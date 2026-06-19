@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Packet Capture Analyzer</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    background: #0d1117;
+    color: #e6edf3;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    font-size: 13px;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: #161b22;
+    border-bottom: 1px solid #30363d;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  .header-logo { font-size: 16px; font-weight: 700; color: #58a6ff; letter-spacing: -0.5px; }
+  .header-subtitle { font-size: 11px; color: #8b949e; }
+  .header-files { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+  .file-badge {
+    background: #21262d; border: 1px solid #30363d; border-radius: 4px;
+    padding: 2px 8px; font-size: 10px; color: #58a6ff;
+  }
+  .reset-btn {
+    background: none; border: 1px solid #30363d; color: #8b949e;
+    border-radius: 4px; padding: 3px 10px; cursor: pointer; font-size: 11px; font-family: inherit;
+  }
+  .reset-btn:hover { border-color: #58a6ff; color: #58a6ff; }
+
+  /* ── MODE TOGGLE ── */
+  .mode-toggle {
+    display: flex; background: #0d1117; border: 1px solid #30363d;
+    border-radius: 8px; padding: 3px; gap: 2px;
+  }
+  .mode-btn {
+    flex: 1; padding: 8px 12px; border-radius: 6px; border: none; cursor: pointer;
+    font-family: inherit; font-size: 12px; font-weight: 600; transition: all 0.2s;
+    background: none; color: #8b949e;
+  }
+  .mode-btn.active { background: #21262d; color: #e6edf3; }
+  .mode-btn.active.triage { color: #e3b341; }
+  .mode-btn.active.security { color: #f85149; }
+  .mode-btn:hover:not(.active) { color: #c9d1d9; }
+  .mode-desc {
+    font-size: 11px; color: #8b949e; text-align: center;
+    padding: 4px 0 0; line-height: 1.5;
+  }
+  .mode-desc em { color: #58a6ff; font-style: normal; }
+  .mode-desc.triage em { color: #e3b341; }
+
+  /* ── LAYOUT ── */
+  .main { display: flex; flex: 1; overflow: hidden; }
+
+  /* ── UPLOAD SCREEN ── */
+  #upload-screen {
+    flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px;
+  }
+  .upload-container { width: 100%; max-width: 580px; display: flex; flex-direction: column; gap: 16px; }
+  .upload-zone {
+    border: 2px dashed #30363d; border-radius: 10px; padding: 44px 24px;
+    text-align: center; cursor: pointer; transition: all 0.2s; background: #161b22;
+  }
+  .upload-zone:hover, .upload-zone.drag-over { border-color: #58a6ff; background: #1c2128; }
+  .upload-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.7; }
+  .upload-title { font-size: 15px; font-weight: 600; color: #e6edf3; margin-bottom: 6px; }
+  .upload-sub { font-size: 12px; color: #8b949e; }
+  .upload-sub em { color: #58a6ff; font-style: normal; }
+
+  .file-list { display: flex; flex-direction: column; gap: 6px; }
+  .file-item {
+    display: flex; align-items: center; gap: 8px; background: #21262d;
+    border: 1px solid #30363d; border-radius: 6px; padding: 7px 12px;
+  }
+  .file-item-icon { color: #58a6ff; }
+  .file-item-name { flex: 1; color: #e6edf3; font-size: 12px; }
+  .file-item-size { color: #8b949e; font-size: 11px; }
+  .file-remove { background: none; border: none; color: #8b949e; cursor: pointer; font-size: 14px; padding: 0 4px; }
+  .file-remove:hover { color: #f85149; }
+
+  .issue-label { font-size: 11px; font-weight: 700; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .issue-input {
+    width: 100%; background: #161b22; border: 1px solid #30363d; border-radius: 8px;
+    padding: 10px 14px; color: #e6edf3; font-family: inherit; font-size: 13px;
+    resize: vertical; min-height: 72px; transition: border-color 0.2s;
+  }
+  .issue-input:focus { outline: none; border-color: #58a6ff; }
+  .issue-input::placeholder { color: #484f58; }
+
+  .analyze-btn {
+    background: #238636; border: 1px solid #2ea043; color: #fff;
+    border-radius: 8px; padding: 12px 24px; font-size: 13px; font-weight: 600;
+    font-family: inherit; cursor: pointer; transition: all 0.2s; width: 100%;
+  }
+  .analyze-btn:hover:not(:disabled) { background: #2ea043; }
+  .analyze-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  /* ── LOADING ── */
+  #loading-screen {
+    flex: 1; display: none; align-items: center; justify-content: center;
+    flex-direction: column; gap: 16px;
+  }
+  .loading-spinner {
+    width: 44px; height: 44px; border: 3px solid #30363d;
+    border-top-color: #58a6ff; border-radius: 50%; animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-size: 13px; color: #8b949e; }
+  .loading-step { font-size: 11px; color: #484f58; }
+
+  /* ── ANALYSIS SCREEN ── */
+  #analysis-screen { display: none; flex: 1; overflow: hidden; }
+
+  /* ── DATA PANEL ── */
+  .data-panel {
+    width: 400px; flex-shrink: 0; border-right: 1px solid #30363d;
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .tabs-wrapper {
+    display: flex; align-items: stretch; border-bottom: 1px solid #30363d;
+    background: #161b22; flex-shrink: 0; position: relative;
+  }
+  .tab-arrow {
+    flex-shrink: 0; width: 26px; background: #161b22; border: none;
+    border-bottom: 1px solid transparent; color: #58a6ff; cursor: pointer;
+    font-size: 16px; font-family: inherit; transition: color 0.15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .tab-arrow:hover { color: #79c0ff; background: #1c2128; }
+  .tab-arrow:disabled { opacity: 0.2; cursor: default; }
+  .tabs {
+    display: flex; flex: 1; overflow-x: hidden; scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    padding: 9px 13px; font-size: 11px; font-weight: 600; color: #8b949e;
+    cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap;
+    transition: color 0.15s; font-family: inherit; background: none;
+    border-top: none; border-left: none; border-right: none; text-transform: uppercase; letter-spacing: 0.4px;
+    flex-shrink: 0;
+  }
+  .tab:hover { color: #e6edf3; }
+  .tab.active { color: #58a6ff; border-bottom-color: #58a6ff; }
+  .tab-content { flex: 1; overflow-y: auto; padding: 14px; display: none; }
+  .tab-content.active { display: block; }
+
+  /* ── METRIC CARDS ── */
+  .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+  .metric-card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 10px 12px; }
+  .metric-label { font-size: 10px; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
+  .metric-value { font-size: 18px; font-weight: 700; color: #e6edf3; }
+  .metric-sub { font-size: 10px; color: #484f58; margin-top: 2px; }
+
+  /* ── BARS ── */
+  .bar-row { margin-bottom: 7px; }
+  .bar-label { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 3px; color: #c9d1d9; }
+  .bar-track { background: #21262d; border-radius: 3px; height: 5px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+
+  /* ── ANOMALIES ── */
+  .anomaly-item { background: #161b22; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; border-left: 3px solid; }
+  .anomaly-item.high { border-left-color: #f85149; }
+  .anomaly-item.medium { border-left-color: #e3b341; }
+  .anomaly-item.low { border-left-color: #58a6ff; }
+  .anomaly-header { display: flex; align-items: center; gap: 7px; margin-bottom: 3px; }
+  .anomaly-badge { font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .anomaly-badge.high { background: rgba(248,81,73,.2); color: #f85149; }
+  .anomaly-badge.medium { background: rgba(227,179,65,.2); color: #e3b341; }
+  .anomaly-badge.low { background: rgba(88,166,255,.2); color: #58a6ff; }
+  .anomaly-type { font-size: 12px; font-weight: 600; color: #e6edf3; }
+  .anomaly-detail { font-size: 11px; color: #8b949e; line-height: 1.5; }
+
+  /* ── EXPANDABLE EVIDENCE ── */
+  .expandable-card { cursor: pointer; transition: border-color 0.15s; }
+  .expandable-card:hover { filter: brightness(1.08); }
+  .expand-toggle {
+    font-size: 9px; color: #484f58; margin-top: 6px; text-align: right;
+    user-select: none; letter-spacing: 0.3px;
+  }
+  .expandable-card:hover .expand-toggle { color: #8b949e; }
+  .card-evidence { display: none; margin-top: 8px; padding-top: 8px; border-top: 1px solid #21262d; }
+  .card-evidence.open { display: block; }
+  .ev-row {
+    font-size: 10px; color: #8b949e; padding: 4px 0;
+    border-bottom: 1px solid #1c2128; line-height: 1.45; word-break: break-all;
+  }
+  .ev-row:last-child { border-bottom: none; }
+  .ev-label { color: #484f58; font-size: 9px; text-transform: uppercase; letter-spacing: 0.3px; margin-right: 4px; }
+  .no-anomalies { text-align: center; padding: 28px; color: #484f58; font-size: 12px; }
+  .no-anomalies-icon { font-size: 28px; margin-bottom: 6px; }
+
+  /* ── TABLES ── */
+  .data-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .data-table th {
+    background: #161b22; color: #8b949e; padding: 7px 8px; text-align: left;
+    border-bottom: 1px solid #30363d; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.4px; position: sticky; top: 0;
+  }
+  .data-table td { padding: 6px 8px; border-bottom: 1px solid #21262d; color: #c9d1d9; word-break: break-all; }
+  .data-table tr:hover td { background: #161b22; }
+
+  /* ── TCP / DNS STATS ── */
+  .stat-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 7px 0; border-bottom: 1px solid #21262d; font-size: 12px;
+  }
+  .stat-row:last-child { border-bottom: none; }
+  .stat-label { color: #8b949e; }
+  .stat-value { font-weight: 700; color: #e6edf3; }
+  .stat-value.warn { color: #e3b341; }
+  .stat-value.danger { color: #f85149; }
+
+  .detail-card { background: #161b22; border-radius: 6px; padding: 8px 10px; margin-bottom: 6px; }
+  .detail-title { font-size: 11px; color: #58a6ff; font-weight: 600; margin-bottom: 3px; word-break: break-all; }
+  .detail-meta { display: flex; flex-wrap: wrap; gap: 8px; font-size: 10px; }
+  .tag-danger { color: #f85149; }
+  .tag-warn { color: #e3b341; }
+  .tag-ok { color: #2ea043; }
+
+  /* ── SOURCE LEGEND ── */
+  .source-legend { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+  .source-legend-item { display: flex; align-items: center; gap: 4px; font-size: 10px; }
+  .source-dot { width: 7px; height: 7px; border-radius: 50%; }
+
+  /* ── SECTION HEADER ── */
+  .section-header {
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+    color: #8b949e; margin-bottom: 8px; margin-top: 14px;
+    padding-bottom: 5px; border-bottom: 1px solid #21262d;
+  }
+  .section-header:first-child { margin-top: 0; }
+
+  .empty-state { text-align: center; padding: 20px; color: #484f58; font-size: 11px; }
+
+  /* ── CHAT PANEL ── */
+  .chat-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .chat-header {
+    padding: 10px 18px; border-bottom: 1px solid #30363d; background: #161b22;
+    font-size: 11px; font-weight: 700; color: #8b949e; text-transform: uppercase;
+    letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+  }
+  .chat-status { width: 7px; height: 7px; border-radius: 50%; background: #2ea043; }
+
+  .chat-messages { flex: 1; overflow-y: auto; padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+  .message { display: flex; flex-direction: column; max-width: 87%; }
+  .message.user { align-self: flex-end; }
+  .message.assistant { align-self: flex-start; }
+  .message-role { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; color: #484f58; }
+  .message.user .message-role { text-align: right; color: #388bfd; }
+  .message.assistant .message-role { color: #2ea043; }
+  .message-bubble {
+    padding: 10px 14px; border-radius: 10px; font-size: 12px; line-height: 1.65;
+    white-space: pre-wrap; word-break: break-word; border: 1px solid #30363d;
+  }
+  .message.user .message-bubble { background: #1c2128; color: #e6edf3; border-bottom-right-radius: 3px; }
+  .message.assistant .message-bubble { background: #161b22; color: #c9d1d9; border-bottom-left-radius: 3px; }
+
+  .typing-dots { display: inline-flex; gap: 4px; align-items: center; }
+  .typing-dot { width: 5px; height: 5px; background: #484f58; border-radius: 50%; animation: bounce 1.2s infinite; }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-5px)} }
+
+  .chat-input-area {
+    border-top: 1px solid #30363d; padding: 12px 18px;
+    display: flex; gap: 8px; background: #161b22; flex-shrink: 0; align-items: flex-end;
+  }
+  .chat-input {
+    flex: 1; background: #0d1117; border: 1px solid #30363d; border-radius: 8px;
+    padding: 9px 12px; color: #e6edf3; font-family: inherit; font-size: 12px;
+    resize: none; min-height: 38px; max-height: 110px; transition: border-color 0.2s; line-height: 1.5;
+  }
+  .chat-input:focus { outline: none; border-color: #58a6ff; }
+  .chat-input::placeholder { color: #484f58; }
+  .send-btn {
+    background: #238636; border: 1px solid #2ea043; color: #fff; border-radius: 8px;
+    padding: 9px 14px; font-size: 12px; font-weight: 600; font-family: inherit;
+    cursor: pointer; transition: all 0.2s; white-space: nowrap;
+  }
+  .send-btn:hover:not(:disabled) { background: #2ea043; }
+  .send-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  /* ── SCROLLBARS ── */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #484f58; }
+
+  /* ── STREAM BUTTON ── */
+  .stream-btn {
+    background: none; border: 1px solid #30363d; color: #58a6ff;
+    border-radius: 4px; padding: 2px 7px; font-size: 10px; cursor: pointer;
+    font-family: inherit; white-space: nowrap; transition: all 0.15s;
+  }
+  .stream-btn:hover { background: #1c2128; border-color: #58a6ff; }
+  /* ── PACKET ROW SELECTION ── */
+  #stream-modal-body tr { transition: background 0.1s; }
+  #stream-modal-body tr:hover { background: rgba(88,166,255,.06) !important; }
+  #stream-modal-body tr.pkt-selected { background: rgba(88,166,255,.14) !important; outline: 1px solid rgba(88,166,255,.3); }
+  /* ── SEND-TO-CHAT BUTTON ── */
+  .chat-to-btn {
+    background: none; border: none; color: #484f58; font-size: 13px;
+    cursor: pointer; padding: 0 2px; line-height: 1; transition: color 0.15s;
+    flex-shrink: 0; margin-left: auto;
+  }
+  .chat-to-btn:hover { color: #58a6ff; }
+
+  /* ── SOURCE COLORS ── */
+  .src-badge {
+    display: inline-block; font-size: 9px; padding: 1px 4px;
+    border-radius: 3px; background: #21262d; margin-right: 3px;
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-logo">⬡ PktAnalyzer</div>
+  <div class="header-subtitle">Packet Capture Diagnostic Tool</div>
+  <div class="header-files" id="header-files" style="display:none">
+    <span id="header-file-badges"></span>
+    <button class="reset-btn" onclick="resetApp()">↩ New Analysis</button>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- ═══════════════════════════════════════ UPLOAD SCREEN -->
+  <div id="upload-screen">
+    <div class="upload-container">
+
+      <div class="upload-zone" id="upload-zone"
+           onclick="document.getElementById('file-input').click()"
+           ondragover="onDragOver(event)"
+           ondragleave="onDragLeave(event)"
+           ondrop="onDrop(event)">
+        <div class="upload-icon">📦</div>
+        <div class="upload-title">Drop packet captures here</div>
+        <div class="upload-sub">Supports <em>.pcap</em> / <em>.pcapng</em> / <em>.cap</em> — drag multiple captures to merge &amp; correlate</div>
+        <input type="file" id="file-input" accept=".pcap,.pcapng,.cap,.npcap" multiple
+               style="display:none" onchange="onFileSelect(event)">
+        <!-- accepts both pcap and pcapng -->
+      </div>
+
+      <div class="file-list" id="file-list"></div>
+
+      <!-- Mode toggle -->
+      <div class="mode-toggle">
+        <button class="mode-btn active" id="mode-issue" onclick="setMode('issue')">🔍 Specific Issue</button>
+        <button class="mode-btn triage" id="mode-triage" onclick="setMode('triage')">⚡ Auto-Triage</button>
+        <button class="mode-btn security" id="mode-security" onclick="setMode('security')">🛡️ Security Review</button>
+      </div>
+      <div class="mode-desc" id="mode-desc">Describe a known problem — assistant focuses the diagnosis around it</div>
+
+      <!-- Issue input (hidden in triage mode) -->
+      <div id="issue-section">
+        <div class="issue-label">Describe the issue</div>
+        <textarea class="issue-input" id="issue-input"
+          placeholder="e.g. Users on VLAN 20 intermittently can't reach web servers at 10.1.1.50–52 since the firewall upgrade Thursday. HTTP and HTTPS fail — pings work fine."></textarea>
+      </div>
+
+      <button class="analyze-btn" id="analyze-btn" onclick="startAnalysis()" disabled>
+        Analyze Captures
+      </button>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ LOADING SCREEN -->
+  <div id="loading-screen">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">Parsing captures…</div>
+    <div class="loading-step" id="loading-step">Reading file headers</div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ ANALYSIS SCREEN -->
+  <div id="analysis-screen">
+
+    <!-- Data panel -->
+    <div class="data-panel">
+      <div class="tabs-wrapper">
+        <button class="tab-arrow" id="tab-arrow-left" onclick="scrollTabs(-1)" disabled>&#8249;</button>
+        <div class="tabs" id="tabs-scroll">
+          <button class="tab active" onclick="switchTab(event,'summary')">Summary</button>
+          <button class="tab" id="tab-btn-anomalies" onclick="switchTab(event,'anomalies')">Anomalies</button>
+          <button class="tab" id="tab-btn-flows" onclick="switchTab(event,'flows')">Flows</button>
+          <button class="tab" id="tab-btn-tcp" onclick="switchTab(event,'tcp')">TCP</button>
+          <button class="tab" id="tab-btn-udp" onclick="switchTab(event,'udp')">UDP</button>
+          <button class="tab" onclick="switchTab(event,'dns')">DNS</button>
+          <button class="tab" id="tab-btn-threats" onclick="switchTab(event,'threats')">Threats</button>
+        </div>
+        <button class="tab-arrow" id="tab-arrow-right" onclick="scrollTabs(1)">&#8250;</button>
+      </div>
+
+      <!-- SUMMARY -->
+      <div class="tab-content active" id="tab-summary">
+        <div class="metric-grid" id="metric-grid"></div>
+        <div class="section-header">Protocol Distribution</div>
+        <div id="proto-bars"></div>
+        <div class="section-header">Top Talkers</div>
+        <div id="top-talkers"></div>
+        <div class="section-header">Ports / Services Observed</div>
+        <div id="ports-table"></div>
+      </div>
+
+      <!-- ANOMALIES -->
+      <div class="tab-content" id="tab-anomalies">
+        <div id="anomalies-list"></div>
+      </div>
+
+      <!-- FLOWS -->
+      <div class="tab-content" id="tab-flows">
+        <div id="source-legend"></div>
+        <div style="overflow-x:auto">
+          <table class="data-table">
+            <thead><tr><th>Flow</th><th>Pkts</th><th>Bytes</th><th></th></tr></thead>
+            <tbody id="flows-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TCP -->
+      <div class="tab-content" id="tab-tcp">
+        <div class="section-header">Health Counters</div>
+        <div id="tcp-counters"></div>
+        <div class="section-header">Streams with Issues</div>
+        <div id="tcp-streams"></div>
+      </div>
+
+      <!-- UDP -->
+      <div class="tab-content" id="tab-udp">
+        <div class="section-header">Health Counters</div>
+        <div id="udp-counters"></div>
+        <div class="section-header">Top UDP Flows</div>
+        <div id="udp-flows"></div>
+        <div class="section-header" id="udp-issues-header">Notable Flows</div>
+        <div id="udp-issues"></div>
+      </div>
+
+      <!-- DNS -->
+      <div class="tab-content" id="tab-dns">
+        <div class="section-header">Summary</div>
+        <div id="dns-counters"></div>
+        <div class="section-header">Query Detail</div>
+        <div id="dns-queries"></div>
+      </div>
+
+      <!-- THREATS -->
+      <div class="tab-content" id="tab-threats">
+        <div id="threats-summary" style="margin-bottom:12px"></div>
+        <div id="threats-list"></div>
+      </div>
+    </div>
+
+    <!-- Chat panel -->
+    <div class="chat-panel">
+      <div class="chat-header">
+        <div class="chat-status"></div>
+        Diagnostic Assistant
+        <button onclick="clearChat()" style="margin-left:auto;background:none;border:1px solid #30363d;color:#8b949e;font-size:11px;padding:2px 8px;border-radius:4px;cursor:pointer;font-family:inherit" title="Clear conversation">Clear</button>
+      </div>
+      <div class="chat-messages" id="chat-messages"></div>
+      <div class="chat-input-area">
+        <textarea class="chat-input" id="chat-input" rows="1"
+          placeholder="Reply to assistant, share what you found, add context…"
+          onkeydown="onChatKey(event)"
+          oninput="autoResize(this)"></textarea>
+        <button class="send-btn" id="send-btn" onclick="sendMessage()" disabled>Send</button>
+      </div>
+    </div>
+
+  </div><!-- /analysis-screen -->
+</div><!-- /main -->
+
+<script>
+// ================================================================
+//  STATE
+// ================================================================
+const SOURCE_COLORS = ['#58a6ff','#bc8cff','#f78166','#56d364'];
+let uploadedFiles = [];
+let analysisResult = null;
+let conversationHistory = [];
+let isThinking = false;
+let analyzeMode = 'issue'; // 'issue' | 'triage'
+
+function setMode(mode) {
+  analyzeMode = mode;
+  document.getElementById('mode-issue').classList.toggle('active', mode==='issue');
+  document.getElementById('mode-triage').classList.toggle('active', mode==='triage');
+  document.getElementById('mode-security').classList.toggle('active', mode==='security');
+  document.getElementById('issue-section').style.display = mode==='issue' ? 'block' : 'none';
+  const desc = document.getElementById('mode-desc');
+  const btn  = document.getElementById('analyze-btn');
+  if (mode==='issue') {
+    desc.className='mode-desc';
+    desc.innerHTML='Describe a known problem — assistant focuses the diagnosis around it';
+    btn.textContent='Analyze Captures';
+  } else if (mode==='triage') {
+    desc.className='mode-desc triage';
+    desc.innerHTML='<em>No issue needed</em> — assistant scans for anything suspicious and reports findings';
+    btn.textContent='⚡ Run Auto-Triage';
+  } else {
+    desc.className='mode-desc triage';
+    desc.innerHTML='<em>No issue needed</em> — scans for threats: port scans, lateral movement, exfiltration, brute force, cleartext credentials, DNS tunneling';
+    btn.textContent='🛡️ Run Security Review';
+  }
+}
+
+// ================================================================
+//  PCAP PARSER
+// ================================================================
+function parsePCAP(buffer, filename) {
+  const dv = new DataView(buffer);
+  if (buffer.byteLength < 12) throw new Error('File too small');
+  const magic = dv.getUint32(0, true);
+  // Route pcapng files to their own parser
+  if (magic === 0x0a0d0d0a) return parsePCAPNG(buffer, filename);
+  if (magic !== 0xa1b2c3d4 && magic !== 0xd4c3b2a1)
+    throw new Error('Not a valid pcap or pcapng file (magic: 0x' + magic.toString(16) + ')');
+  if (buffer.byteLength < 24) throw new Error('File too small for pcap');
+  const le = (magic === 0xa1b2c3d4);
+  const linkType = dv.getUint32(20, le);
+  const packets = [];
+  let off = 24;
+  while (off + 16 <= buffer.byteLength) {
+    const tsSec  = dv.getUint32(off,     le);
+    const tsUsec = dv.getUint32(off + 4, le);
+    const inclLen= dv.getUint32(off + 8, le);
+    off += 16;
+    if (inclLen === 0 || inclLen > 65535 || off + inclLen > buffer.byteLength) break;
+    const raw = new Uint8Array(buffer, off, inclLen);
+    const pkt = decodePacket(raw, linkType);
+    pkt.timestamp  = tsSec + tsUsec / 1e6;
+    pkt.capturedLen= inclLen;
+    pkt.source     = filename;
+    packets.push(pkt);
+    off += inclLen;
+  }
+  return packets;
+}
+
+function decodePacket(d, lt) {
+  if (lt === 1)   return decodeEthernet(d);
+  if (lt === 113) return decodeLinuxSLL(d);
+  return { protocol: 'Unknown' };
+}
+function decodeLinuxSLL(d) {
+  if (d.length < 16) return { protocol: 'Unknown' };
+  const et = (d[14]<<8)|d[15];
+  if (et === 0x0800) return decodeIPv4(d, 16);
+  if (et === 0x86DD) return { protocol: 'IPv6' };
+  return { protocol: 'Other' };
+}
+function decodeEthernet(d) {
+  if (d.length < 14) return { protocol: 'Unknown' };
+  const et = (d[12]<<8)|d[13];
+  if (et === 0x0800) return decodeIPv4(d, 14);
+  if (et === 0x0806) return { protocol: 'ARP' };
+  if (et === 0x86DD) return { protocol: 'IPv6' };
+  if (et === 0x8100) {
+    if (d.length < 18) return { protocol: 'VLAN' };
+    const inner = (d[16]<<8)|d[17];
+    return inner === 0x0800
+      ? { ...decodeIPv4(d, 18), vlan: ((d[14]<<8)|d[15]) & 0xfff }
+      : { protocol: 'VLAN' };
+  }
+  return { protocol: '0x'+et.toString(16).padStart(4,'0') };
+}
+function decodeIPv4(d, o) {
+  if (d.length < o + 20) return { protocol: 'IPv4' };
+  const ihl  = (d[o] & 0x0f) * 4;
+  const proto= d[o+9];
+  const sip  = d[o+12]+'.'+d[o+13]+'.'+d[o+14]+'.'+d[o+15];
+  const dip  = d[o+16]+'.'+d[o+17]+'.'+d[o+18]+'.'+d[o+19];
+  const tlen = (d[o+2]<<8)|d[o+3];
+  const ttl  = d[o+8];
+  const base = { srcIP:sip, dstIP:dip, ttl, totalLen:tlen };
+  if (proto===6)  return { ...base, ...decodeTCP(d,o+ihl),  protocol:'TCP'  };
+  if (proto===17) return { ...base, ...decodeUDP(d,o+ihl),  protocol:'UDP'  };
+  if (proto===1)  return { ...base, ...decodeICMP(d,o+ihl), protocol:'ICMP' };
+  return { ...base, protocol:'IP/'+proto };
+}
+function decodeTCP(d, o) {
+  if (d.length < o+20) return {};
+  const sp  = (d[o]<<8)|d[o+1];
+  const dp  = (d[o+2]<<8)|d[o+3];
+  const seq = ((d[o+4]<<24)|(d[o+5]<<16)|(d[o+6]<<8)|d[o+7])>>>0;
+  const ack = ((d[o+8]<<24)|(d[o+9]<<16)|(d[o+10]<<8)|d[o+11])>>>0;
+  const dataOff = (d[o+12]>>4)*4;
+  const f   = d[o+13];
+  const win = (d[o+14]<<8)|d[o+15];
+  const ps  = o + dataOff;
+  const pl  = Math.min(d.length - ps, 512);
+  const payload = pl > 0 ? d.slice(ps, ps + pl) : null;
+  return { srcPort:sp, dstPort:dp, seqNum:seq, ackNum:ack, windowSize:win,
+    flags:{ fin:!!(f&1),syn:!!(f&2),rst:!!(f&4),psh:!!(f&8),ack:!!(f&16),urg:!!(f&32) }, payload };
+}
+function decodeUDP(d, o) {
+  if (d.length < o+8) return {};
+  const sp=(d[o]<<8)|d[o+1], dp=(d[o+2]<<8)|d[o+3];
+  const ps = o+8, pl = Math.min(d.length - ps, 512);
+  const payload = pl > 0 ? d.slice(ps, ps + pl) : null;
+  return { srcPort:sp, dstPort:dp, payload, dns:(sp===53||dp===53)?decodeDNS(d,o+8):null };
+}
+function decodeICMP(d, o) {
+  if (d.length < o+4) return {};
+  const t=d[o], c=d[o+1];
+  const n={0:'Echo Reply',3:'Dest Unreachable',8:'Echo Request',11:'Time Exceeded',12:'Param Problem'};
+  return { icmpType:t, icmpCode:c, icmpDesc:n[t]||'Type '+t };
+}
+function decodeDNS(d, o) {
+  if (d.length < o+12) return null;
+  try {
+    const id    =(d[o]<<8)|d[o+1];
+    const flags =(d[o+2]<<8)|d[o+3];
+    const isResp=!!(flags&0x8000);
+    const rcode =flags&0x000f;
+    const an    =(d[o+6]<<8)|d[o+7];
+    let qo=o+12, qname='';
+    while (qo < d.length) {
+      const len=d[qo];
+      if (len===0||((len&0xc0)===0xc0)) break;
+      if (qname) qname+='.';
+      for (let i=1;i<=len&&qo+i<d.length;i++) qname+=String.fromCharCode(d[qo+i]);
+      qo+=len+1;
+    }
+    return { id, isResponse:isResp, rcode, answers:an, qname };
+  } catch { return null; }
+}
+
+// ================================================================
+//  PCAPNG PARSER
+// ================================================================
+function parsePCAPNG(buffer, filename) {
+  const dv = new DataView(buffer);
+  if (buffer.byteLength < 28) throw new Error('File too small for pcapng');
+
+  // Verify SHB block type
+  const firstBlock = dv.getUint32(0, true);
+  if (firstBlock !== 0x0a0d0d0a) throw new Error('Not a valid pcapng file');
+
+  // Byte-order magic is at offset 8 inside the SHB body
+  const bom = dv.getUint32(8, true);
+  const le = (bom === 0x1a2b3c4d);
+  if (bom !== 0x1a2b3c4d && bom !== 0x4d3c2b1a)
+    throw new Error('Invalid pcapng byte-order magic: 0x' + bom.toString(16));
+
+  const ifaces  = []; // [{linkType, tsResol}]
+  const packets = [];
+  let offset = 0;
+
+  while (offset + 12 <= buffer.byteLength) {
+    const bType = dv.getUint32(offset,     le);
+    const bLen  = dv.getUint32(offset + 4, le);
+    if (bLen < 12 || offset + bLen > buffer.byteLength) break;
+
+    // ── Section Header Block (0x0A0D0D0A) ──────────────────────
+    // Just re-read byte order; interfaces reset per section
+    if (bType === 0x0a0d0d0a) {
+      // nothing extra needed — interfaces already reset if this is a second SHB
+    }
+
+    // ── Interface Description Block (0x00000001) ───────────────
+    else if (bType === 0x00000001) {
+      const linkType = dv.getUint16(offset + 8, le);
+      let tsResol = 1e6; // default: microseconds (1e6 units per second)
+      // Scan options for if_tsresol (opt code 9)
+      // r encodes negative exponent: resolution = base^(-r), so divisor = base^r
+      let oo = offset + 16, bend = offset + bLen - 4;
+      while (oo + 4 <= bend) {
+        const oType = dv.getUint16(oo,     le);
+        const oLen  = dv.getUint16(oo + 2, le);
+        if (oType === 0) break;
+        if (oType === 9 && oLen >= 1) {
+          const r = dv.getUint8(oo + 4);
+          // r & 0x80: base-2 if set, base-10 if not. r & 0x7f: the exponent.
+          tsResol = (r & 0x80) ? Math.pow(2, r & 0x7f) : Math.pow(10, r & 0x7f);
+        }
+        oo += 4 + oLen + ((oLen % 4) ? (4 - oLen % 4) : 0);
+      }
+      ifaces.push({ linkType, tsResol });
+    }
+
+    // ── Enhanced Packet Block (0x00000006) ─────────────────────
+    else if (bType === 0x00000006 && bLen >= 28) {
+      const ifaceId = dv.getUint32(offset + 8,  le);
+      const tsHi    = dv.getUint32(offset + 12, le);
+      const tsLo    = dv.getUint32(offset + 16, le);
+      const capLen  = dv.getUint32(offset + 20, le);
+      const iface   = ifaces[ifaceId] || { linkType:1, tsResol:1e6 };
+      const ts      = (tsHi * 4294967296 + tsLo) / iface.tsResol;
+      if (capLen > 0 && capLen < 65536 && offset + 28 + capLen <= buffer.byteLength) {
+        const raw = new Uint8Array(buffer, offset + 28, capLen);
+        const pkt = decodePacket(raw, iface.linkType);
+        pkt.timestamp   = ts;
+        pkt.capturedLen = capLen;
+        pkt.source      = filename;
+        packets.push(pkt);
+      }
+    }
+
+    // ── Obsolete Packet Block (0x00000002) ─────────────────────
+    else if (bType === 0x00000002 && bLen >= 28) {
+      const ifaceId = dv.getUint16(offset + 8, le);
+      const tsHi    = dv.getUint32(offset + 12, le);
+      const tsLo    = dv.getUint32(offset + 16, le);
+      const capLen  = dv.getUint32(offset + 20, le);
+      const iface   = ifaces[ifaceId] || { linkType:1, tsResol:1e6 };
+      const ts      = (tsHi * 4294967296 + tsLo) / iface.tsResol;
+      if (capLen > 0 && capLen < 65536 && offset + 28 + capLen <= buffer.byteLength) {
+        const raw = new Uint8Array(buffer, offset + 28, capLen);
+        const pkt = decodePacket(raw, iface.linkType);
+        pkt.timestamp   = ts;
+        pkt.capturedLen = capLen;
+        pkt.source      = filename;
+        packets.push(pkt);
+      }
+    }
+
+    // ── Simple Packet Block (0x00000003) ───────────────────────
+    else if (bType === 0x00000003 && bLen >= 16) {
+      const origLen = dv.getUint32(offset + 8, le);
+      const capLen  = Math.min(origLen, bLen - 16);
+      const iface   = ifaces[0] || { linkType:1, tsResol:1e6 };
+      if (capLen > 0 && capLen < 65536 && offset + 12 + capLen <= buffer.byteLength) {
+        const raw = new Uint8Array(buffer, offset + 12, capLen);
+        const pkt = decodePacket(raw, iface.linkType);
+        pkt.timestamp   = 0; // SPB has no timestamp
+        pkt.capturedLen = capLen;
+        pkt.source      = filename;
+        packets.push(pkt);
+      }
+    }
+
+    offset += bLen;
+  }
+
+  if (!packets.length) throw new Error('pcapng parsed but no packets found — file may be empty or use an unsupported block type');
+  return packets;
+}
+
+// ================================================================
+//  ANALYSIS ENGINE
+// ================================================================
+function analyzePackets(pkts) {
+  if (!pkts.length) return null;
+  pkts.sort((a,b)=>a.timestamp-b.timestamp);
+  const first=pkts[0].timestamp, last=pkts[pkts.length-1].timestamp, dur=last-first;
+
+  const protocols={}, talkers={}, convMap={}, tcpStreams={}, udpFlows={}, dnsMap={}, portMap={};
+  let totalBytes=0;
+
+  for (const p of pkts) {
+    protocols[p.protocol]=(protocols[p.protocol]||0)+1;
+    totalBytes+=p.capturedLen;
+
+    // Port tracking — count both src and dst, keyed as "PROTO/port"
+    if ((p.protocol==='TCP'||p.protocol==='UDP') && p.srcPort && p.dstPort) {
+      // Only count the lower-numbered port (usually the service port) to avoid double-counting
+      const svc = Math.min(p.srcPort, p.dstPort);
+      const key = p.protocol+'/'+svc;
+      if (!portMap[key]) portMap[key]={port:svc,proto:p.protocol,pkts:0,bytes:0};
+      portMap[key].pkts++; portMap[key].bytes+=p.capturedLen;
+    }
+
+    if (p.srcIP) talkers[p.srcIP]=(talkers[p.srcIP]||0)+p.capturedLen;
+
+    if (p.srcIP && p.dstIP) {
+      const normKey=[p.srcIP+(p.srcPort||''), p.dstIP+(p.dstPort||'')].sort().join('|')+'|'+p.protocol;
+      const display=p.srcPort&&p.dstPort
+        ?`${p.srcIP}:${p.srcPort} ↔ ${p.dstIP}:${p.dstPort} [${p.protocol}]`
+        :`${p.srcIP} ↔ ${p.dstIP} [${p.protocol}]`;
+      if (!convMap[normKey]) convMap[normKey]={display,normKey,pkts:0,bytes:0,first:p.timestamp,last:p.timestamp,srcs:new Set()};
+      const c=convMap[normKey]; c.pkts++; c.bytes+=p.capturedLen; c.last=p.timestamp; c.srcs.add(p.source);
+    }
+
+    if (p.protocol==='TCP' && p.srcIP && p.flags) {
+      const nk=[p.srcIP+':'+(p.srcPort||'?'), p.dstIP+':'+(p.dstPort||'?')].sort().join(' ↔ ');
+      if (!tcpStreams[nk]) tcpStreams[nk]={syns:0,synAcks:0,rsts:0,fins:0,zeroWin:0,retrans:0,pkts:0,bytes:0,seqs:{}};
+      const s=tcpStreams[nk];
+      s.pkts++; s.bytes+=p.capturedLen;
+      if (p.flags.syn&&!p.flags.ack) s.syns++;
+      if (p.flags.syn&&p.flags.ack)  s.synAcks++;
+      if (p.flags.rst) s.rsts++;
+      if (p.flags.fin) s.fins++;
+      if (p.windowSize===0&&!p.flags.syn&&!p.flags.rst) s.zeroWin++;
+      if (p.seqNum!==undefined) {
+        const sk=p.srcIP+':'+p.srcPort;
+        if (!s.seqs[sk]) s.seqs[sk]=new Set();
+        if (s.seqs[sk].has(p.seqNum)&&p.seqNum!==0) { s.retrans++; }
+        else { s.seqs[sk].add(p.seqNum); if(s.seqs[sk].size>1500){const v=s.seqs[sk].values().next().value;s.seqs[sk].delete(v);} }
+      }
+    }
+
+    if (p.dns) {
+      const {id,isResponse,qname,rcode}=p.dns;
+      if (!isResponse) { dnsMap[id]={qname:qname||'(unknown)',ts:p.timestamp,answered:false,rcode:null,rtt:null}; }
+      else if (dnsMap[id]&&!dnsMap[id].answered) { dnsMap[id].answered=true; dnsMap[id].rcode=rcode; dnsMap[id].rtt=((p.timestamp-dnsMap[id].ts)*1000).toFixed(1); }
+    }
+
+    if (p.protocol==='UDP' && p.srcIP && p.dstIP && p.srcPort && p.dstPort) {
+      const nk=[p.srcIP+':'+p.srcPort, p.dstIP+':'+p.dstPort].sort().join(' ↔ ');
+      if (!udpFlows[nk]) udpFlows[nk]={key:nk,pkts:0,bytes:0,largeCount:0,dirs:new Set()};
+      const f=udpFlows[nk];
+      f.pkts++; f.bytes+=p.capturedLen;
+      if (p.capturedLen>1400) f.largeCount++;
+      // track directionality for one-sided detection
+      f.dirs.add(p.srcIP+':'+p.srcPort);
+    }
+  }
+
+  // TCP aggregates
+  let totalRsts=0,failedHS=0,totalRetrans=0,totalZeroWin=0;
+  const issueStreams=[];
+  for (const [k,s] of Object.entries(tcpStreams)) {
+    totalRsts+=s.rsts; totalRetrans+=s.retrans; totalZeroWin+=s.zeroWin;
+    if (s.syns>0&&s.synAcks===0) failedHS++;
+    if (s.rsts>2||s.retrans>5||s.zeroWin>2||(s.syns>0&&s.synAcks===0))
+      issueStreams.push({key:k,rsts:s.rsts,retrans:s.retrans,zeroWin:s.zeroWin,failedHS:s.syns>0&&s.synAcks===0,pkts:s.pkts,bytes:s.bytes});
+  }
+
+  // DNS aggregates
+  const dnsAll=Object.values(dnsMap);
+  const dnsUnanswered=dnsAll.filter(d=>!d.answered);
+  const dnsErrors=dnsAll.filter(d=>d.answered&&d.rcode!==0);
+
+  // UDP aggregates
+  const udpFlowArr=Object.values(udpFlows).map(f=>({...f,dirs:[...f.dirs],oneSided:f.dirs.size===1}));
+  udpFlowArr.sort((a,b)=>b.pkts-a.pkts);
+  const udpTotal=udpFlowArr.reduce((s,f)=>s+f.pkts,0);
+  const udpBytes=udpFlowArr.reduce((s,f)=>s+f.bytes,0);
+  const udpLargeFlows=udpFlowArr.filter(f=>f.largeCount>0);
+  const udpOneSided=udpFlowArr.filter(f=>f.oneSided);
+  const udpHighRate=udpFlowArr.filter(f=>f.pkts>200);
+
+  // Anomalies
+  const anomalies=[];
+  const ICMP_TYPE_NAMES={3:'Unreachable',4:'Source Quench',5:'Redirect',11:'Time Exceeded',12:'Parameter Problem'};
+  const DNS_RCODES=['NOERROR','FORMERR','SERVFAIL','NXDOMAIN','NOTIMP','REFUSED'];
+  if (failedHS>0) anomalies.push({severity:'high',type:'Failed TCP Handshakes',
+    detail:`${failedHS} connection(s) have SYN with no SYN-ACK — possible firewall block, routing blackhole, or host unreachable`,
+    evidence:issueStreams.filter(s=>s.failedHS).slice(0,10).map(s=>`Stream: ${s.key} — SYN sent, no SYN-ACK received`)});
+  if (totalRsts>10) anomalies.push({severity:'high',type:'High TCP RST Rate',
+    detail:`${totalRsts} RST packets — abrupt connection terminations across multiple streams`,
+    evidence:issueStreams.filter(s=>s.rsts>0).sort((a,b)=>b.rsts-a.rsts).slice(0,10).map(s=>`Stream: ${s.key} — ${s.rsts} RST(s)`)});
+  else if (totalRsts>3) anomalies.push({severity:'medium',type:'TCP RSTs Detected',
+    detail:`${totalRsts} RST packets — connection refusals or mid-session terminations`,
+    evidence:issueStreams.filter(s=>s.rsts>0).sort((a,b)=>b.rsts-a.rsts).slice(0,10).map(s=>`Stream: ${s.key} — ${s.rsts} RST(s)`)});
+  if (totalRetrans>20) anomalies.push({severity:'high',type:'Excessive Retransmissions',
+    detail:`${totalRetrans} retransmissions — significant packet loss on the path`,
+    evidence:issueStreams.filter(s=>s.retrans>0).sort((a,b)=>b.retrans-a.retrans).slice(0,10).map(s=>`Stream: ${s.key} — ${s.retrans} retransmission(s)`)});
+  else if (totalRetrans>5) anomalies.push({severity:'medium',type:'TCP Retransmissions',
+    detail:`${totalRetrans} retransmissions — some loss present`,
+    evidence:issueStreams.filter(s=>s.retrans>0).sort((a,b)=>b.retrans-a.retrans).slice(0,10).map(s=>`Stream: ${s.key} — ${s.retrans} retransmission(s)`)});
+  if (totalZeroWin>5) anomalies.push({severity:'medium',type:'TCP Zero Window',
+    detail:`${totalZeroWin} zero-window ads — receiver buffer exhaustion, slow application or overloaded host`,
+    evidence:issueStreams.filter(s=>s.zeroWin>0).sort((a,b)=>b.zeroWin-a.zeroWin).slice(0,10).map(s=>`Stream: ${s.key} — ${s.zeroWin} zero-window ad(s)`)});
+  if (dnsUnanswered.length>3) anomalies.push({severity:'high',type:'Unanswered DNS Queries',
+    detail:`${dnsUnanswered.length} DNS queries with no response — DNS server unreachable or dropping queries`,
+    evidence:dnsUnanswered.slice(0,10).map(d=>`Query: ${d.qname} (at ${safeIso(d.ts)})`)});
+  else if (dnsUnanswered.length>0) anomalies.push({severity:'medium',type:'DNS Queries Unanswered',
+    detail:`${dnsUnanswered.length} DNS queries received no response`,
+    evidence:dnsUnanswered.slice(0,10).map(d=>`Query: ${d.qname} (at ${safeIso(d.ts)})`)});
+  if (dnsErrors.length>0) anomalies.push({severity:'medium',type:'DNS Resolution Errors',
+    detail:`${dnsErrors.length} DNS error responses (NXDOMAIN, SERVFAIL, REFUSED, etc.)`,
+    evidence:dnsErrors.slice(0,10).map(d=>`${d.qname} → ${DNS_RCODES[d.rcode]||'rcode:'+d.rcode}`)});
+  const icmpErrs=pkts.filter(p=>p.protocol==='ICMP'&&p.icmpType!==0&&p.icmpType!==8);
+  if (icmpErrs.length>0) anomalies.push({severity:'medium',type:'ICMP Error Messages',
+    detail:`${icmpErrs.length} ICMP errors (Unreachable, Time Exceeded, etc.)`,
+    evidence:icmpErrs.slice(0,10).map(p=>`${p.srcIP} → ${p.dstIP}: ${ICMP_TYPE_NAMES[p.icmpType]||'type '+p.icmpType} (${safeIso(p.timestamp)})`)});
+
+  const captures=[...new Set(pkts.map(p=>p.source))];
+  const convs=Object.entries(convMap).sort((a,b)=>b[1].pkts-a[1].pkts).slice(0,60)
+    .map(([,v])=>({...v,srcs:[...v.srcs]}));  // normKey preserved
+
+  const ports=Object.values(portMap).sort((a,b)=>b.pkts-a.pkts).slice(0,30);
+  const security=securityScan(pkts);
+
+  return {
+    metadata:{ totalPackets:pkts.length, duration:dur.toFixed(3),
+      firstTs:safeIso(first),
+      lastTs:safeIso(last),
+      pps:dur>0?(pkts.length/dur).toFixed(1):'N/A', totalBytes, captures },
+    protocols:Object.entries(protocols).sort((a,b)=>b[1]-a[1]),
+    topTalkers:Object.entries(talkers).sort((a,b)=>b[1]-a[1]).slice(0,10),
+    conversations:convs,
+    ports,
+    tcpStats:{ totalRsts,failedHandshakes:failedHS,totalRetrans,totalZeroWin,
+      issueStreams:issueStreams.slice(0,12) },
+    dnsStats:{ total:dnsAll.length, answered:dnsAll.filter(d=>d.answered).length,
+      unanswered:dnsUnanswered.length, errors:dnsErrors.length,
+      queries:dnsAll.slice(0,30) },
+    anomalies,
+    security,
+    udpStats:{ total:udpTotal, totalBytes:udpBytes, flows:udpFlowArr.slice(0,40),
+      largeFlows:udpLargeFlows.slice(0,20), oneSided:udpOneSided.slice(0,20),
+      highRate:udpHighRate.slice(0,10) },
+    rawPackets: pkts
+  };
+}
+
+// ================================================================
+//  SECURITY SCAN ENGINE
+// ================================================================
+function isPrivate(ip){ const [a,b]=ip.split('.').map(Number); return a===10||(a===172&&b>=16&&b<=31)||(a===192&&b===168); }
+
+function securityScan(pkts){
+  const KNOWN_DNS=new Set(['8.8.8.8','8.8.4.4','1.1.1.1','1.0.0.1','9.9.9.9','208.67.222.222','208.67.220.220']);
+  const CLEARTEXT={21:'FTP',23:'Telnet',80:'HTTP',110:'POP3',143:'IMAP',25:'SMTP',119:'NNTP',194:'IRC',69:'TFTP',512:'rexec',513:'rlogin',514:'rsh'};
+  const BRUTE_PORTS=new Set([22,23,3389,21,25,110,143,389,3306,5432,1433,5900]);
+  const ADMIN_PORTS=new Set([22,445,3389,135,139,5985,5986,5900,3306,5432,1433]);
+  const PORT_NAMES={22:'SSH',23:'Telnet',3389:'RDP',21:'FTP',25:'SMTP',110:'POP3',143:'IMAP',389:'LDAP',3306:'MySQL',5432:'PostgreSQL',1433:'MSSQL',5985:'WinRM',445:'SMB',135:'RPC',139:'NetBIOS',5900:'VNC'};
+
+  const srcTargets={}, cleartext={}, cleartextIPs={}, bruteMap={}, bruteTargets={}, extTransfers={}, lateralMap={}, dnsPerSrc={}, dnsServers=new Set();
+
+  for (const p of pkts){
+    if (!p.srcIP||!p.dstIP) continue;
+    const sPriv=isPrivate(p.srcIP), dPriv=isPrivate(p.dstIP);
+
+    // Port scan: track unique dst host:port per src
+    if ((p.protocol==='TCP'||p.protocol==='UDP')&&p.dstPort){
+      if (!srcTargets[p.srcIP]) srcTargets[p.srcIP]={hosts:new Set(),ports:new Set(),pairs:new Set()};
+      srcTargets[p.srcIP].hosts.add(p.dstIP);
+      srcTargets[p.srcIP].ports.add(p.dstPort);
+      srcTargets[p.srcIP].pairs.add(p.dstIP+':'+p.dstPort);
+    }
+
+    // Cleartext — count by service port (either direction)
+    if (p.protocol==='TCP'){
+      const svcPort=p.dstPort&&CLEARTEXT[p.dstPort]?p.dstPort:p.srcPort&&CLEARTEXT[p.srcPort]?p.srcPort:null;
+      if (svcPort) {
+        cleartext[svcPort]=(cleartext[svcPort]||0)+1;
+        if (!cleartextIPs[svcPort]) cleartextIPs[svcPort]=new Set();
+        cleartextIPs[svcPort].add(p.srcIP+' → '+p.dstIP);
+      }
+    }
+
+    // Brute force: SYNs to sensitive ports
+    if (p.protocol==='TCP'&&p.flags?.syn&&!p.flags?.ack&&p.dstPort&&BRUTE_PORTS.has(p.dstPort)){
+      const k=p.srcIP+'|'+p.dstPort;
+      bruteMap[k]=(bruteMap[k]||0)+1;
+      if (!bruteTargets[k]) bruteTargets[k]=new Set();
+      bruteTargets[k].add(p.dstIP);
+    }
+
+    // Large outbound to external
+    if (sPriv&&!dPriv){
+      const k=p.srcIP+'→'+p.dstIP;
+      extTransfers[k]=(extTransfers[k]||0)+p.capturedLen;
+    }
+
+    // Lateral movement: internal→internal on admin ports
+    if (sPriv&&dPriv&&p.protocol==='TCP'&&p.dstPort&&ADMIN_PORTS.has(p.dstPort)){
+      const k=p.srcIP+'|'+p.dstPort;
+      if (!lateralMap[k]) lateralMap[k]={srcIP:p.srcIP,port:p.dstPort,targets:new Set()};
+      lateralMap[k].targets.add(p.dstIP);
+    }
+
+    // DNS analysis
+    if (p.dns&&!p.dns.isResponse){
+      if (!dnsPerSrc[p.srcIP]) dnsPerSrc[p.srcIP]={count:0,longNames:[]};
+      dnsPerSrc[p.srcIP].count++;
+      if (p.dns.qname&&p.dns.qname.length>50) dnsPerSrc[p.srcIP].longNames.push(p.dns.qname);
+      if (p.dstIP) dnsServers.add(p.dstIP);
+    }
+  }
+
+  const threats=[];
+
+  // Port scan
+  for (const [srcIP,t] of Object.entries(srcTargets)){
+    if (t.pairs.size>50&&t.ports.size>20)
+      threats.push({severity:'high',category:'Reconnaissance',type:'Port Scan',
+        detail:`${srcIP} hit ${t.pairs.size} unique host:port pairs across ${t.hosts.size} hosts / ${t.ports.size} ports`,
+        evidence:[`Source: ${srcIP}`,`Hosts targeted: ${[...t.hosts].slice(0,5).join(', ')}${t.hosts.size>5?' …and '+(t.hosts.size-5)+' more':''}`,
+          `Sample targets: ${[...t.pairs].slice(0,8).join(', ')}${t.pairs.size>8?' …':''}`,
+          `Distinct ports: ${[...t.ports].slice(0,10).sort((a,b)=>a-b).join(', ')}${t.ports.size>10?' …':''}`]});
+    else if (t.pairs.size>20&&t.ports.size>10)
+      threats.push({severity:'medium',category:'Reconnaissance',type:'Possible Port Scan',
+        detail:`${srcIP} hit ${t.pairs.size} unique host:port combos — possible scan`,
+        evidence:[`Source: ${srcIP}`,`Sample targets: ${[...t.pairs].slice(0,8).join(', ')}`,
+          `Distinct ports seen: ${[...t.ports].slice(0,10).sort((a,b)=>a-b).join(', ')}`]});
+  }
+
+  // Cleartext
+  for (const [port,count] of Object.entries(cleartext)){
+    if (count>0){
+      const sev=([23,512,513,514].includes(+port))?'high':'medium';
+      threats.push({severity:sev,category:'Credential Risk',type:`Cleartext ${CLEARTEXT[port]}`,
+        detail:`${count} packets on port ${port} (${CLEARTEXT[port]}) — credentials/data in plaintext`,
+        evidence:[`Protocol: ${CLEARTEXT[port]} (port ${port})`,`Packet count: ${count}`,
+          ...[...(cleartextIPs[port]||[])].slice(0,8).map(f=>`Flow: ${f}`)]});
+    }
+  }
+
+  // Brute force
+  for (const [key,count] of Object.entries(bruteMap)){
+    if (count>15){
+      const [srcIP,dstPort]=key.split('|');
+      const tgts=[...(bruteTargets[key]||[])];
+      threats.push({severity:'high',category:'Brute Force',type:`Brute Force — ${PORT_NAMES[dstPort]||'port '+dstPort}`,
+        detail:`${srcIP} sent ${count} SYN packets to port ${dstPort} (${PORT_NAMES[dstPort]||''}) — credential spray or brute force`,
+        evidence:[`Attacker: ${srcIP}`,`Target port: ${dstPort} (${PORT_NAMES[dstPort]||'unknown service'})`,
+          `SYN count: ${count}`,`Target host(s): ${tgts.slice(0,5).join(', ')}${tgts.length>5?' …and '+(tgts.length-5)+' more':''}`]});
+    }
+  }
+
+  // Large outbound
+  const extSorted=Object.entries(extTransfers).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  for (const [flow,bytes] of extSorted){
+    if (bytes>1048576){
+      const [src,dst]=flow.split('→');
+      threats.push({severity:bytes>10485760?'high':'medium',category:'Data Transfer',type:'Large Outbound Transfer',
+        detail:`${flow} — ${fmtBytes(bytes)} sent to external host — possible exfiltration or bulk upload`,
+        evidence:[`Source (internal): ${src}`,`Destination (external): ${dst}`,`Volume transferred: ${fmtBytes(bytes)}`,
+          `Threshold: ${bytes>10485760?'HIGH (>10 MB)':'MEDIUM (>1 MB)'}`]});
+    }
+  }
+
+  // Lateral movement
+  for (const [,s] of Object.entries(lateralMap)){
+    if (s.targets.size>=3){
+      const tgts=[...s.targets];
+      threats.push({severity:'high',category:'Lateral Movement',type:`Admin Port Spread (${PORT_NAMES[s.port]||'port '+s.port})`,
+        detail:`${s.srcIP} connected to ${s.targets.size} internal hosts on port ${s.port} (${PORT_NAMES[s.port]||''}) — possible lateral movement`,
+        evidence:[`Source: ${s.srcIP}`,`Admin port: ${s.port} (${PORT_NAMES[s.port]||'unknown'})`,
+          `Target hosts (${tgts.length}): ${tgts.slice(0,8).join(', ')}${tgts.length>8?' …':''}`]});
+    }
+  }
+
+  // DNS tunneling
+  for (const [srcIP,stats] of Object.entries(dnsPerSrc)){
+    if (stats.longNames.length>2)
+      threats.push({severity:'medium',category:'Covert Channel',type:'DNS Tunneling Indicator',
+        detail:`${srcIP}: ${stats.longNames.length} queries with names >50 chars — e.g. "${stats.longNames[0].slice(0,55)}…"`,
+        evidence:[`Source: ${srcIP}`,`Long-name query count: ${stats.longNames.length}`,
+          ...stats.longNames.slice(0,6).map(n=>`Query: ${n}`)]});
+    else if (stats.count>100)
+      threats.push({severity:'medium',category:'Covert Channel',type:'High DNS Query Rate',
+        detail:`${srcIP} issued ${stats.count} DNS queries — possible tunneling or misconfiguration`,
+        evidence:[`Source: ${srcIP}`,`Total DNS queries: ${stats.count}`]});
+  }
+
+  // Non-standard DNS servers
+  const suspectDNS=[...dnsServers].filter(ip=>!KNOWN_DNS.has(ip)&&!ip.endsWith('.1')&&!ip.endsWith('.2')&&!ip.endsWith('.254'));
+  if (suspectDNS.length>0)
+    threats.push({severity:'low',category:'DNS',type:'Non-Standard DNS Resolvers',
+      detail:`Queries sent to: ${suspectDNS.slice(0,5).join(', ')} — verify these are authorized DNS servers`,
+      evidence:[`Non-standard resolvers observed:`, ...suspectDNS.slice(0,10).map(ip=>`  ${ip}`),
+        `Known-good DNS servers: 8.8.8.8, 8.8.4.4, 1.1.1.1, 9.9.9.9`]});
+
+  threats.sort((a,b)=>({high:0,medium:1,low:2}[a.severity]-({high:0,medium:1,low:2}[b.severity])));
+  return { threats, summary:{total:threats.length,high:threats.filter(t=>t.severity==='high').length,medium:threats.filter(t=>t.severity==='medium').length,low:threats.filter(t=>t.severity==='low').length}};
+}
+
+// ================================================================
+//  FILE HANDLING
+// ================================================================
+function onDragOver(e)  { e.preventDefault(); document.getElementById('upload-zone').classList.add('drag-over'); }
+function onDragLeave(e) { document.getElementById('upload-zone').classList.remove('drag-over'); }
+function onDrop(e)      { e.preventDefault(); document.getElementById('upload-zone').classList.remove('drag-over'); addFiles([...e.dataTransfer.files]); }
+function onFileSelect(e){ addFiles([...e.target.files]); e.target.value=''; }
+function addFiles(files){ for(const f of files) if(!uploadedFiles.find(x=>x.name===f.name)) uploadedFiles.push(f); renderFileList(); }
+function removeFile(n)  { uploadedFiles=uploadedFiles.filter(f=>f.name!==n); renderFileList(); }
+function renderFileList(){
+  document.getElementById('file-list').innerHTML=uploadedFiles.map(f=>`
+    <div class="file-item">
+      <span class="file-item-icon">📄</span>
+      <span class="file-item-name">${esc(f.name)}</span>
+      <span class="file-item-size">${fmtBytes(f.size)}</span>
+      <button class="file-remove" onclick="removeFile('${esc(f.name)}')">✕</button>
+    </div>`).join('');
+  document.getElementById('analyze-btn').disabled=!uploadedFiles.length;
+}
+
+// ================================================================
+//  START ANALYSIS
+// ================================================================
+async function startAnalysis(){
+  if(!uploadedFiles.length) return;
+  document.getElementById('upload-screen').style.display='none';
+  document.getElementById('loading-screen').style.display='flex';
+  const issue=document.getElementById('issue-input').value.trim();
+  try {
+    const allPkts=[];
+    for(let i=0;i<uploadedFiles.length;i++){
+      const f=uploadedFiles[i];
+      setStep(`Parsing ${f.name} (${i+1}/${uploadedFiles.length})…`);
+      const buf=await readBuf(f);
+      allPkts.push(...parsePCAP(buf,f.name));
+    }
+    setStep('Running analysis…'); await tick();
+    analysisResult=analyzePackets(allPkts);
+    analysisResult.issueDescription=issue;
+    analysisResult.fileNames=uploadedFiles.map(f=>f.name);
+    setStep('Rendering…'); await tick();
+    renderUI();
+    document.getElementById('loading-screen').style.display='none';
+    document.getElementById('analysis-screen').style.display='flex';
+    const _ts=document.getElementById('tabs-scroll');
+    if(_ts){ _ts.addEventListener('scroll',updateTabArrows,{passive:true}); setTimeout(updateTabArrows,100); }
+    document.getElementById('header-files').style.display='flex';
+    document.getElementById('header-file-badges').innerHTML=
+      analysisResult.fileNames.map((n,i)=>`<span class="file-badge" style="border-color:${SOURCE_COLORS[i%4]}">${esc(n)}</span>`).join('');
+    document.getElementById('send-btn').disabled=false;
+    await generateInitialMessage(issue);
+  } catch(err){
+    document.getElementById('loading-screen').style.display='none';
+    document.getElementById('upload-screen').style.display='flex';
+    alert('Parse error: '+err.message);
+  }
+}
+function readBuf(f){ return new Promise((r,j)=>{ const fr=new FileReader(); fr.onload=e=>r(e.target.result); fr.onerror=j; fr.readAsArrayBuffer(f); }); }
+function tick(){ return new Promise(r=>setTimeout(r,30)); }
+function setStep(t){ document.getElementById('loading-step').textContent=t; }
+
+// ================================================================
+//  RENDER UI
+// ================================================================
+function renderUI(){
+  const R=analysisResult;
+
+  // Metrics
+  document.getElementById('metric-grid').innerHTML=
+    mc('Packets',R.metadata.totalPackets.toLocaleString(),'')+
+    mc('Duration',R.metadata.duration+'s',R.metadata.pps+' pps')+
+    mc('Data',fmtBytes(R.metadata.totalBytes),'')+
+    mc('Files',R.metadata.captures.length,R.metadata.captures.length>1?'merged':'single');
+
+  // Protocol bars
+  const ptotal=R.protocols.reduce((s,[,n])=>s+n,0);
+  const pcol={'TCP':'#58a6ff','UDP':'#bc8cff','ICMP':'#f78166','ARP':'#56d364','IPv6':'#79c0ff'};
+  document.getElementById('proto-bars').innerHTML=R.protocols.slice(0,8).map(([p,n])=>
+    bar(p,n.toLocaleString()+' ('+((n/ptotal)*100).toFixed(1)+'%)',(n/ptotal*100).toFixed(1),pcol[p]||'#484f58')).join('');
+
+  // Top talkers
+  const maxB=R.topTalkers[0]?.[1]||1;
+  document.getElementById('top-talkers').innerHTML=R.topTalkers.map(([ip,b])=>
+    bar(ip,fmtBytes(b),(b/maxB*100).toFixed(1),'#388bfd')).join('');
+
+  // Ports / Services
+  const PORT_NAMES={
+    20:'FTP-data',21:'FTP',22:'SSH',23:'Telnet',25:'SMTP',53:'DNS',
+    67:'DHCP-srv',68:'DHCP-cli',69:'TFTP',80:'HTTP',110:'POP3',123:'NTP',
+    143:'IMAP',161:'SNMP',162:'SNMP-trap',179:'BGP',389:'LDAP',
+    443:'HTTPS',445:'SMB',465:'SMTPS',514:'Syslog',587:'SMTP-sub',
+    636:'LDAPS',993:'IMAPS',995:'POP3S',1433:'MSSQL',1723:'PPTP',
+    3306:'MySQL',3389:'RDP',5060:'SIP',5061:'SIP-TLS',5432:'PostgreSQL',
+    8080:'HTTP-alt',8443:'HTTPS-alt',8888:'HTTP-alt2',
+    500:'IKE',4500:'IKE-NAT',1194:'OpenVPN',1701:'L2TP'
+  };
+  const maxPkts=R.ports[0]?.pkts||1;
+  document.getElementById('ports-table').innerHTML = R.ports.length
+    ? `<table class="data-table" style="margin-bottom:4px">
+        <thead><tr><th>Port</th><th>Proto</th><th>Service</th><th>Pkts</th><th style="width:80px">Volume</th></tr></thead>
+        <tbody>${R.ports.map(p=>{
+          const svc=PORT_NAMES[p.port]||'';
+          const pct=(p.pkts/maxPkts*100).toFixed(0);
+          const col=p.proto==='TCP'?'#58a6ff':'#bc8cff';
+          return`<tr>
+            <td style="font-weight:700;color:#e6edf3">${p.port}</td>
+            <td><span style="font-size:10px;padding:1px 5px;border-radius:3px;background:${p.proto==='TCP'?'rgba(88,166,255,.15)':'rgba(188,140,255,.15)'};color:${col}">${p.proto}</span></td>
+            <td style="color:${svc?'#e3b341':'#484f58'}">${svc||'—'}</td>
+            <td>${p.pkts.toLocaleString()}</td>
+            <td><div class="bar-track" style="margin-top:2px"><div class="bar-fill" style="width:${pct}%;background:${col}"></div></div></td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>`
+    : '<div class="empty-state">No TCP/UDP port data</div>';
+
+  // Threats tab
+  const sec=R.security;
+  const threatTabBtn=document.getElementById('tab-btn-threats');
+  threatTabBtn.textContent=sec.summary.total>0?`Threats (${sec.summary.total})`:'Threats';
+  if(sec.summary.high>0) threatTabBtn.style.color='#f85149';
+  else if(sec.summary.medium>0) threatTabBtn.style.color='#e3b341';
+
+  document.getElementById('threats-summary').innerHTML=sec.summary.total===0
+    ?`<div class="no-anomalies"><div class="no-anomalies-icon">🛡️</div>No threat indicators detected</div>`
+    :`<div class="metric-grid">
+        ${mc('Total Findings',sec.summary.total,'')}
+        ${mc('HIGH',sec.summary.high,'')}
+        ${mc('MEDIUM',sec.summary.medium,'')}
+        ${mc('LOW',sec.summary.low,'')}
+      </div>`;
+
+  const catColors={Reconnaissance:'#f85149','Credential Risk':'#e3b341','Brute Force':'#f85149','Data Transfer':'#bc8cff','Lateral Movement':'#f85149','Covert Channel':'#e3b341',DNS:'#58a6ff'};
+  document.getElementById('threats-list').innerHTML=sec.threats.length
+    ?sec.threats.map(t=>renderCard(t,
+        `<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:rgba(255,255,255,.05);color:${catColors[t.category]||'#8b949e'}">${esc(t.category)}</span>`
+      )).join('')
+    :'';
+
+  // Anomalies
+  const tabBtn=document.getElementById('tab-btn-anomalies');
+  if(!R.anomalies.length){
+    document.getElementById('anomalies-list').innerHTML=`<div class="no-anomalies"><div class="no-anomalies-icon">✅</div>No anomalies detected</div>`;
+    tabBtn.textContent='Anomalies';
+  } else {
+    tabBtn.textContent=`Anomalies (${R.anomalies.length})`;
+    document.getElementById('anomalies-list').innerHTML=R.anomalies.map(a=>renderCard(a)).join('');
+  }
+
+  // Flows
+  document.getElementById('tab-btn-flows').textContent=`Flows (${R.conversations.length})`;
+  const caps=R.metadata.captures;
+  if(caps.length>1){
+    document.getElementById('source-legend').innerHTML=`<div class="source-legend">`+
+      caps.map((s,i)=>`<div class="source-legend-item"><div class="source-dot" style="background:${SOURCE_COLORS[i%4]}"></div><span style="color:${SOURCE_COLORS[i%4]}">${esc(s)}</span></div>`).join('')+
+      `</div>`;
+  }
+  window._flowChatItems=R.conversations.map(c=>({type:'Flow',display:c.display,pkts:c.pkts,bytes:c.bytes,key:c.key||c.display}));
+  document.getElementById('flows-tbody').innerHTML=R.conversations.map((c,ci)=>{
+    const badges=c.srcs.map(s=>{const i=caps.indexOf(s);return`<span class="src-badge" style="color:${SOURCE_COLORS[i%4]}">◆${esc(s)}</span>`;}).join('');
+    return`<tr>
+      <td>${esc(c.display)}<br>${badges}</td>
+      <td>${c.pkts}</td>
+      <td>${fmtBytes(c.bytes)}</td>
+      <td style="display:flex;gap:4px;align-items:center">
+        <button class="stream-btn" onclick="openStream(${ci})">▶ Stream</button>
+        <button class="chat-to-btn" style="margin-left:2px" onclick="sendFlowToAssistant(window._flowChatItems[${ci}])" title="Send to Diagnostic Assistant">\u{1F4AC}</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  // TCP
+  const ts=R.tcpStats;
+  document.getElementById('tab-btn-tcp').textContent=ts.issueStreams.length>0?`TCP (${ts.issueStreams.length})`:'TCP';
+  document.getElementById('tcp-counters').innerHTML=
+    sr('RST Packets',ts.totalRsts,ts.totalRsts>10?'danger':ts.totalRsts>3?'warn':'')+
+    sr('Failed Handshakes',ts.failedHandshakes,ts.failedHandshakes>0?'danger':'')+
+    sr('Retransmissions',ts.totalRetrans,ts.totalRetrans>20?'danger':ts.totalRetrans>5?'warn':'')+
+    sr('Zero Window Ads',ts.totalZeroWin,ts.totalZeroWin>5?'warn':'')+
+    sr('Problem Streams',ts.issueStreams.length,'');
+  window._tcpIssueKeys=ts.issueStreams.map(s=>s.key);
+  window._tcpIssueItems=ts.issueStreams.map(s=>({type:'TCP Stream',key:s.key,pkts:s.pkts,bytes:s.bytes,failedHS:s.failedHS||false,rsts:s.rsts||0,retrans:s.retrans||0,zeroWin:s.zeroWin||0}));
+  const maxTcpPkts=ts.issueStreams.reduce((m,s)=>Math.max(m,s.pkts),1);
+  document.getElementById('tcp-streams').innerHTML=ts.issueStreams.length
+    ?ts.issueStreams.map((s,i)=>`
+      <div class="detail-card" style="display:flex;align-items:flex-start;gap:8px">
+        <div style="flex:1">
+          <div class="detail-title">${esc(s.key)}</div>
+          <div class="detail-meta">
+            <span>${s.pkts} pkts</span>
+            <span style="color:#8b949e">${fmtBytes(s.bytes)}</span>
+            ${s.failedHS?'<span class="tag-danger">NO SYN-ACK</span>':''}
+            ${s.rsts?`<span class="tag-danger">RST:${s.rsts}</span>`:''}
+            ${s.retrans?`<span class="tag-warn">RETR:${s.retrans}</span>`:''}
+            ${s.zeroWin?`<span class="tag-warn">ZWIN:${s.zeroWin}</span>`:''}
+          </div>
+          <div class="bar-track" style="margin-top:4px"><div class="bar-fill" style="width:${(s.pkts/maxTcpPkts*100).toFixed(0)}%;background:#58a6ff"></div></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0;margin-top:2px">
+          <button class="stream-btn" onclick="openStreamByTcpKey(window._tcpIssueKeys[${i}])">▶ Stream</button>
+          <button class="chat-to-btn" style="margin:0" onclick="sendFlowToAssistant(window._tcpIssueItems[${i}])" title="Send to Diagnostic Assistant">\u{1F4AC}</button>
+        </div>
+      </div>`).join('')
+    :'<div class="empty-state">No streams with notable TCP issues</div>';
+
+  // UDP
+  const us=R.udpStats;
+  const udpTabBtn=document.getElementById('tab-btn-udp');
+  udpTabBtn.textContent=us.total>0?`UDP (${us.flows.length})`:'UDP';
+  document.getElementById('udp-counters').innerHTML=
+    sr('Total UDP Packets',us.total,'')+
+    sr('Unique Flows',us.flows.length,'')+
+    sr('Total Volume',fmtBytes(us.totalBytes),'')+
+    
