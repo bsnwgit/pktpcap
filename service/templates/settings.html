@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings — Packet Capture Analyzer</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    background: #0d1117; color: #e6edf3;
+    min-height: 100vh; display: flex; flex-direction: column;
+    font-size: 13px;
+  }
+  .header {
+    background: #161b22; border-bottom: 1px solid #30363d;
+    padding: 12px 24px; display: flex; align-items: center; gap: 12px;
+  }
+  .header-logo { font-size: 15px; font-weight: 700; color: #58a6ff; }
+  .header-back {
+    margin-left: auto; background: none; border: 1px solid #30363d;
+    color: #8b949e; border-radius: 4px; padding: 4px 12px;
+    cursor: pointer; font-family: inherit; font-size: 11px; text-decoration: none;
+  }
+  .header-back:hover { border-color: #58a6ff; color: #58a6ff; }
+
+  .content { flex: 1; padding: 32px 24px; max-width: 640px; margin: 0 auto; width: 100%; }
+  h1 { font-size: 16px; font-weight: 700; color: #e6edf3; margin-bottom: 6px; }
+  .subtitle { font-size: 11px; color: #8b949e; margin-bottom: 28px; }
+
+  .section {
+    background: #161b22; border: 1px solid #30363d; border-radius: 10px;
+    padding: 20px; margin-bottom: 16px;
+  }
+  .section-title {
+    font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.5px; color: #8b949e; margin-bottom: 16px;
+    padding-bottom: 8px; border-bottom: 1px solid #21262d;
+  }
+
+  .field { margin-bottom: 14px; }
+  .field:last-child { margin-bottom: 0; }
+  label {
+    display: block; font-size: 11px; font-weight: 600; color: #8b949e;
+    text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 5px;
+  }
+  input[type="text"], input[type="number"], input[type="password"], select {
+    width: 100%; background: #0d1117; border: 1px solid #30363d; border-radius: 6px;
+    padding: 8px 12px; color: #e6edf3; font-family: inherit; font-size: 13px;
+    transition: border-color 0.2s;
+  }
+  input:focus, select:focus { outline: none; border-color: #58a6ff; }
+  input::placeholder { color: #484f58; }
+  .field-hint { font-size: 10px; color: #484f58; margin-top: 4px; }
+
+  .provider-toggle {
+    display: flex; background: #0d1117; border: 1px solid #30363d;
+    border-radius: 8px; padding: 3px; gap: 2px;
+  }
+  .prov-btn {
+    flex: 1; padding: 7px 12px; border-radius: 6px; border: none; cursor: pointer;
+    font-family: inherit; font-size: 12px; font-weight: 600; transition: all 0.2s;
+    background: none; color: #8b949e;
+  }
+  .prov-btn.active { background: #21262d; color: #58a6ff; }
+  .prov-btn:hover:not(.active) { color: #c9d1d9; }
+
+  .key-row { display: flex; gap: 8px; align-items: flex-start; }
+  .key-row input { flex: 1; }
+  .test-btn {
+    background: none; border: 1px solid #30363d; color: #8b949e;
+    border-radius: 6px; padding: 8px 14px; cursor: pointer; font-family: inherit;
+    font-size: 11px; white-space: nowrap; transition: all 0.2s; flex-shrink: 0;
+  }
+  .test-btn:hover { border-color: #58a6ff; color: #58a6ff; }
+  .test-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .test-result {
+    font-size: 11px; margin-top: 5px; padding: 5px 10px;
+    border-radius: 5px; display: none;
+  }
+  .test-result.ok  { background: rgba(46,160,67,.15); color: #2ea043; border: 1px solid rgba(46,160,67,.3); }
+  .test-result.err { background: rgba(248,81,73,.15); color: #f85149; border: 1px solid rgba(248,81,73,.3); }
+
+  .actions { display: flex; gap: 10px; margin-top: 20px; }
+  .save-btn {
+    background: #238636; border: 1px solid #2ea043; color: #fff;
+    border-radius: 8px; padding: 10px 28px; font-size: 13px; font-weight: 600;
+    font-family: inherit; cursor: pointer; transition: all 0.2s;
+  }
+  .save-btn:hover:not(:disabled) { background: #2ea043; }
+  .save-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .status-msg {
+    font-size: 11px; padding: 8px 14px; border-radius: 6px;
+    display: none; align-items: center;
+  }
+  .status-msg.ok  { display: flex; background: rgba(46,160,67,.15); color: #2ea043; border: 1px solid rgba(46,160,67,.3); }
+  .status-msg.err { display: flex; background: rgba(248,81,73,.15); color: #f85149; border: 1px solid rgba(248,81,73,.3); }
+
+  .provider-sections .prov-section { display: none; }
+  .provider-sections .prov-section.visible { display: block; }
+
+  .port-restart-note {
+    font-size: 10px; color: #484f58; margin-top: 5px;
+  }
+
+  /* ── Toggle switch ── */
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; }
+  .toggle-label { font-size: 12px; color: #c9d1d9; }
+  .toggle-hint  { font-size: 10px; color: #484f58; margin-top: 4px; }
+  .switch { position: relative; display: inline-block; width: 40px; height: 22px; flex-shrink: 0; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider {
+    position: absolute; cursor: pointer; inset: 0;
+    background: #30363d; border-radius: 22px; transition: background 0.2s;
+  }
+  .slider:before {
+    content: ''; position: absolute; height: 16px; width: 16px;
+    left: 3px; bottom: 3px; background: #8b949e; border-radius: 50%; transition: transform 0.2s, background 0.2s;
+  }
+  input:checked + .slider { background: #238636; }
+  input:checked + .slider:before { transform: translateX(18px); background: #fff; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">⚙ Packet Capture Analyzer — Settings</div>
+  <a href="/" class="header-back">← Back to App</a>
+</div>
+
+<div class="content">
+  <h1>Configuration</h1>
+  <p class="subtitle">API keys are stored in <code>config.json</code> and never sent to the browser in full.</p>
+
+  <!-- Server -->
+  <div class="section">
+    <div class="section-title">Server</div>
+    <div class="field">
+      <label>Port</label>
+      <input type="number" id="port" min="1024" max="65535" value="8765">
+      <p class="port-restart-note">Restart the server after changing the port.</p>
+    </div>
+    <div class="field" style="margin-top:6px">
+      <div style="display:flex;gap:10px;align-items:center">
+        <button class="test-btn" id="restart-btn" onclick="restartServer()" style="border-color:#e3b341;color:#e3b341;">↺ Restart Server</button>
+        <div class="test-result" id="restart-result" style="display:none;flex:1"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Startup -->
+  <div class="section">
+    <div class="section-title">System</div>
+    <div class="field">
+      <div class="toggle-row">
+        <span class="toggle-label">Run at Windows startup</span>
+        <label class="switch">
+          <input type="checkbox" id="startup-toggle" onchange="setStartup(this.checked)">
+          <span class="slider"></span>
+        </label>
+      </div>
+      <p class="toggle-hint" id="startup-hint">Checking…</p>
+    </div>
+  </div>
+
+  <!-- AI Provider -->
+  <div class="section">
+    <div class="section-title">AI Provider</div>
+    <div class="field">
+      <label>Provider</label>
+      <div class="provider-toggle">
+        <button class="prov-btn active" id="btn-anthropic" onclick="setProvider('anthropic')">Anthropic (Claude)</button>
+        <button class="prov-btn" id="btn-openai" onclick="setProvider('openai')">OpenAI</button>
+      </div>
+    </div>
+    <input type="hidden" id="provider" value="anthropic">
+
+    <div class="provider-sections">
+
+      <!-- Anthropic -->
+      <div class="prov-section visible" id="section-anthropic">
+        <div class="field">
+          <label>Anthropic API Key</label>
+          <div class="key-row">
+            <input type="password" id="anthropic_key" placeholder="sk-ant-…" autocomplete="off">
+            <button class="test-btn" id="test-ant-btn" onclick="testKey('anthropic')">Test</button>
+          </div>
+          <div class="test-result" id="test-ant-result"></div>
+          <p class="field-hint">Get your key at console.anthropic.com → API Keys</p>
+        </div>
+        <div class="field">
+          <label>Model</label>
+          <select id="anthropic_model">
+            <option value="claude-opus-4-8">claude-opus-4-8 (most capable)</option>
+            <option value="claude-sonnet-4-6">claude-sonnet-4-6 (balanced)</option>
+            <option value="claude-haiku-4-5-20251001">claude-haiku-4-5 (fastest)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- OpenAI -->
+      <div class="prov-section" id="section-openai">
+        <div class="field">
+          <label>OpenAI API Key</label>
+          <div class="key-row">
+            <input type="password" id="openai_key" placeholder="sk-…" autocomplete="off">
+            <button class="test-btn" id="test-oai-btn" onclick="testKey('openai')">Test</button>
+          </div>
+          <div class="test-result" id="test-oai-result"></div>
+          <p class="field-hint">Get your key at platform.openai.com → API Keys</p>
+        </div>
+        <div class="field">
+          <label>Model</label>
+          <select id="openai_model">
+            <option value="gpt-4o">gpt-4o (recommended)</option>
+            <option value="gpt-4o-mini">gpt-4o-mini (faster / cheaper)</option>
+            <option value="o1">o1 (reasoning)</option>
+          </select>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="save-btn" id="save-btn" onclick="saveSettings()">Save Settings</button>
+    <div class="status-msg" id="status-msg"></div>
+  </div>
+</div>
+
+<script>
+let currentSettings = {};
+
+async function load() {
+  try {
+    const r = await fetch('/api/settings');
+    const cfg = await r.json();
+    currentSettings = cfg;
+    document.getElementById('port').value = cfg.port || 8765;
+    document.getElementById('anthropic_key').value = cfg.anthropic_key || '';
+    document.getElementById('openai_key').value    = cfg.openai_key    || '';
+
+    const antModel = document.getElementById('anthropic_model');
+    if (cfg.anthropic_model) antModel.value = cfg.anthropic_model;
+
+    const oaiModel = document.getElementById('openai_model');
+    if (cfg.openai_model) oaiModel.value = cfg.openai_model;
+
+    setProvider(cfg.provider || 'anthropic');
+  } catch(e) {
+    showStatus('err', 'Failed to load settings: ' + e.message);
+  }
+}
+
+function setProvider(p) {
+  document.getElementById('provider').value = p;
+  document.getElementById('btn-anthropic').classList.toggle('active', p === 'anthropic');
+  document.getElementById('btn-openai').classList.toggle('active', p === 'openai');
+  document.getElementById('section-anthropic').classList.toggle('visible', p === 'anthropic');
+  document.getElementById('section-openai').classList.toggle('visible', p === 'openai');
+}
+
+async function saveSettings() {
+  const btn = document.getElementById('save-btn');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+  try {
+    const body = {
+      port:             parseInt(document.getElementById('port').value) || 8765,
+      provider:         document.getElementById('provider').value,
+      anthropic_key:    document.getElementById('anthropic_key').value,
+      anthropic_model:  document.getElementById('anthropic_model').value,
+      openai_key:       document.getElementById('openai_key').value,
+      openai_model:     document.getElementById('openai_model').value,
+    };
+    const r = await fetch('/api/settings', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body)
+    });
+    const result = await r.json();
+    if (result.ok) {
+      showStatus('ok', '✓ Settings saved');
+      if (result.port !== currentSettings.port) {
+        showStatus('ok', `✓ Saved — port changed to ${result.port}. Restart the server to apply.`);
+      }
+    } else {
+      showStatus('err', result.error || 'Save failed');
+    }
+  } catch(e) {
+    showStatus('err', 'Error: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Save Settings';
+  }
+}
+
+async function testKey(provider) {
+  const resultEl = document.getElementById('test-' + (provider === 'anthropic' ? 'ant' : 'oai') + '-result');
+  const btn      = document.getElementById('test-' + (provider === 'anthropic' ? 'ant' : 'oai') + '-btn');
+  btn.disabled = true;
+  btn.textContent = 'Testing…';
+  resultEl.style.display = 'none';
+  try {
+    const body = {
+      provider,
+      anthropic_key:   document.getElementById('anthropic_key').value,
+      anthropic_model: document.getElementById('anthropic_model').value,
+      openai_key:      document.getElementById('openai_key').value,
+      openai_model:    document.getElementById('openai_model').value,
+    };
+    const r = await fetch('/api/ai/test', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body)
+    });
+    const result = await r.json();
+    resultEl.style.display = 'block';
+    if (result.ok) {
+      resultEl.className = 'test-result ok';
+      resultEl.textContent = '✓ Connected — ' + (result.reply || 'OK');
+    } else {
+      resultEl.className = 'test-result err';
+      resultEl.textContent = '✗ ' + (result.error || 'Failed');
+    }
+  } catch(e) {
+    resultEl.style.display = 'block';
+    resultEl.className = 'test-result err';
+    resultEl.textContent = '✗ ' + e.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Test';
+  }
+}
+
+function showStatus(type, msg) {
+  const el = document.getElementById('status-msg');
+  el.textContent = msg;
+  el.className = 'status-msg ' + type;
+  setTimeout(() => { el.className = 'status-msg'; }, 5000);
+}
+
+async function restartServer() {
+  const btn = document.getElementById('restart-btn');
+  const res = document.getElementById('restart-result');
+  btn.disabled = true;
+  btn.textContent = 'Restarting…';
+  res.style.display = 'none';
+  try {
+    await fetch('/api/restart', { method: 'POST' });
+    res.style.display = 'block';
+    res.className = 'test-result ok';
+    res.textContent = '✓ Restarting — page will reload in 3 s';
+    setTimeout(() => location.reload(), 3000);
+  } catch(e) {
+    // fetch may throw when the server drops — that's expected
+    res.style.display = 'block';
+    res.className = 'test-result ok';
+    res.textContent = '✓ Server restarting — reloading…';
+    setTimeout(() => location.reload(), 3000);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '↺ Restart Server';
+  }
+}
+
+async function loadStartup() {
+  try {
+    const r = await fetch('/api/startup');
+    const data = await r.json();
+    document.getElementById('startup-toggle').checked = data.enabled;
+    document.getElementById('startup-hint').textContent = data.enabled
+      ? '✓ Will launch automatically when Windows starts'
+      : 'Not configured to start with Windows';
+  } catch(e) {
+    document.getElementById('startup-hint').textContent = 'Could not check startup status';
+  }
+}
+
+async function setStartup(enable) {
+  document.getElementById('startup-hint').textContent = enable ? 'Enabling…' : 'Disabling…';
+  try {
+    const r = await fetch('/api/startup', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({enabled: enable})
+    });
+    const result = await r.json();
+    if (result.ok) {
+      document.getElementById('startup-hint').textContent = enable
+        ? '✓ Will launch automatically when Windows starts'
+        : 'Not configured to start with Windows';
+    } else {
+      document.getElementById('startup-hint').textContent = '✗ Error: ' + (result.error || 'Failed');
+      document.getElementById('startup-toggle').checked = !enable;
+    }
+  } catch(e) {
+    document.getElementById('startup-hint').textContent = '✗ ' + e.message;
+    document.getElementById('startup-toggle').checked = !enable;
+  }
+}
+
+load();
+loadStartup();
+</script>
+</body>
+</html>
