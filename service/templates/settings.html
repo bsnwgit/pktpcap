@@ -20,14 +20,14 @@
   .header-logo { font-size: 15px; font-weight: 700; color: #58a6ff; }
   .header-back {
     margin-left: auto; background: none; border: 1px solid #30363d;
-    color: #8b949e; border-radius: 4px; padding: 4px 12px;
+    color: #e6edf3; border-radius: 4px; padding: 4px 12px;
     cursor: pointer; font-family: inherit; font-size: 11px; text-decoration: none;
   }
   .header-back:hover { border-color: #58a6ff; color: #58a6ff; }
 
   .content { flex: 1; padding: 32px 24px; max-width: 640px; margin: 0 auto; width: 100%; }
   h1 { font-size: 16px; font-weight: 700; color: #e6edf3; margin-bottom: 6px; }
-  .subtitle { font-size: 11px; color: #8b949e; margin-bottom: 28px; }
+  .subtitle { font-size: 11px; color: #e6edf3; margin-bottom: 28px; }
 
   .section {
     background: #161b22; border: 1px solid #30363d; border-radius: 10px;
@@ -35,14 +35,14 @@
   }
   .section-title {
     font-size: 10px; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.5px; color: #8b949e; margin-bottom: 16px;
+    letter-spacing: 0.5px; color: #e6edf3; margin-bottom: 16px;
     padding-bottom: 8px; border-bottom: 1px solid #21262d;
   }
 
   .field { margin-bottom: 14px; }
   .field:last-child { margin-bottom: 0; }
   label {
-    display: block; font-size: 11px; font-weight: 600; color: #8b949e;
+    display: block; font-size: 11px; font-weight: 600; color: #e6edf3;
     text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 5px;
   }
   input[type="text"], input[type="number"], input[type="password"], select {
@@ -51,8 +51,8 @@
     transition: border-color 0.2s;
   }
   input:focus, select:focus { outline: none; border-color: #58a6ff; }
-  input::placeholder { color: #484f58; }
-  .field-hint { font-size: 10px; color: #484f58; margin-top: 4px; }
+  input::placeholder { color: #e6edf3; }
+  .field-hint { font-size: 10px; color: #e6edf3; margin-top: 4px; }
 
   .provider-toggle {
     display: flex; background: #0d1117; border: 1px solid #30363d;
@@ -61,15 +61,15 @@
   .prov-btn {
     flex: 1; padding: 7px 12px; border-radius: 6px; border: none; cursor: pointer;
     font-family: inherit; font-size: 12px; font-weight: 600; transition: all 0.2s;
-    background: none; color: #8b949e;
+    background: none; color: #e6edf3;
   }
   .prov-btn.active { background: #21262d; color: #58a6ff; }
-  .prov-btn:hover:not(.active) { color: #c9d1d9; }
+  .prov-btn:hover:not(.active) { color: #e6edf3; }
 
   .key-row { display: flex; gap: 8px; align-items: flex-start; }
   .key-row input { flex: 1; }
   .test-btn {
-    background: none; border: 1px solid #30363d; color: #8b949e;
+    background: none; border: 1px solid #30363d; color: #e6edf3;
     border-radius: 6px; padding: 8px 14px; cursor: pointer; font-family: inherit;
     font-size: 11px; white-space: nowrap; transition: all 0.2s; flex-shrink: 0;
   }
@@ -102,13 +102,17 @@
   .provider-sections .prov-section.visible { display: block; }
 
   .port-restart-note {
-    font-size: 10px; color: #484f58; margin-top: 5px;
+    font-size: 10px; color: #e6edf3; margin-top: 5px;
   }
+
+  /* ── SSL path row ── */
+  .ssl-fields { margin-top: 12px; }
+  .ssl-fields.hidden { display: none; }
 
   /* ── Toggle switch ── */
   .toggle-row { display: flex; align-items: center; justify-content: space-between; }
-  .toggle-label { font-size: 12px; color: #c9d1d9; }
-  .toggle-hint  { font-size: 10px; color: #484f58; margin-top: 4px; }
+  .toggle-label { font-size: 12px; color: #e6edf3; }
+  .toggle-hint  { font-size: 10px; color: #e6edf3; margin-top: 4px; }
   .switch { position: relative; display: inline-block; width: 40px; height: 22px; flex-shrink: 0; }
   .switch input { opacity: 0; width: 0; height: 0; }
   .slider {
@@ -150,18 +154,30 @@
     </div>
   </div>
 
-  <!-- Startup -->
+  <!-- SSL / HTTPS -->
   <div class="section">
-    <div class="section-title">System</div>
+    <div class="section-title">SSL / HTTPS</div>
     <div class="field">
       <div class="toggle-row">
-        <span class="toggle-label">Run at Windows startup</span>
+        <span class="toggle-label">Enable HTTPS</span>
         <label class="switch">
-          <input type="checkbox" id="startup-toggle" onchange="setStartup(this.checked)">
+          <input type="checkbox" id="ssl-toggle" onchange="toggleSslFields(this.checked)">
           <span class="slider"></span>
         </label>
       </div>
-      <p class="toggle-hint" id="startup-hint">Checking…</p>
+      <p class="toggle-hint">Requires a valid certificate and key file. Restart the server to apply.</p>
+    </div>
+    <div class="ssl-fields hidden" id="ssl-fields">
+      <div class="field">
+        <label>Certificate File (.crt / .pem)</label>
+        <input type="text" id="ssl_cert" placeholder="C:\path\to\cert.pem" autocomplete="off">
+        <p class="field-hint">Full path to the PEM-encoded certificate file.</p>
+      </div>
+      <div class="field">
+        <label>Private Key File (.key / .pem)</label>
+        <input type="text" id="ssl_key" placeholder="C:\path\to\key.pem" autocomplete="off">
+        <p class="field-hint">Full path to the private key file. Keep this file secure.</p>
+      </div>
     </div>
   </div>
 
@@ -242,6 +258,12 @@ async function load() {
     document.getElementById('anthropic_key').value = cfg.anthropic_key || '';
     document.getElementById('openai_key').value    = cfg.openai_key    || '';
 
+    const sslEnabled = !!cfg.ssl_enabled;
+    document.getElementById('ssl-toggle').checked = sslEnabled;
+    document.getElementById('ssl_cert').value = cfg.ssl_cert || '';
+    document.getElementById('ssl_key').value  = cfg.ssl_key  || '';
+    toggleSslFields(sslEnabled);
+
     const antModel = document.getElementById('anthropic_model');
     if (cfg.anthropic_model) antModel.value = cfg.anthropic_model;
 
@@ -252,6 +274,10 @@ async function load() {
   } catch(e) {
     showStatus('err', 'Failed to load settings: ' + e.message);
   }
+}
+
+function toggleSslFields(enabled) {
+  document.getElementById('ssl-fields').classList.toggle('hidden', !enabled);
 }
 
 function setProvider(p) {
@@ -274,6 +300,9 @@ async function saveSettings() {
       anthropic_model:  document.getElementById('anthropic_model').value,
       openai_key:       document.getElementById('openai_key').value,
       openai_model:     document.getElementById('openai_model').value,
+      ssl_enabled:      document.getElementById('ssl-toggle').checked,
+      ssl_cert:         document.getElementById('ssl_cert').value,
+      ssl_key:          document.getElementById('ssl_key').value,
     };
     const r = await fetch('/api/settings', {
       method: 'POST',
@@ -366,44 +395,7 @@ async function restartServer() {
   }
 }
 
-async function loadStartup() {
-  try {
-    const r = await fetch('/api/startup');
-    const data = await r.json();
-    document.getElementById('startup-toggle').checked = data.enabled;
-    document.getElementById('startup-hint').textContent = data.enabled
-      ? '✓ Will launch automatically when Windows starts'
-      : 'Not configured to start with Windows';
-  } catch(e) {
-    document.getElementById('startup-hint').textContent = 'Could not check startup status';
-  }
-}
-
-async function setStartup(enable) {
-  document.getElementById('startup-hint').textContent = enable ? 'Enabling…' : 'Disabling…';
-  try {
-    const r = await fetch('/api/startup', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({enabled: enable})
-    });
-    const result = await r.json();
-    if (result.ok) {
-      document.getElementById('startup-hint').textContent = enable
-        ? '✓ Will launch automatically when Windows starts'
-        : 'Not configured to start with Windows';
-    } else {
-      document.getElementById('startup-hint').textContent = '✗ Error: ' + (result.error || 'Failed');
-      document.getElementById('startup-toggle').checked = !enable;
-    }
-  } catch(e) {
-    document.getElementById('startup-hint').textContent = '✗ ' + e.message;
-    document.getElementById('startup-toggle').checked = !enable;
-  }
-}
-
 load();
-loadStartup();
 </script>
 </body>
 </html>
