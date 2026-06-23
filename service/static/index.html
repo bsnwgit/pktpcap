@@ -30,14 +30,14 @@
     flex-shrink: 0;
   }
   .header-logo { font-size: 16px; font-weight: 700; color: #58a6ff; letter-spacing: -0.5px; }
-  .header-subtitle { font-size: 11px; color: #8b949e; }
+  .header-subtitle { font-size: 11px; color: #e6edf3; }
   .header-files { display: flex; gap: 8px; align-items: center; }
   .file-badge {
     background: #21262d; border: 1px solid #30363d; border-radius: 4px;
     padding: 2px 8px; font-size: 10px; color: #58a6ff;
   }
   .reset-btn {
-    background: none; border: 1px solid #30363d; color: #8b949e;
+    background: none; border: 1px solid #30363d; color: #e6edf3;
     border-radius: 4px; padding: 3px 10px; cursor: pointer; font-size: 11px; font-family: inherit;
   }
   .reset-btn:hover { border-color: #58a6ff; color: #58a6ff; }
@@ -50,14 +50,14 @@
   .mode-btn {
     flex: 1; padding: 8px 12px; border-radius: 6px; border: none; cursor: pointer;
     font-family: inherit; font-size: 12px; font-weight: 600; transition: all 0.2s;
-    background: none; color: #8b949e;
+    background: none; color: #e6edf3;
   }
   .mode-btn.active { background: #21262d; color: #e6edf3; }
   .mode-btn.active.triage { color: #e3b341; }
   .mode-btn.active.security { color: #f85149; }
-  .mode-btn:hover:not(.active) { color: #c9d1d9; }
+  .mode-btn:hover:not(.active) { color: #e6edf3; }
   .mode-desc {
-    font-size: 11px; color: #8b949e; text-align: center;
+    font-size: 11px; color: #e6edf3; text-align: center;
     padding: 4px 0 0; line-height: 1.5;
   }
   .mode-desc em { color: #58a6ff; font-style: normal; }
@@ -78,7 +78,7 @@
   .upload-zone:hover, .upload-zone.drag-over { border-color: #58a6ff; background: #1c2128; }
   .upload-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.7; }
   .upload-title { font-size: 15px; font-weight: 600; color: #e6edf3; margin-bottom: 6px; }
-  .upload-sub { font-size: 12px; color: #8b949e; }
+  .upload-sub { font-size: 12px; color: #e6edf3; }
   .upload-sub em { color: #58a6ff; font-style: normal; }
 
   .file-list { display: flex; flex-direction: column; gap: 6px; }
@@ -88,18 +88,18 @@
   }
   .file-item-icon { color: #58a6ff; }
   .file-item-name { flex: 1; color: #e6edf3; font-size: 12px; }
-  .file-item-size { color: #8b949e; font-size: 11px; }
-  .file-remove { background: none; border: none; color: #8b949e; cursor: pointer; font-size: 14px; padding: 0 4px; }
+  .file-item-size { color: #e6edf3; font-size: 11px; }
+  .file-remove { background: none; border: none; color: #e6edf3; cursor: pointer; font-size: 14px; padding: 0 4px; }
   .file-remove:hover { color: #f85149; }
 
-  .issue-label { font-size: 11px; font-weight: 700; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .issue-label { font-size: 11px; font-weight: 700; color: #e6edf3; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
   .issue-input {
     width: 100%; background: #161b22; border: 1px solid #30363d; border-radius: 8px;
     padding: 10px 14px; color: #e6edf3; font-family: inherit; font-size: 13px;
     resize: vertical; min-height: 72px; transition: border-color 0.2s;
   }
   .issue-input:focus { outline: none; border-color: #58a6ff; }
-  .issue-input::placeholder { color: #484f58; }
+  .issue-input::placeholder { color: #e6edf3; }
 
   .analyze-btn {
     background: #238636; border: 1px solid #2ea043; color: #fff;
@@ -119,8 +119,8 @@
     border-top-color: #58a6ff; border-radius: 50%; animation: spin 0.8s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
-  .loading-text { font-size: 13px; color: #8b949e; }
-  .loading-step { font-size: 11px; color: #484f58; }
+  .loading-text { font-size: 13px; color: #e6edf3; }
+  .loading-step { font-size: 11px; color: #e6edf3; }
 
   /* ── ANALYSIS SCREEN ── */
   #analysis-screen { display: none; flex: 1; overflow: hidden; }
@@ -147,7 +147,7 @@
   }
   .tabs::-webkit-scrollbar { display: none; }
   .tab {
-    padding: 9px 13px; font-size: 11px; font-weight: 600; color: #8b949e;
+    padding: 9px 13px; font-size: 11px; font-weight: 600; color: #e6edf3;
     cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap;
     transition: color 0.15s; font-family: inherit; background: none;
     border-top: none; border-left: none; border-right: none; text-transform: uppercase; letter-spacing: 0.4px;
@@ -161,13 +161,13 @@
   /* ── METRIC CARDS ── */
   .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
   .metric-card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 10px 12px; }
-  .metric-label { font-size: 10px; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
+  .metric-label { font-size: 10px; color: #e6edf3; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
   .metric-value { font-size: 18px; font-weight: 700; color: #e6edf3; }
-  .metric-sub { font-size: 10px; color: #484f58; margin-top: 2px; }
+  .metric-sub { font-size: 10px; color: #e6edf3; margin-top: 2px; }
 
   /* ── BARS ── */
   .bar-row { margin-bottom: 7px; }
-  .bar-label { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 3px; color: #c9d1d9; }
+  .bar-label { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 3px; color: #e6edf3; }
   .bar-track { background: #21262d; border-radius: 3px; height: 5px; overflow: hidden; }
   .bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
 
@@ -182,35 +182,35 @@
   .anomaly-badge.medium { background: rgba(227,179,65,.2); color: #e3b341; }
   .anomaly-badge.low { background: rgba(88,166,255,.2); color: #58a6ff; }
   .anomaly-type { font-size: 12px; font-weight: 600; color: #e6edf3; }
-  .anomaly-detail { font-size: 11px; color: #8b949e; line-height: 1.5; }
+  .anomaly-detail { font-size: 11px; color: #e6edf3; line-height: 1.5; }
 
   /* ── EXPANDABLE EVIDENCE ── */
   .expandable-card { cursor: pointer; transition: border-color 0.15s; }
   .expandable-card:hover { filter: brightness(1.08); }
   .expand-toggle {
-    font-size: 9px; color: #484f58; margin-top: 6px; text-align: right;
+    font-size: 9px; color: #e6edf3; margin-top: 6px; text-align: right;
     user-select: none; letter-spacing: 0.3px;
   }
-  .expandable-card:hover .expand-toggle { color: #8b949e; }
+  .expandable-card:hover .expand-toggle { color: #e6edf3; }
   .card-evidence { display: none; margin-top: 8px; padding-top: 8px; border-top: 1px solid #21262d; }
   .card-evidence.open { display: block; }
   .ev-row {
-    font-size: 10px; color: #8b949e; padding: 4px 0;
+    font-size: 10px; color: #e6edf3; padding: 4px 0;
     border-bottom: 1px solid #1c2128; line-height: 1.45; word-break: break-all;
   }
   .ev-row:last-child { border-bottom: none; }
-  .ev-label { color: #484f58; font-size: 9px; text-transform: uppercase; letter-spacing: 0.3px; margin-right: 4px; }
-  .no-anomalies { text-align: center; padding: 28px; color: #484f58; font-size: 12px; }
+  .ev-label { color: #e6edf3; font-size: 9px; text-transform: uppercase; letter-spacing: 0.3px; margin-right: 4px; }
+  .no-anomalies { text-align: center; padding: 28px; color: #e6edf3; font-size: 12px; }
   .no-anomalies-icon { font-size: 28px; margin-bottom: 6px; }
 
   /* ── TABLES ── */
   .data-table { width: 100%; border-collapse: collapse; font-size: 11px; }
   .data-table th {
-    background: #161b22; color: #8b949e; padding: 7px 8px; text-align: left;
+    background: #161b22; color: #e6edf3; padding: 7px 8px; text-align: left;
     border-bottom: 1px solid #30363d; font-weight: 700; text-transform: uppercase;
     letter-spacing: 0.4px; position: sticky; top: 0;
   }
-  .data-table td { padding: 6px 8px; border-bottom: 1px solid #21262d; color: #c9d1d9; word-break: break-all; }
+  .data-table td { padding: 6px 8px; border-bottom: 1px solid #21262d; color: #e6edf3; word-break: break-all; }
   .data-table tr:hover td { background: #161b22; }
 
   /* ── TCP / DNS STATS ── */
@@ -219,7 +219,7 @@
     padding: 7px 0; border-bottom: 1px solid #21262d; font-size: 12px;
   }
   .stat-row:last-child { border-bottom: none; }
-  .stat-label { color: #8b949e; }
+  .stat-label { color: #e6edf3; }
   .stat-value { font-weight: 700; color: #e6edf3; }
   .stat-value.warn { color: #e3b341; }
   .stat-value.danger { color: #f85149; }
@@ -239,18 +239,18 @@
   /* ── SECTION HEADER ── */
   .section-header {
     font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
-    color: #8b949e; margin-bottom: 8px; margin-top: 14px;
+    color: #e6edf3; margin-bottom: 8px; margin-top: 14px;
     padding-bottom: 5px; border-bottom: 1px solid #21262d;
   }
   .section-header:first-child { margin-top: 0; }
 
-  .empty-state { text-align: center; padding: 20px; color: #484f58; font-size: 11px; }
+  .empty-state { text-align: center; padding: 20px; color: #e6edf3; font-size: 11px; }
 
   /* ── CHAT PANEL ── */
   .chat-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
   .chat-header {
     padding: 10px 18px; border-bottom: 1px solid #30363d; background: #161b22;
-    font-size: 11px; font-weight: 700; color: #8b949e; text-transform: uppercase;
+    font-size: 11px; font-weight: 700; color: #e6edf3; text-transform: uppercase;
     letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px; flex-shrink: 0;
   }
   .chat-status { width: 7px; height: 7px; border-radius: 50%; background: #2ea043; }
@@ -259,7 +259,7 @@
   .message { display: flex; flex-direction: column; max-width: 87%; }
   .message.user { align-self: flex-end; }
   .message.assistant { align-self: flex-start; }
-  .message-role { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; color: #484f58; }
+  .message-role { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; color: #e6edf3; }
   .message.user .message-role { text-align: right; color: #388bfd; }
   .message.assistant .message-role { color: #2ea043; }
   .message-bubble {
@@ -267,7 +267,7 @@
     white-space: pre-wrap; word-break: break-word; border: 1px solid #30363d;
   }
   .message.user .message-bubble { background: #1c2128; color: #e6edf3; border-bottom-right-radius: 3px; }
-  .message.assistant .message-bubble { background: #161b22; color: #c9d1d9; border-bottom-left-radius: 3px; }
+  .message.assistant .message-bubble { background: #161b22; color: #e6edf3; border-bottom-left-radius: 3px; }
 
   .typing-dots { display: inline-flex; gap: 4px; align-items: center; }
   .typing-dot { width: 5px; height: 5px; background: #484f58; border-radius: 50%; animation: bounce 1.2s infinite; }
@@ -285,7 +285,7 @@
     resize: none; min-height: 38px; max-height: 110px; transition: border-color 0.2s; line-height: 1.5;
   }
   .chat-input:focus { outline: none; border-color: #58a6ff; }
-  .chat-input::placeholder { color: #484f58; }
+  .chat-input::placeholder { color: #e6edf3; }
   .send-btn {
     background: #238636; border: 1px solid #2ea043; color: #fff; border-radius: 8px;
     padding: 9px 14px; font-size: 12px; font-weight: 600; font-family: inherit;
@@ -313,7 +313,7 @@
   #stream-modal-body tr.pkt-selected { background: rgba(88,166,255,.14) !important; outline: 1px solid rgba(88,166,255,.3); }
   /* ── SEND-TO-CHAT BUTTON ── */
   .chat-to-btn {
-    background: none; border: none; color: #484f58; font-size: 13px;
+    background: none; border: none; color: #e6edf3; font-size: 13px;
     cursor: pointer; padding: 0 2px; line-height: 1; transition: color 0.15s;
     flex-shrink: 0; margin-left: auto;
   }
@@ -337,7 +337,7 @@
     <span id="header-file-badges"></span>
     <button class="reset-btn" onclick="resetApp()">↩ New Analysis</button>
   </div>
-  <a href="/settings" style="margin-left:auto;background:none;border:1px solid #30363d;color:#8b949e;border-radius:4px;padding:3px 10px;font-size:11px;font-family:inherit;text-decoration:none;flex-shrink:0;" onmouseover="this.style.borderColor='#58a6ff';this.style.color='#58a6ff'" onmouseout="this.style.borderColor='#30363d';this.style.color='#8b949e'">⚙ Settings</a>
+  <a href="/settings" style="margin-left:auto;background:none;border:1px solid #30363d;color:#e6edf3;border-radius:4px;padding:3px 10px;font-size:11px;font-family:inherit;text-decoration:none;flex-shrink:0;" onmouseover="this.style.borderColor='#58a6ff';this.style.color='#58a6ff'" onmouseout="this.style.borderColor='#30363d';this.style.color='#e6edf3'">⚙ Settings</a>
 </div>
 
 <div class="main">
@@ -474,7 +474,7 @@
       <div class="chat-header">
         <div class="chat-status"></div>
         Diagnostic Assistant
-        <button onclick="clearChat()" style="margin-left:auto;background:none;border:1px solid #30363d;color:#8b949e;font-size:11px;padding:2px 8px;border-radius:4px;cursor:pointer;font-family:inherit" title="Clear conversation">Clear</button>
+        <button onclick="clearChat()" style="margin-left:auto;background:none;border:1px solid #30363d;color:#e6edf3;font-size:11px;padding:2px 8px;border-radius:4px;cursor:pointer;font-family:inherit" title="Clear conversation">Clear</button>
       </div>
       <div class="chat-messages" id="chat-messages"></div>
       <div class="chat-input-area">
@@ -1177,7 +1177,7 @@ function renderUI(){
           return`<tr>
             <td style="font-weight:700;color:#e6edf3">${p.port}</td>
             <td><span style="font-size:10px;padding:1px 5px;border-radius:3px;background:${p.proto==='TCP'?'rgba(88,166,255,.15)':'rgba(188,140,255,.15)'};color:${col}">${p.proto}</span></td>
-            <td style="color:${svc?'#e3b341':'#484f58'}">${svc||'—'}</td>
+            <td style="color:${svc?'#e3b341':'#c9d1d9'}">${svc||'—'}</td>
             <td>${p.pkts.toLocaleString()}</td>
             <td><div class="bar-track" style="margin-top:2px"><div class="bar-fill" style="width:${pct}%;background:${col}"></div></div></td>
           </tr>`;
@@ -1204,7 +1204,7 @@ function renderUI(){
   const catColors={Reconnaissance:'#f85149','Credential Risk':'#e3b341','Brute Force':'#f85149','Data Transfer':'#bc8cff','Lateral Movement':'#f85149','Covert Channel':'#e3b341',DNS:'#58a6ff'};
   document.getElementById('threats-list').innerHTML=sec.threats.length
     ?sec.threats.map(t=>renderCard(t,
-        `<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:rgba(255,255,255,.05);color:${catColors[t.category]||'#8b949e'}">${esc(t.category)}</span>`
+        `<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:rgba(255,255,255,.05);color:${catColors[t.category]||'#e6edf3'}">${esc(t.category)}</span>`
       )).join('')
     :'';
 
@@ -1259,7 +1259,7 @@ function renderUI(){
           <div class="detail-title">${esc(s.key)}</div>
           <div class="detail-meta">
             <span>${s.pkts} pkts</span>
-            <span style="color:#8b949e">${fmtBytes(s.bytes)}</span>
+            <span style="color:#e6edf3">${fmtBytes(s.bytes)}</span>
             ${s.failedHS?'<span class="tag-danger">NO SYN-ACK</span>':''}
             ${s.rsts?`<span class="tag-danger">RST:${s.rsts}</span>`:''}
             ${s.retrans?`<span class="tag-warn">RETR:${s.retrans}</span>`:''}
@@ -1298,7 +1298,7 @@ function renderUI(){
           <div class="detail-title">${esc(f.key)}</div>
           <div class="detail-meta">
             <span>${f.pkts} pkts</span>
-            <span style="color:#8b949e">${fmtBytes(f.bytes)}</span>
+            <span style="color:#e6edf3">${fmtBytes(f.bytes)}</span>
             ${f.largeCount?`<span class="tag-warn">LARGE:${f.largeCount}</span>`:''}
             ${f.oneSided?'<span class="tag-warn">ONE-SIDED</span>':''}
             ${f.pkts>200?'<span class="tag-warn">HIGH-RATE</span>':''}
@@ -1727,21 +1727,21 @@ function renderStreamModal(title, flowPkts){
     const relT=((p.timestamp-t0)*1000).toFixed(1)+'ms';
     const flags=flagStr(p.flags)||'';
     const fs=flags?flags.split(' ').map(f=>{
-      const fc=f==='RST'?'#f85149':f==='SYN'?'#2ea043':f==='FIN'?'#e3b341':'#484f58';
+      const fc=f==='RST'?'#f85149':f==='SYN'?'#2ea043':f==='FIN'?'#e3b341':'#c9d1d9';
       return`<span style="font-size:9px;color:${fc};border:1px solid ${fc};border-radius:2px;padding:0 3px;margin-right:2px">${f}</span>`;
     }).join(''):'';
     const ascii=p.payload?payloadToAscii(p.payload).slice(0,80):'';
-    const payDisplay=ascii?`<span style="color:#6e7681;font-size:10px;margin-left:6px;word-break:break-all">${esc(ascii)}${p.payload&&p.payload.length>80?'…':''}</span>`:'';
+    const payDisplay=ascii?`<span style="color:#c9d1d9;font-size:10px;margin-left:6px;word-break:break-all">${esc(ascii)}${p.payload&&p.payload.length>80?'…':''}</span>`:'';
     const retransBadge=(p.flags&&i>0&&shown.slice(0,i).some(pp=>pp.srcIP===p.srcIP&&pp.srcPort===p.srcPort&&pp.seqNum===p.seqNum&&p.seqNum!==undefined&&p.seqNum!==0))
       ?`<span style="font-size:9px;color:#f85149;margin-left:4px">RETR</span>`:'';
     return`<tr id="spkt_${i}" onclick="showPacketDetail(${i})" style="cursor:pointer">
-      <td style="color:#484f58;white-space:nowrap">${relT}</td>
+      <td style="color:#e6edf3;white-space:nowrap">${relT}</td>
       <td style="color:${dirColor};font-weight:700;text-align:center">${dirArrow}</td>
-      <td style="color:#8b949e;white-space:nowrap">${esc(p.srcIP)}:${p.srcPort||'?'}</td>
-      <td style="color:#484f58">→</td>
-      <td style="color:#8b949e;white-space:nowrap">${esc(p.dstIP)}:${p.dstPort||'?'}</td>
+      <td style="color:#e6edf3;white-space:nowrap">${esc(p.srcIP)}:${p.srcPort||'?'}</td>
+      <td style="color:#e6edf3">→</td>
+      <td style="color:#e6edf3;white-space:nowrap">${esc(p.dstIP)}:${p.dstPort||'?'}</td>
       <td>${fs}${retransBadge}</td>
-      <td style="color:#c9d1d9;text-align:right">${p.capturedLen}</td>
+      <td style="color:#e6edf3;text-align:right">${p.capturedLen}</td>
       <td>${payDisplay}</td>
     </tr>`;
   }).join('');
@@ -1813,14 +1813,14 @@ function closePacketDetail(){
 }
 
 function hexDumpPayload(payload){
-  if(!payload||!payload.length) return '<em style="color:#484f58;font-size:11px">No payload captured</em>';
+  if(!payload||!payload.length) return '<em style="color:#e6edf3;font-size:11px">No payload captured</em>';
   const rows=[];
   for(let i=0;i<payload.length;i+=16){
     const chunk=Array.from(payload.slice(i,i+16));
     const offset=i.toString(16).padStart(4,'0');
     const hexPart=chunk.map(b=>b.toString(16).padStart(2,'0')).join(' ').padEnd(47);
     const ascPart=chunk.map(b=>(b>=32&&b<127)?String.fromCharCode(b):'.').join('');
-    rows.push(`<div style="display:flex;gap:14px;line-height:1.7"><span style="color:#484f58;min-width:34px;font-size:10px">${offset}</span><span style="color:#58a6ff;letter-spacing:1px;font-size:10px;min-width:150px">${esc(hexPart)}</span><span style="color:#c9d1d9;font-size:10px">${esc(ascPart)}</span></div>`);
+    rows.push(`<div style="display:flex;gap:14px;line-height:1.7"><span style="color:#e6edf3;min-width:34px;font-size:10px">${offset}</span><span style="color:#58a6ff;letter-spacing:1px;font-size:10px;min-width:150px">${esc(hexPart)}</span><span style="color:#e6edf3;font-size:10px">${esc(ascPart)}</span></div>`);
   }
   return`<div style="font-family:monospace">${rows.join('')}</div>`;
 }
@@ -1845,22 +1845,22 @@ function showPacketDetail(i){
   // Build detail content
   const flags=flagStr(p.flags)||'';
   const flagBadges=flags?flags.split(' ').map(f=>{
-    const fc=f==='RST'?'#f85149':f==='SYN'?'#2ea043':f==='FIN'?'#e3b341':f==='ACK'?'#58a6ff':'#8b949e';
+    const fc=f==='RST'?'#f85149':f==='SYN'?'#2ea043':f==='FIN'?'#e3b341':f==='ACK'?'#58a6ff':'#e6edf3';
     return`<span style="font-size:10px;color:${fc};border:1px solid ${fc};border-radius:3px;padding:1px 5px;margin-right:3px">${f}</span>`;
-  }).join(''):'<span style="color:#484f58;font-size:10px">none</span>';
+  }).join(''):'<span style="color:#e6edf3;font-size:10px">none</span>';
   const relMs=((p.timestamp-t0)*1000).toFixed(3);
   const absTime=safeIso(p.timestamp);
-  const sec=(label,content)=>`<div style="margin-bottom:10px"><div style="font-size:10px;font-weight:700;color:#484f58;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:4px;border-bottom:1px solid #21262d;padding-bottom:3px">${label}</div>${content}</div>`;
-  const field=(label,val,color='#c9d1d9')=>`<div style="display:flex;gap:8px;font-size:11px;margin-bottom:2px"><span style="color:#6e7681;min-width:110px;flex-shrink:0">${label}</span><span style="color:${color};word-break:break-all">${val}</span></div>`;
+  const sec=(label,content)=>`<div style="margin-bottom:10px"><div style="font-size:10px;font-weight:700;color:#e6edf3;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:4px;border-bottom:1px solid #21262d;padding-bottom:3px">${label}</div>${content}</div>`;
+  const field=(label,val,color='#c9d1d9')=>`<div style="display:flex;gap:8px;font-size:11px;margin-bottom:2px"><span style="color:#c9d1d9;min-width:110px;flex-shrink:0">${label}</span><span style="color:${color};word-break:break-all">${val}</span></div>`;
   let transportSection='';
   if(p.protocol==='TCP'){
     transportSection=sec('TCP',
       field('Src Port',p.srcPort||'?','#58a6ff')+
       field('Dst Port',p.dstPort||'?','#e3b341')+
       field('Flags',flagBadges)+
-      (p.seqNum!==undefined?field('Seq Number',p.seqNum.toLocaleString(),'#8b949e'):'')+
-      (p.ackNum!==undefined&&p.flags?.ack?field('Ack Number',p.ackNum.toLocaleString(),'#8b949e'):'')+
-      (p.windowSize!==undefined?field('Window Size',p.windowSize.toLocaleString()+' bytes','#8b949e'):''));
+      (p.seqNum!==undefined?field('Seq Number',p.seqNum.toLocaleString(),'#e6edf3'):'')+
+      (p.ackNum!==undefined&&p.flags?.ack?field('Ack Number',p.ackNum.toLocaleString(),'#e6edf3'):'')+
+      (p.windowSize!==undefined?field('Window Size',p.windowSize.toLocaleString()+' bytes','#e6edf3'):''));
   } else if(p.protocol==='UDP'){
     transportSection=sec('UDP',
       field('Src Port',p.srcPort||'?','#58a6ff')+
@@ -1874,7 +1874,7 @@ function showPacketDetail(i){
   const appProto=detectProtocol(p.payload);
   const detailContent=
     sec('Frame',field('Packet #',i+1)+field('Timestamp (abs)',absTime)+field('Relative Time',relMs+' ms')+field('Captured Length',p.capturedLen+' bytes'))+
-    sec('IP',field('Source',p.srcIP||'?','#58a6ff')+field('Destination',p.dstIP||'?','#e3b341')+field('Protocol',p.protocol||'?',(p.protocol==='TCP'?'#58a6ff':p.protocol==='UDP'?'#bc8cff':'#8b949e'))+(p.ttl!==undefined?field('TTL',p.ttl):''))+
+    sec('IP',field('Source',p.srcIP||'?','#58a6ff')+field('Destination',p.dstIP||'?','#e3b341')+field('Protocol',p.protocol||'?',(p.protocol==='TCP'?'#58a6ff':p.protocol==='UDP'?'#bc8cff':'#e6edf3'))+(p.ttl!==undefined?field('TTL',p.ttl):''))+
     transportSection+
     (appProto?sec('Application',field('Detected Protocol',appProto,'#2ea043')):'')+
     sec(`Payload (${p.payload?p.payload.length:0} bytes${p.payload&&p.capturedLen>p.payload.length?' truncated':''})`,hexDumpPayload(p.payload));
@@ -1889,8 +1889,8 @@ function showPacketDetail(i){
     <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 14px;background:#161b22;border-bottom:1px solid #21262d;position:sticky;top:0;z-index:2">
       <span style="font-size:11px;font-weight:700;color:#58a6ff">Packet #${i+1} — ${esc(p.srcIP||'?')}:${p.srcPort||'?'} → ${esc(p.dstIP||'?')}:${p.dstPort||'?'}</span>
       <div style="display:flex;gap:8px;align-items:center">
-        <button onclick="sendPacketToAssistant()" title="Send to Diagnostic Assistant" style="background:none;border:none;color:#484f58;font-size:13px;cursor:pointer;padding:0;line-height:1;transition:color 0.15s" onmouseover="this.style.color='#58a6ff'" onmouseout="this.style.color='#484f58'">\u{1F4AC}</button>
-        <button onclick="closePacketDetail()" title="Close" style="background:none;border:none;color:#484f58;font-size:15px;cursor:pointer;padding:0;line-height:1">✕</button>
+        <button onclick="sendPacketToAssistant()" title="Send to Diagnostic Assistant" style="background:none;border:none;color:#e6edf3;font-size:13px;cursor:pointer;padding:0;line-height:1;transition:color 0.15s" onmouseover="this.style.color='#58a6ff'" onmouseout="this.style.color='#c9d1d9'">\u{1F4AC}</button>
+        <button onclick="closePacketDetail()" title="Close" style="background:none;border:none;color:#e6edf3;font-size:15px;cursor:pointer;padding:0;line-height:1">✕</button>
       </div>
     </div>
     <div style="padding:10px 14px;overflow-y:auto" id="inline-detail-content">${detailContent}</div>`;
@@ -1957,10 +1957,10 @@ async function localAsk(prompt, dataArr){
     <!-- locked title bar -->
     <div style="background:#0d1117;border-bottom:1px solid #30363d;padding:12px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0">
       <span style="font-size:13px;font-weight:700;color:#58a6ff;flex:1;word-break:break-all" id="stream-modal-title"></span>
-      <button onclick="closeStream()" style="background:none;border:1px solid #30363d;color:#8b949e;border-radius:6px;padding:3px 10px;cursor:pointer;font-family:inherit;font-size:12px">✕ Close</button>
+      <button onclick="closeStream()" style="background:none;border:1px solid #30363d;color:#e6edf3;border-radius:6px;padding:3px 10px;cursor:pointer;font-family:inherit;font-size:12px">✕ Close</button>
     </div>
     <!-- locked meta bar -->
-    <div style="padding:8px 16px;background:#0d1117;border-bottom:1px solid #21262d;font-size:11px;color:#8b949e;display:flex;flex-wrap:wrap;gap:4px;flex-shrink:0" id="stream-modal-meta"></div>
+    <div style="padding:8px 16px;background:#0d1117;border-bottom:1px solid #21262d;font-size:11px;color:#e6edf3;display:flex;flex-wrap:wrap;gap:4px;flex-shrink:0" id="stream-modal-meta"></div>
     <!-- scrollable packet list (detail row injected inline on click) -->
     <div style="overflow-y:auto;overflow-x:auto;flex:1;padding:0;min-height:0" id="stream-modal-body"></div>
   </div>

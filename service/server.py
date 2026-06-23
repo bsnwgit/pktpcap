@@ -17,7 +17,10 @@ DEFAULT_CONFIG = {
     "anthropic_key": "",
     "anthropic_model": "claude-opus-4-8",
     "openai_key": "",
-    "openai_model": "gpt-4o"
+    "openai_model": "gpt-4o",
+    "ssl_enabled": False,
+    "ssl_cert": "",
+    "ssl_key": ""
 }
 
 # ── Config helpers ────────────────────────────────────────────────────────────
@@ -74,6 +77,13 @@ def post_settings():
         v = body.get(k, "")
         if v and "•" not in v:
             cfg[k] = v
+    # SSL settings
+    if "ssl_enabled" in body:
+        cfg["ssl_enabled"] = bool(body["ssl_enabled"])
+    if "ssl_cert" in body:
+        cfg["ssl_cert"] = body["ssl_cert"].strip()
+    if "ssl_key" in body:
+        cfg["ssl_key"] = body["ssl_key"].strip()
     save_config(cfg)
     return jsonify({"ok": True, "port": cfg["port"]})
 
@@ -174,18 +184,6 @@ def ai_test():
         return jsonify({"ok": False, "error": str(e)}), 500
 
 
-# ── API: startup ─────────────────────────────────────────────────────────────
-
-def get_startup_bat_path():
-    startup_dir = os.path.join(os.environ.get('APPDATA', ''),
-                               'Microsoft', 'Windows', 'Start Menu',
-                               'Programs', 'Startup')
-    return os.path.join(startup_dir, 'packet-analyzer.bat')
-
-@app.route("/api/startup", methods=["GET"])
-def get_startup():
-    return jsonify({"enabled": os.path.exists(get_startup_bat_path())})
-
 @app.route("/api/restart", methods=["POST"])
 def restart_server():
     def do_restart():
@@ -195,24 +193,6 @@ def restart_server():
         os._exit(0)
     threading.Thread(target=do_restart, daemon=True).start()
     return jsonify({"ok": True})
-
-@app.route("/api/startup", methods=["POST"])
-def set_startup():
-    body = request.get_json(force=True)
-    enable = body.get("enabled", False)
-    bat = get_startup_bat_path()
-    try:
-        if enable:
-            script = BASE / "server.py"
-            content = f'@echo off\nstart "" pythonw "{script}"\n'
-            with open(bat, 'w') as fh:
-                fh.write(content)
-        else:
-            if os.path.exists(bat):
-                os.remove(bat)
-        return jsonify({"ok": True, "enabled": enable})
-    except Exception as e:
-        return jsonify({"ok": False, "error": str(e)}), 500
 
 
 # ── API: save screenshot ──────────────────────────────────────────────────────
@@ -228,7 +208,7 @@ def save_image():
     if not match:
         return jsonify({"ok": False, "error": "Invalid data URL"}), 400
     img_bytes = base64.b64decode(match.group(1))
-    out_dir = BASE.parent / "screenshots"
+    out_dir = BASE / "screenshots"
     out_dir.mkdir(exist_ok=True)
     out_path = out_dir / filename
     out_path.write_bytes(img_bytes)
@@ -239,7 +219,7 @@ def take_screenshot():
     import re, subprocess
     body = request.get_json(force=True)
     filename = re.sub(r'[^a-zA-Z0-9_\-.]', '_', body.get("filename", "screenshot.png"))
-    out_dir = BASE.parent / "screenshots"
+    out_dir = BASE / "screenshots"
     out_dir.mkdir(exist_ok=True)
     out_path = str(out_dir / filename).replace("\\", "/")
     ps = r"""
@@ -281,9 +261,9 @@ $bmp.Dispose(); $g.Dispose()
 
 # ── Entry point ───────────────────────────────────────────────────────────────
 
-def open_browser(port):
+def open_browser(port, scheme="http"):
     time.sleep(1.2)
-    webbrowser.open(f"http://localhost:{port}")
+    webbrowser.open(f"{scheme}://localhost:{port}")
 
 if __name__ == "__main__":
     cfg = load_config()
@@ -293,11 +273,29 @@ if __name__ == "__main__":
     if not CONFIG_FILE.exists():
         save_config(cfg)
 
+    ssl_enabled = cfg.get("ssl_enabled", False)
+    ssl_cert    = cfg.get("ssl_cert", "")
+    ssl_key     = cfg.get("ssl_key", "")
+    ssl_context = None
+    scheme = "http"
+
+    if ssl_enabled and ssl_cert and ssl_key:
+        if not os.path.isfile(ssl_cert):
+            print(f"  WARNING: SSL cert not found: {ssl_cert}")
+        elif not os.path.isfile(ssl_key):
+            print(f"  WARNING: SSL key not found: {ssl_key}")
+        else:
+            ssl_context = (ssl_cert, ssl_key)
+            scheme = "https"
+
     print(f"\n  Packet Capture Analyzer")
     print(f"  ─────────────────────────────────────")
-    print(f"  App      →  http://localhost:{port}/")
-    print(f"  Settings →  http://localhost:{port}/settings")
+    print(f"  App      →  {scheme}://localhost:{port}/")
+    print(f"  Settings →  {scheme}://localhost:{port}/settings")
+    if ssl_context:
+        print(f"  SSL      →  enabled ({ssl_cert})")
     print(f"  Press Ctrl+C to stop\n")
 
-    threading.Thread(target=open_browser, args=(port,), daemon=True).start()
-    app.run(host="0.0.0.0", port=port, debug=False)
+    if sys.platform == "win32":
+        threading.Thread(target=open_browser, args=(port, scheme), daemon=True).start()
+    app.run(host="0.0.0.0", port=port, debug=False, ssl_context=ssl_context)
