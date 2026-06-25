@@ -3,7 +3,7 @@ setlocal
 cd /d "%~dp0"
 
 echo.
-echo  PktAnalyzer — Git Setup and Push
+echo  PktPCAP — Git Setup and Push
 echo  ─────────────────────────────────────────────────────
 
 :: Remove any broken .git from a previous attempt
@@ -27,8 +27,8 @@ git commit -m "Initial commit: Packet Capture Analyzer web service"
 
 echo.
 echo  Adding remotes...
-git remote add github  git@github.com:bsnwgit/pktanalyzer.git
-git remote add gitlab  git@gitlab.com:robert.barnett/pktanalyzer.git
+git remote add github  git@github.com:bsnwgit/pktpcap.git
+git remote add gitlab  git@gitlab.com:robert.barnett/pktpcap.git
 
 echo.
 echo  Pushing to GitHub...

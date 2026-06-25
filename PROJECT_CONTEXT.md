@@ -19,11 +19,11 @@ C:\Users\robert.barnett\My Drive\Documents\Claude\Projects\Packet Analyzer\
 │   │   └── index.html              ← Full SPA (~1969 lines)
 │   └── templates/
 │       └── settings.html           ← Settings UI
-├── deploy-to-apps.bat              ← Copies service/ → C:\apps\packet-analyzer\
+├── deploy-to-apps.bat              ← Copies service/ → C:\apps\pktpcap\
 ├── git-setup-and-push.bat          ← Full git init + push to GitHub + GitLab
 ├── .gitignore                      ← Excludes config.json, screenshots/, *.pcapng
 ├── PROJECT_CONTEXT.md              ← This file
-├── packet-analyzer.html            ← Original standalone artifact (pre-Flask)
+├── pktpcap.html            ← Original standalone artifact (pre-Flask)
 ├── screenshots/                    ← Tab screenshots (GITIGNORED)
 │   └── capture.png                 ← Last captured screenshot
 └── test-cap.pcapng                 ← Test capture file (1.6 MB) — GITIGNORED
@@ -32,7 +32,7 @@ C:\Users\robert.barnett\My Drive\Documents\Claude\Projects\Packet Analyzer\
 
 ### Deployment target (same pattern as Maverik)
 ```
-C:\apps\packet-analyzer\
+C:\apps\pktpcap\
 ├── server.py
 ├── requirements.txt
 ├── start.bat                       ← Launch script (cd here, pip install, python server.py)
@@ -56,7 +56,7 @@ python server.py
 
 **Deployed (currently running):**
 ```
-C:\apps\packet-analyzer\start.bat
+C:\apps\pktpcap\start.bat
 ```
 
 Opens at: http://localhost:8765
@@ -115,7 +115,7 @@ Ran with Auto-Triage mode. Parser works fully without API key — AI assistant p
 
 ## server.py — Architecture
 
-`BASE = Path(__file__).parent` — all paths resolve relative to server.py's location, so the app works correctly from both `service/` and `C:\apps\packet-analyzer\`.
+`BASE = Path(__file__).parent` — all paths resolve relative to server.py's location, so the app works correctly from both `service/` and `C:\apps\pktpcap\`.
 
 ### API Endpoints
 
@@ -129,8 +129,8 @@ Ran with Auto-Triage mode. Parser works fully without API key — AI assistant p
 | POST | `/api/ai/test` | Tests API key with "Say PONG" request |
 | POST | `/api/restart` | Spawns new process then `os._exit(0)` after 0.8s |
 | GET | `/api/startup` | Returns `{enabled: bool}` — checks Startup folder for .bat |
-| POST | `/api/startup` | Writes/removes `%APPDATA%\...\Startup\packet-analyzer.bat` |
-| POST | `/api/save-image` | Saves base64 dataUrl to screenshots/ — **NOTE: saves to C:\apps\screenshots\ not C:\apps\packet-analyzer\screenshots\ — path bug, BASE.parent issue to investigate** |
+| POST | `/api/startup` | Writes/removes `%APPDATA%\...\Startup\pktpcap.bat` |
+| POST | `/api/save-image` | Saves base64 dataUrl to screenshots/ — **NOTE: saves to C:\apps\screenshots\ not C:\apps\pktpcap\screenshots\ — path bug, BASE.parent issue to investigate** |
 | POST | `/api/screenshot` | PowerShell PrintWindow capture (unreliable, not used) |
 
 ### Key Implementation Details
@@ -139,7 +139,7 @@ Ran with Auto-Triage mode. Parser works fully without API key — AI assistant p
 
 **Server restart:** `subprocess.Popen([sys.executable] + sys.argv)` spawns a new instance, then `os._exit(0)` after 0.8s. Browser reconnects automatically.
 
-**Windows Startup toggle:** Writes `pythonw "C:\apps\packet-analyzer\server.py"` to `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\packet-analyzer.bat`. Uses `pythonw` (no console window).
+**Windows Startup toggle:** Writes `pythonw "C:\apps\pktpcap\server.py"` to `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\pktpcap.bat`. Uses `pythonw` (no console window).
 
 **AI proxy (`/api/ai`):** `index.html` calls `localAsk()` which POSTs to `/api/ai`. This replaced the original `window.cowork.askClaude()` call so the app works standalone without Cowork.
 
@@ -175,9 +175,9 @@ Default model: `claude-opus-4-8`. Also supports `claude-sonnet-4-6`, `claude-hai
 ## Screenshot Capture — Current Status
 
 ### What Works
-- **`C:\apps\packet-analyzer\screenshot.ps1`** — captures Chrome window by title matching "localhost|Packet|8765" using `SetForegroundWindow` + `CopyFromScreen`. Saves to `C:\apps\packet-analyzer\screenshots\capture.png`.
-- **`C:\apps\packet-analyzer\screenshot-named.ps1`** — same but accepts `-FileName` parameter for named output files.
-- **`/api/save-image`** endpoint responds correctly to POST with `{dataUrl, filename}`. **Saves to `C:\apps\screenshots\` (not `C:\apps\packet-analyzer\screenshots\`) — path bug.**
+- **`C:\apps\pktpcap\screenshot.ps1`** — captures Chrome window by title matching "localhost|Packet|8765" using `SetForegroundWindow` + `CopyFromScreen`. Saves to `C:\apps\pktpcap\screenshots\capture.png`.
+- **`C:\apps\pktpcap\screenshot-named.ps1`** — same but accepts `-FileName` parameter for named output files.
+- **`/api/save-image`** endpoint responds correctly to POST with `{dataUrl, filename}`. **Saves to `C:\apps\screenshots\` (not `C:\apps\pktpcap\screenshots\`) — path bug.**
 
 ### Known Problems
 - **Multi-monitor issue:** The PS scripts find Chrome at position (1920,0) — the user's second monitor. When Claude in Chrome controls a tab and JS clicks navigate tabs, the PS script screenshots the WRONG Chrome window (user's window on monitor 2, not Claude's controlled tab).
@@ -186,7 +186,7 @@ Default model: `claude-opus-4-8`. Also supports `claude-sonnet-4-6`, `claude-hai
 
 ### Pending Screenshot Work
 To capture all 7 tabs as named PNGs:
-1. Fix the `/api/save-image` path bug so it saves to `C:\apps\packet-analyzer\screenshots\`
+1. Fix the `/api/save-image` path bug so it saves to `C:\apps\pktpcap\screenshots\`
 2. Inject html2canvas (`https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js`) via `javascript_tool`
 3. For each tab: click via JS → wait 600ms → `html2canvas(document.querySelector('.main'))` → POST to `/api/save-image`
 
@@ -198,12 +198,12 @@ To capture all 7 tabs as named PNGs:
 
 | Remote | URL |
 |--------|-----|
-| github | git@github.com:bsnwgit/pktanalyzer.git |
-| gitlab | git@gitlab.com:robert.barnett/pktanalyzer.git |
+| github | git@github.com:bsnwgit/pktpcap.git |
+| gitlab | git@gitlab.com:robert.barnett/pktpcap.git |
 
 **PR links (template):**
-- GitHub: `https://github.com/bsnwgit/pktanalyzer/compare/<branch>`
-- GitLab: `https://gitlab.com/robert.barnett/pktanalyzer/-/merge_requests/new?merge_request[source_branch]=<branch>`
+- GitHub: `https://github.com/bsnwgit/pktpcap/compare/<branch>`
+- GitLab: `https://gitlab.com/robert.barnett/pktpcap/-/merge_requests/new?merge_request[source_branch]=<branch>`
 
 **Git push notes:**
 - Bash sandbox has no SSH outbound access — must use Desktop Commander (`shell: cmd`) which uses the user's Windows SSH keys.
@@ -218,8 +218,8 @@ To capture all 7 tabs as named PNGs:
 | Item | Status | Notes |
 |------|--------|-------|
 | Add API key to deployed app | Pending | Go to http://localhost:8765/settings and enter Anthropic key |
-| Redeploy after code changes | Pending | Run `deploy-to-apps.bat` to sync service/ → C:\apps\packet-analyzer\ |
-| Fix /api/save-image path | Bug | Saves to C:\apps\screenshots\ instead of C:\apps\packet-analyzer\screenshots\ |
+| Redeploy after code changes | Pending | Run `deploy-to-apps.bat` to sync service/ → C:\apps\pktpcap\ |
+| Fix /api/save-image path | Bug | Saves to C:\apps\screenshots\ instead of C:\apps\pktpcap\screenshots\ |
 | Tab screenshot capture | In Progress | html2canvas on .main element + /api/save-image. See screenshot section above. |
 | Confluence KB article | Blocked | Article drafted and approved. `createConfluencePage` returns 404 — Atlassian connector likely lacks `write:confluence-content` scope. Needs reconnection with write permissions. |
 
@@ -227,7 +227,7 @@ To capture all 7 tabs as named PNGs:
 
 ## Confluence Article (drafted, not yet published)
 
-**Title:** How to - Packet Capture Analyzer (PktAnalyzer)
+**Title:** How to - Packet Capture Analyzer (PktPCAP)
 **Space:** SEC (Security Confluence space)
 **Parent page ID:** 631406680 (SEC space homepage)
 **Cloud ID:** d08da9e7-83db-4179-add1-b58cf5dcbe5c

@@ -17,11 +17,11 @@ client.connect(O2_HOST, username=O2_USER, pkey=key, timeout=15, banner_timeout=1
 print("Connected.\n")
 
 print("=== Service status ===")
-out, _ = ssh_run(client, "systemctl is-active pktanalyzer")
+out, _ = ssh_run(client, "systemctl is-active pktpcap")
 print(out)
 
 print("\n=== Last 30 log lines ===")
-out, _ = ssh_run(client, "sudo journalctl -u pktanalyzer -n 30 --no-pager")
+out, _ = ssh_run(client, "sudo journalctl -u pktpcap -n 30 --no-pager")
 print(out)
 
 print("\n=== Listening ports ===")
