@@ -1,6 +1,12 @@
 # Config (contains API keys — never commit)
 service/config.json
 
+# Local deployment and infrastructure scripts — not for public repo
+PROJECT_CONTEXT.md
+o2-fix-and-deploy.py
+o2-diagnose.py
+git-setup-and-push.bat
+
 # Runtime output
 screenshots/
 
