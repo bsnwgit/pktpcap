@@ -275,6 +275,7 @@ def ai_call():
             return jsonify({"error": "Unknown provider: {}".format(provider)}), 400
         return jsonify({"content": text})
     except Exception as e:
+        log.exception("AI call failed")
         return jsonify({"error": str(e)}), 500
 
 @app.route("/api/ai/test", methods=["POST"])
@@ -634,7 +635,7 @@ if __name__ == "__main__":
     if not os.path.isabs(_db_path):
         _db_path = str(BASE / _db_path)
     _log_handler = SQLiteLogHandler(db_path=_db_path)
-    _log_handler.attach_to_root_logger("pktpcap")
+    _log_handler.attach_to_root_logger("")  # root logger — catches Flask, werkzeug, everything
     # ---------------------------------------------------------------------------
 
     cfg  = load_config()
@@ -648,13 +649,16 @@ if __name__ == "__main__":
 
     if ssl_enabled and ssl_cert and ssl_key_:
         if not os.path.isfile(ssl_cert):
+            log.warning("SSL cert not found: %s", ssl_cert)
             print("  WARNING: SSL cert not found: {}".format(ssl_cert))
         elif not os.path.isfile(ssl_key_):
+            log.warning("SSL key not found: %s", ssl_key_)
             print("  WARNING: SSL key not found: {}".format(ssl_key_))
         else:
             ssl_context = (ssl_cert, ssl_key_)
             scheme = "https"
 
+    log.info("pktPCAP starting on %s://0.0.0.0:%s", scheme, port)
     print("\n  pktPCAP")
     print("  " + "-" * 37)
     print("  App      ->  {}://localhost:{}/".format(scheme, port))
