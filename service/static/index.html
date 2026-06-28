@@ -2504,9 +2504,9 @@ function updateWsConfig() {
   box.textContent = [
     `SSH Host:   ${ip}`,
     `SSH Port:   22`,
-    `SSH User:   <ssh-user>  `,
-    `Auth:       SSH Key file (<your-key.pem>  )`,
-    `Command:    <remote-deploy-path>  /pkt-capture`,
+    `SSH User:   <your-ssh-user>`,
+    `Auth:       SSH Key file (<your-key.pem>)`,
+    `Command:    <path-to-capture-script>`,
     `Interface:  ${iface}`,
     `Filter:     ${filter || '(none)'}`,
   ].join('\n');

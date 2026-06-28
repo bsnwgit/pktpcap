@@ -286,7 +286,7 @@ Buffer limit is **200 MB per named session**. If the stream exceeds this, the se
 ### 1. Clone
 
 ```bash
-git clone https://github.com/your-username/pktpcap  .git
+git clone <your-repo-url>
 cd pktpcap
 ```
 
@@ -520,15 +520,10 @@ pktpcap/
 
 ## Git workflow
 
-Changes go to a feature branch — never directly to `main`. PRs are opened on both GitHub and GitLab for review before merging.
-
-| Remote | URL |
-|---|---|
-| GitHub | https://github.com/your-username/pktpcap   |
-| GitLab | https://gitlab.com/your-username/pktpcap   |
+Changes go to a feature branch — never directly to `main`. Open a PR for review before merging.
 
 ---
 
 ## License
 
-Internal tool — <your-org>  .
+MIT
