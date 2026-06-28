@@ -3,385 +3,459 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Packet Capture Analyzer</title>
+<title>pktPCAP</title>
 <style>
   :root { color-scheme: light; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
     font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
-    background: #0d1117;
-    color: #e6edf3;
+    background: #030712;
+    color: #f9fafb;
     height: 100vh;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     overflow: hidden;
     font-size: 13px;
   }
 
-  /* ── HEADER ── */
-  .header {
-    background: #161b22;
-    border-bottom: 1px solid #30363d;
-    padding: 10px 20px;
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 208px;
+    flex-shrink: 0;
+    background: #111827;
+    border-right: 1px solid #1f2937;
+    display: flex;
+    flex-direction: column;
+  }
+  .sidebar-logo {
+    padding: 12px;
+    border-bottom: 1px solid #374151;
+  }
+
+  /* ── APP RIGHT WRAPPER ── */
+  .app-right {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 0;
+  }
+
+  /* ── TOP BAR ── */
+  .top-bar { font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    height: 48px;
+    background: #111827;
+    border-bottom: 1px solid #374151;
+    padding: 0 20px;
     display: flex;
     align-items: center;
     gap: 12px;
     flex-shrink: 0;
   }
-  .header-logo { font-size: 16px; font-weight: 700; color: #58a6ff; letter-spacing: -0.5px; }
-  .header-subtitle { font-size: 11px; color: #8b949e; }
-  .header-files { display: flex; gap: 8px; align-items: center; }
+  .top-bar-title { font-size: 13px; font-weight: 600; color: #f9fafb; }
+  .header-files { margin-left: auto; display: flex; gap: 8px; align-items: center; }
   .file-badge {
-    background: #21262d; border: 1px solid #30363d; border-radius: 4px;
-    padding: 2px 8px; font-size: 10px; color: #58a6ff;
+    background: #1f2937; border: 1px solid #374151; border-radius: 4px;
+    padding: 2px 8px; font-size: 10px; color: #60a5fa;
   }
   .reset-btn {
-    background: none; border: 1px solid #30363d; color: #8b949e;
+    background: none; border: 1px solid #374151; color: #9ca3af;
     border-radius: 4px; padding: 3px 10px; cursor: pointer; font-size: 11px; font-family: inherit;
   }
-  .reset-btn:hover { border-color: #58a6ff; color: #58a6ff; }
+  .reset-btn:hover { border-color: #60a5fa; color: #60a5fa; }
 
   /* ── MODE TOGGLE ── */
-  .mode-toggle {
-    display: flex; background: #0d1117; border: 1px solid #30363d;
-    border-radius: 8px; padding: 3px; gap: 2px;
-  }
-  .mode-btn {
-    flex: 1; padding: 8px 12px; border-radius: 6px; border: none; cursor: pointer;
-    font-family: inherit; font-size: 12px; font-weight: 600; transition: all 0.2s;
-    background: none; color: #8b949e;
-  }
-  .mode-btn.active { background: #21262d; color: #e6edf3; }
-  .mode-btn.active.triage { color: #e3b341; }
-  .mode-btn.active.security { color: #f85149; }
-  .mode-btn:hover:not(.active) { color: #c9d1d9; }
-  .mode-desc {
-    font-size: 11px; color: #8b949e; text-align: center;
-    padding: 4px 0 0; line-height: 1.5;
-  }
-  .mode-desc em { color: #58a6ff; font-style: normal; }
-  .mode-desc.triage em { color: #e3b341; }
-
+  .mode-toggle { display:flex; background:#030712; border:1px solid #374151; border-radius:8px; padding:3px; gap:2px; }
+  .mode-btn { flex:1; padding:8px 12px; border-radius:6px; border:none; cursor:pointer; font-family:Inter,-apple-system,sans-serif; font-size:12px; font-weight:600; transition:all 0.2s; background:none; color:#9ca3af; }
+  .mode-btn.active { background:#1f2937; color:#f9fafb; }
+  .mode-btn.active.triage { color:#f59e0b; }
+  .mode-btn.active.security { color:#ef4444; }
+  .mode-btn:hover:not(.active) { color:#d1d5db; }
+  .mode-desc { font-size:11px; color:#9ca3af; text-align:center; padding:4px 0 0; line-height:1.5; font-family:Inter,-apple-system,sans-serif; }
+  .mode-desc em { color:#60a5fa; font-style:normal; }
+  .mode-desc.triage em { color:#f59e0b; }
   /* ── LAYOUT ── */
-  .main { display: flex; flex: 1; overflow: hidden; }
-
+  .main { display:flex; flex:1; overflow:hidden; }
   /* ── UPLOAD SCREEN ── */
-  #upload-screen {
-    flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px;
-  }
-  .upload-container { width: 100%; max-width: 580px; display: flex; flex-direction: column; gap: 16px; }
-  .upload-zone {
-    border: 2px dashed #30363d; border-radius: 10px; padding: 44px 24px;
-    text-align: center; cursor: pointer; transition: all 0.2s; background: #161b22;
-  }
-  .upload-zone:hover, .upload-zone.drag-over { border-color: #58a6ff; background: #1c2128; }
-  .upload-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.7; }
-  .upload-title { font-size: 15px; font-weight: 600; color: #e6edf3; margin-bottom: 6px; }
-  .upload-sub { font-size: 12px; color: #8b949e; }
-  .upload-sub em { color: #58a6ff; font-style: normal; }
-
-  .file-list { display: flex; flex-direction: column; gap: 6px; }
-  .file-item {
-    display: flex; align-items: center; gap: 8px; background: #21262d;
-    border: 1px solid #30363d; border-radius: 6px; padding: 7px 12px;
-  }
-  .file-item-icon { color: #58a6ff; }
-  .file-item-name { flex: 1; color: #e6edf3; font-size: 12px; }
-  .file-item-size { color: #8b949e; font-size: 11px; }
-  .file-remove { background: none; border: none; color: #8b949e; cursor: pointer; font-size: 14px; padding: 0 4px; }
-  .file-remove:hover { color: #f85149; }
-
-  .issue-label { font-size: 11px; font-weight: 700; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
-  .issue-input {
-    width: 100%; background: #161b22; border: 1px solid #30363d; border-radius: 8px;
-    padding: 10px 14px; color: #e6edf3; font-family: inherit; font-size: 13px;
-    resize: vertical; min-height: 72px; transition: border-color 0.2s;
-  }
-  .issue-input:focus { outline: none; border-color: #58a6ff; }
-  .issue-input::placeholder { color: #484f58; }
-
-  .analyze-btn {
-    background: #238636; border: 1px solid #2ea043; color: #fff;
-    border-radius: 8px; padding: 12px 24px; font-size: 13px; font-weight: 600;
-    font-family: inherit; cursor: pointer; transition: all 0.2s; width: 100%;
-  }
-  .analyze-btn:hover:not(:disabled) { background: #2ea043; }
-  .analyze-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-
+  #upload-screen { flex:1; display:flex; overflow-y:auto; }
+  .az-page-container { padding:28px 32px; max-width:760px; width:100%; }
+  .az-page-hdr { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:20px; }
+  .az-page-title { display:flex; align-items:center; gap:8px; font-size:16px; font-weight:700; color:#f9fafb; margin-bottom:4px; font-family:Inter,-apple-system,sans-serif; }
+  .az-page-sub { font-size:13px; color:#6b7280; font-family:Inter,-apple-system,sans-serif; }
+  .az-options-card { background:#111827; border:1px solid #1f2937; border-radius:10px; padding:18px; margin-top:14px; }
+  .az-container,.az-card,.az-card-header,.az-card-icon,.az-card-title,.az-card-sub { display:none; }
+  .upload-zone { border:2px dashed #374151; border-radius:10px; padding:36px 24px; text-align:center; cursor:pointer; transition:all 0.2s; background:#0d1117; margin-bottom:14px; }
+  .upload-zone:hover,.upload-zone.drag-over { border-color:#3b82f6; background:#111827; }
+  .upload-icon { font-size:36px; margin-bottom:10px; opacity:0.6; }
+  .upload-title { font-size:14px; font-weight:600; color:#f9fafb; margin-bottom:4px; font-family:Inter,-apple-system,sans-serif; }
+  .upload-sub { font-size:12px; color:#6b7280; font-family:Inter,-apple-system,sans-serif; }
+  .upload-sub em { color:#60a5fa; font-style:normal; }
+  .file-list { display:flex; flex-direction:column; gap:6px; margin-bottom:14px; }
+  .file-item { display:flex; align-items:center; gap:10px; background:#1f2937; border:1px solid #374151; border-radius:8px; padding:8px 12px; }
+  .file-item-icon { color:#60a5fa; }
+  .file-item-name { flex:1; color:#f9fafb; font-size:13px; font-family:Inter,-apple-system,sans-serif; }
+  .file-item-size { color:#6b7280; font-size:11px; font-family:Inter,-apple-system,sans-serif; }
+  .file-remove { background:none; border:none; color:#4b5563; cursor:pointer; font-size:14px; padding:0 4px; transition:color 0.15s; }
+  .file-remove:hover { color:#ef4444; }
+  .issue-label { display:block; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; margin-bottom:6px; font-family:Inter,-apple-system,sans-serif; }
+  .issue-input { width:100%; background:#0d1117; border:1px solid #374151; border-radius:8px; padding:10px 14px; color:#f9fafb; font-family:Inter,-apple-system,sans-serif; font-size:13px; resize:vertical; min-height:72px; transition:border-color 0.2s; margin-bottom:14px; box-sizing:border-box; }
+  .issue-input:focus { outline:none; border-color:#3b82f6; }
+  .issue-input::placeholder { color:#4b5563; }
+  .analyze-btn { width:100%; background:#2563eb; border:none; color:#fff; border-radius:8px; padding:11px 24px; font-size:13px; font-weight:600; font-family:Inter,-apple-system,sans-serif; cursor:pointer; transition:background 0.2s; }
+  .analyze-btn:hover:not(:disabled) { background:#3b82f6; }
+  .analyze-btn:disabled { background:#1e3a5f; color:#374151; cursor:not-allowed; }
   /* ── LOADING ── */
-  #loading-screen {
-    flex: 1; display: none; align-items: center; justify-content: center;
-    flex-direction: column; gap: 16px;
-  }
-  .loading-spinner {
-    width: 44px; height: 44px; border: 3px solid #30363d;
-    border-top-color: #58a6ff; border-radius: 50%; animation: spin 0.8s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .loading-text { font-size: 13px; color: #8b949e; }
-  .loading-step { font-size: 11px; color: #484f58; }
-
+  #loading-screen { flex:1; display:none; align-items:center; justify-content:center; flex-direction:column; gap:16px; }
+  .loading-spinner { width:44px; height:44px; border:3px solid #1f2937; border-top-color:#3b82f6; border-radius:50%; animation:spin 0.8s linear infinite; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .loading-text { font-size:14px; color:#9ca3af; font-family:Inter,-apple-system,sans-serif; }
+  .loading-step { font-size:12px; color:#4b5563; font-family:Inter,-apple-system,sans-serif; }
   /* ── ANALYSIS SCREEN ── */
-  #analysis-screen { display: none; flex: 1; overflow: hidden; }
-
-  /* ── DATA PANEL ── */
-  .data-panel {
-    width: 400px; flex-shrink: 0; border-right: 1px solid #30363d;
-    display: flex; flex-direction: column; overflow: hidden;
-  }
-  .tabs-wrapper {
-    display: flex; align-items: stretch; border-bottom: 1px solid #30363d;
-    background: #161b22; flex-shrink: 0; position: relative;
-  }
-  .tab-arrow {
-    flex-shrink: 0; width: 26px; background: #161b22; border: none;
-    border-bottom: 1px solid transparent; color: #58a6ff; cursor: pointer;
-    font-size: 16px; font-family: inherit; transition: color 0.15s;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .tab-arrow:hover { color: #79c0ff; background: #1c2128; }
-  .tab-arrow:disabled { opacity: 0.2; cursor: default; }
-  .tabs {
-    display: flex; flex: 1; overflow-x: hidden; scrollbar-width: none;
-  }
-  .tabs::-webkit-scrollbar { display: none; }
-  .tab {
-    padding: 9px 13px; font-size: 11px; font-weight: 600; color: #8b949e;
-    cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap;
-    transition: color 0.15s; font-family: inherit; background: none;
-    border-top: none; border-left: none; border-right: none; text-transform: uppercase; letter-spacing: 0.4px;
-    flex-shrink: 0;
-  }
-  .tab:hover { color: #e6edf3; }
-  .tab.active { color: #58a6ff; border-bottom-color: #58a6ff; }
-  .tab-content { flex: 1; overflow-y: auto; padding: 14px; display: none; }
-  .tab-content.active { display: block; }
-
-  /* ── METRIC CARDS ── */
-  .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
-  .metric-card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 10px 12px; }
-  .metric-label { font-size: 10px; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
-  .metric-value { font-size: 18px; font-weight: 700; color: #e6edf3; }
-  .metric-sub { font-size: 10px; color: #484f58; margin-top: 2px; }
-
-  /* ── BARS ── */
-  .bar-row { margin-bottom: 7px; }
-  .bar-label { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 3px; color: #c9d1d9; }
-  .bar-track { background: #21262d; border-radius: 3px; height: 5px; overflow: hidden; }
-  .bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
-
-  /* ── ANOMALIES ── */
-  .anomaly-item { background: #161b22; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; border-left: 3px solid; }
-  .anomaly-item.high { border-left-color: #f85149; }
-  .anomaly-item.medium { border-left-color: #e3b341; }
-  .anomaly-item.low { border-left-color: #58a6ff; }
-  .anomaly-header { display: flex; align-items: center; gap: 7px; margin-bottom: 3px; }
-  .anomaly-badge { font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.5px; }
-  .anomaly-badge.high { background: rgba(248,81,73,.2); color: #f85149; }
-  .anomaly-badge.medium { background: rgba(227,179,65,.2); color: #e3b341; }
-  .anomaly-badge.low { background: rgba(88,166,255,.2); color: #58a6ff; }
-  .anomaly-type { font-size: 12px; font-weight: 600; color: #e6edf3; }
-  .anomaly-detail { font-size: 11px; color: #8b949e; line-height: 1.5; }
-
-  /* ── EXPANDABLE EVIDENCE ── */
-  .expandable-card { cursor: pointer; transition: border-color 0.15s; }
-  .expandable-card:hover { filter: brightness(1.08); }
-  .expand-toggle {
-    font-size: 9px; color: #484f58; margin-top: 6px; text-align: right;
-    user-select: none; letter-spacing: 0.3px;
-  }
-  .expandable-card:hover .expand-toggle { color: #8b949e; }
-  .card-evidence { display: none; margin-top: 8px; padding-top: 8px; border-top: 1px solid #21262d; }
-  .card-evidence.open { display: block; }
-  .ev-row {
-    font-size: 10px; color: #8b949e; padding: 4px 0;
-    border-bottom: 1px solid #1c2128; line-height: 1.45; word-break: break-all;
-  }
-  .ev-row:last-child { border-bottom: none; }
-  .ev-label { color: #484f58; font-size: 9px; text-transform: uppercase; letter-spacing: 0.3px; margin-right: 4px; }
-  .no-anomalies { text-align: center; padding: 28px; color: #484f58; font-size: 12px; }
-  .no-anomalies-icon { font-size: 28px; margin-bottom: 6px; }
-
-  /* ── TABLES ── */
-  .data-table { width: 100%; border-collapse: collapse; font-size: 11px; }
-  .data-table th {
-    background: #161b22; color: #8b949e; padding: 7px 8px; text-align: left;
-    border-bottom: 1px solid #30363d; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.4px; position: sticky; top: 0;
-  }
-  .data-table td { padding: 6px 8px; border-bottom: 1px solid #21262d; color: #c9d1d9; word-break: break-all; }
-  .data-table tr:hover td { background: #161b22; }
-
-  /* ── TCP / DNS STATS ── */
-  .stat-row {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 7px 0; border-bottom: 1px solid #21262d; font-size: 12px;
-  }
-  .stat-row:last-child { border-bottom: none; }
-  .stat-label { color: #8b949e; }
-  .stat-value { font-weight: 700; color: #e6edf3; }
-  .stat-value.warn { color: #e3b341; }
-  .stat-value.danger { color: #f85149; }
-
-  .detail-card { background: #161b22; border-radius: 6px; padding: 8px 10px; margin-bottom: 6px; }
-  .detail-title { font-size: 11px; color: #58a6ff; font-weight: 600; margin-bottom: 3px; word-break: break-all; }
-  .detail-meta { display: flex; flex-wrap: wrap; gap: 8px; font-size: 10px; }
-  .tag-danger { color: #f85149; }
-  .tag-warn { color: #e3b341; }
-  .tag-ok { color: #2ea043; }
-
-  /* ── SOURCE LEGEND ── */
-  .source-legend { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
-  .source-legend-item { display: flex; align-items: center; gap: 4px; font-size: 10px; }
-  .source-dot { width: 7px; height: 7px; border-radius: 50%; }
-
-  /* ── SECTION HEADER ── */
-  .section-header {
-    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
-    color: #8b949e; margin-bottom: 8px; margin-top: 14px;
-    padding-bottom: 5px; border-bottom: 1px solid #21262d;
-  }
-  .section-header:first-child { margin-top: 0; }
-
-  .empty-state { text-align: center; padding: 20px; color: #484f58; font-size: 11px; }
-
+  #analysis-screen { display:none; flex:1; overflow:hidden; }
+  .data-panel { width:400px; flex-shrink:0; border-right:1px solid #1f2937; display:flex; flex-direction:column; overflow:hidden; background:#0d1117; }
+  .tabs-wrapper { display:flex; align-items:stretch; border-bottom:1px solid #1f2937; background:#111827; flex-shrink:0; position:relative; }
+  .tab-arrow { flex-shrink:0; width:26px; background:#111827; border:none; color:#4b5563; cursor:pointer; font-size:16px; font-family:inherit; transition:color 0.15s; display:flex; align-items:center; justify-content:center; }
+  .tab-arrow:hover { color:#9ca3af; background:#1f2937; }
+  .tab-arrow:disabled { opacity:0.2; cursor:default; }
+  .tabs { display:flex; flex:1; overflow-x:hidden; scrollbar-width:none; }
+  .tabs::-webkit-scrollbar { display:none; }
+  .tab { padding:10px 13px; font-size:11px; font-weight:600; color:#6b7280; cursor:pointer; border-bottom:2px solid transparent; white-space:nowrap; transition:all 0.15s; font-family:Inter,-apple-system,sans-serif; background:none; border-top:none; border-left:none; border-right:none; text-transform:uppercase; letter-spacing:0.5px; flex-shrink:0; }
+  .tab:hover { color:#9ca3af; }
+  .tab.active { color:#60a5fa; border-bottom-color:#3b82f6; }
+  .tab-content { flex:1; overflow-y:auto; padding:14px; display:none; }
+  .tab-content.active { display:block; }
+  .metric-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px; }
+  .metric-card { background:#111827; border:1px solid #1f2937; border-radius:8px; padding:10px 12px; }
+  .metric-label { font-size:10px; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; font-family:Inter,-apple-system,sans-serif; }
+  .metric-value { font-size:20px; font-weight:700; color:#f9fafb; font-family:Inter,-apple-system,sans-serif; }
+  .metric-sub { font-size:10px; color:#4b5563; margin-top:2px; font-family:Inter,-apple-system,sans-serif; }
+  .bar-row { margin-bottom:8px; }
+  .bar-label { display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px; color:#9ca3af; font-family:Inter,-apple-system,sans-serif; }
+  .bar-track { background:#1f2937; border-radius:3px; height:4px; overflow:hidden; }
+  .bar-fill { height:100%; border-radius:3px; transition:width 0.5s ease; }
+  .anomaly-item { background:#111827; border-radius:8px; padding:10px 12px; margin-bottom:8px; border-left:3px solid; }
+  .anomaly-item.high { border-left-color:#ef4444; }
+  .anomaly-item.medium { border-left-color:#f59e0b; }
+  .anomaly-item.low { border-left-color:#3b82f6; }
+  .anomaly-header { display:flex; align-items:center; gap:7px; margin-bottom:4px; }
+  .anomaly-badge { font-size:10px; font-weight:600; padding:2px 6px; border-radius:4px; text-transform:uppercase; letter-spacing:0.3px; font-family:Inter,-apple-system,sans-serif; }
+  .anomaly-badge.high { background:rgba(239,68,68,.15); color:#f87171; }
+  .anomaly-badge.medium { background:rgba(245,158,11,.15); color:#fbbf24; }
+  .anomaly-badge.low { background:rgba(59,130,246,.15); color:#60a5fa; }
+  .anomaly-type { font-size:13px; font-weight:600; color:#f9fafb; font-family:Inter,-apple-system,sans-serif; }
+  .anomaly-detail { font-size:12px; color:#9ca3af; line-height:1.5; font-family:Inter,-apple-system,sans-serif; }
+  .expandable-card { cursor:pointer; }
+  .expandable-card:hover { filter:brightness(1.08); }
+  .expand-toggle { font-size:10px; color:#4b5563; margin-top:6px; text-align:right; user-select:none; font-family:Inter,-apple-system,sans-serif; }
+  .expandable-card:hover .expand-toggle { color:#9ca3af; }
+  .card-evidence { display:none; margin-top:8px; padding-top:8px; border-top:1px solid #1f2937; }
+  .card-evidence.open { display:block; }
+  .ev-row { font-size:11px; color:#9ca3af; padding:4px 0; border-bottom:1px solid #1f2937; line-height:1.45; word-break:break-all; font-family:'SF Mono','Fira Code','Consolas',monospace; }
+  .ev-row:last-child { border-bottom:none; }
+  .ev-label { color:#4b5563; font-size:9px; text-transform:uppercase; letter-spacing:0.4px; margin-right:4px; }
+  .no-anomalies { text-align:center; padding:28px; color:#4b5563; font-size:13px; font-family:Inter,-apple-system,sans-serif; }
+  .no-anomalies-icon { font-size:28px; margin-bottom:8px; }
+  .data-table { width:100%; border-collapse:collapse; font-size:12px; }
+  .data-table th { background:#111827; color:#6b7280; padding:7px 8px; text-align:left; border-bottom:1px solid #1f2937; font-weight:600; text-transform:uppercase; letter-spacing:0.4px; position:sticky; top:0; font-family:Inter,-apple-system,sans-serif; font-size:10px; }
+  .data-table td { padding:6px 8px; border-bottom:1px solid #1f2937; color:#d1d5db; word-break:break-all; font-family:'SF Mono','Fira Code','Consolas',monospace; font-size:11px; }
+  .data-table tr:hover td { background:#111827; }
+  .stat-row { display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid #1f2937; font-size:13px; font-family:Inter,-apple-system,sans-serif; }
+  .stat-row:last-child { border-bottom:none; }
+  .stat-label { color:#9ca3af; }
+  .stat-value { font-weight:700; color:#f9fafb; }
+  .stat-value.warn { color:#fbbf24; }
+  .stat-value.danger { color:#f87171; }
+  .detail-card { background:#111827; border-radius:6px; padding:8px 10px; margin-bottom:6px; border:1px solid #1f2937; }
+  .detail-title { font-size:12px; color:#60a5fa; font-weight:600; margin-bottom:3px; word-break:break-all; font-family:'SF Mono','Fira Code','Consolas',monospace; }
+  .detail-meta { display:flex; flex-wrap:wrap; gap:8px; font-size:11px; font-family:Inter,-apple-system,sans-serif; }
+  .tag-danger { color:#f87171; }
+  .tag-warn { color:#fbbf24; }
+  .tag-ok { color:#60a5fa; }
+  .source-legend { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
+  .source-legend-item { display:flex; align-items:center; gap:5px; font-size:11px; color:#9ca3af; font-family:Inter,-apple-system,sans-serif; }
+  .source-dot { width:7px; height:7px; border-radius:50%; }
+  .section-header { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.6px; color:#6b7280; margin-bottom:8px; margin-top:16px; padding-bottom:6px; border-bottom:1px solid #1f2937; font-family:Inter,-apple-system,sans-serif; }
+  .section-header:first-child { margin-top:0; }
+  .empty-state { text-align:center; padding:24px; color:#4b5563; font-size:13px; font-family:Inter,-apple-system,sans-serif; }
   /* ── CHAT PANEL ── */
-  .chat-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-  .chat-header {
-    padding: 10px 18px; border-bottom: 1px solid #30363d; background: #161b22;
-    font-size: 11px; font-weight: 700; color: #8b949e; text-transform: uppercase;
-    letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px; flex-shrink: 0;
-  }
-  .chat-status { width: 7px; height: 7px; border-radius: 50%; background: #2ea043; }
-
-  .chat-messages { flex: 1; overflow-y: auto; padding: 18px; display: flex; flex-direction: column; gap: 14px; }
-  .message { display: flex; flex-direction: column; max-width: 87%; }
-  .message.user { align-self: flex-end; }
-  .message.assistant { align-self: flex-start; }
-  .message-role { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; color: #484f58; }
-  .message.user .message-role { text-align: right; color: #388bfd; }
-  .message.assistant .message-role { color: #2ea043; }
-  .message-bubble {
-    padding: 10px 14px; border-radius: 10px; font-size: 12px; line-height: 1.65;
-    white-space: pre-wrap; word-break: break-word; border: 1px solid #30363d;
-  }
-  .message.user .message-bubble { background: #1c2128; color: #e6edf3; border-bottom-right-radius: 3px; }
-  .message.assistant .message-bubble { background: #161b22; color: #c9d1d9; border-bottom-left-radius: 3px; }
-
-  .typing-dots { display: inline-flex; gap: 4px; align-items: center; }
-  .typing-dot { width: 5px; height: 5px; background: #484f58; border-radius: 50%; animation: bounce 1.2s infinite; }
-  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
-  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+  .chat-panel { flex:1; display:flex; flex-direction:column; overflow:hidden; background:#030712; }
+  .chat-header { padding:12px 18px; border-bottom:1px solid #1f2937; background:#111827; font-size:12px; font-weight:600; color:#9ca3af; display:flex; align-items:center; gap:8px; flex-shrink:0; font-family:Inter,-apple-system,sans-serif; }
+  .chat-status { width:7px; height:7px; border-radius:50%; background:#3b82f6; }
+  .chat-messages { flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:12px; }
+  .message { display:flex; flex-direction:column; max-width:88%; }
+  .message.user { align-self:flex-end; }
+  .message.assistant { align-self:flex-start; }
+  .message-role { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.4px; margin-bottom:4px; color:#4b5563; font-family:Inter,-apple-system,sans-serif; }
+  .message.user .message-role { text-align:right; color:#3b82f6; }
+  .message.assistant .message-role { color:#374151; }
+  .message-bubble { padding:10px 13px; border-radius:10px; font-size:13px; line-height:1.6; white-space:pre-wrap; word-break:break-word; font-family:Inter,-apple-system,sans-serif; }
+  .message.user .message-bubble { background:#1d4ed8; color:#eff6ff; border-bottom-right-radius:3px; }
+  .message.assistant .message-bubble { background:#111827; color:#d1d5db; border:1px solid #1f2937; border-bottom-left-radius:3px; }
+  .typing-dots { display:inline-flex; gap:4px; align-items:center; }
+  .typing-dot { width:5px; height:5px; background:#374151; border-radius:50%; animation:bounce 1.2s infinite; }
+  .typing-dot:nth-child(2) { animation-delay:0.2s; }
+  .typing-dot:nth-child(3) { animation-delay:0.4s; }
   @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-5px)} }
+  .chat-input-area { border-top:1px solid #1f2937; padding:12px 16px; display:flex; gap:8px; background:#111827; flex-shrink:0; align-items:flex-end; }
+  .chat-input { flex:1; background:#0d1117; border:1px solid #374151; border-radius:8px; padding:9px 12px; color:#f9fafb; font-family:Inter,-apple-system,sans-serif; font-size:13px; resize:none; min-height:38px; max-height:110px; transition:border-color 0.2s; line-height:1.5; }
+  .chat-input:focus { outline:none; border-color:#3b82f6; }
+  .chat-input::placeholder { color:#4b5563; }
+  .send-btn { background:#2563eb; border:none; color:#fff; border-radius:8px; padding:9px 14px; font-size:13px; font-weight:600; font-family:Inter,-apple-system,sans-serif; cursor:pointer; transition:background 0.2s; white-space:nowrap; }
+  .send-btn:hover:not(:disabled) { background:#3b82f6; }
+  .send-btn:disabled { background:#1e3a5f; color:#374151; cursor:not-allowed; }
+  ::-webkit-scrollbar { width:5px; height:5px; }
+  ::-webkit-scrollbar-track { background:transparent; }
+  ::-webkit-scrollbar-thumb { background:#1f2937; border-radius:3px; }
+  ::-webkit-scrollbar-thumb:hover { background:#374151; }
+  .stream-btn { background:none; border:1px solid #374151; color:#60a5fa; border-radius:4px; padding:2px 7px; font-size:10px; cursor:pointer; font-family:Inter,-apple-system,sans-serif; white-space:nowrap; transition:all 0.15s; }
+  .stream-btn:hover { background:#1f2937; border-color:#60a5fa; }
+  #stream-modal-body tr { transition:background 0.1s; }
+  #stream-modal-body tr:hover { background:rgba(59,130,246,.06) !important; }
+  #stream-modal-body tr.pkt-selected { background:rgba(59,130,246,.14) !important; outline:1px solid rgba(59,130,246,.3); }
+  .chat-to-btn { background:none; border:none; color:#4b5563; font-size:13px; cursor:pointer; padding:0 2px; line-height:1; transition:color 0.15s; flex-shrink:0; margin-left:auto; }
+  .chat-to-btn:hover { color:#60a5fa; }
+  .src-badge { display:inline-block; font-size:9px; padding:1px 4px; border-radius:3px; background:#1f2937; margin-right:3px; white-space:nowrap; font-family:Inter,-apple-system,sans-serif; }
+  /* ── LIVE FEEDS PAGE ── */
+  #live-feeds-screen { display:none; flex:1; overflow-y:auto; }
+  .lf-container { padding:28px 32px; max-width:860px; }
+  .lf-page-hdr { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:24px; }
+  .lf-page-title { display:flex; align-items:center; gap:8px; font-size:16px; font-weight:700; color:#f9fafb; margin-bottom:4px; font-family:Inter,-apple-system,sans-serif; }
+  .lf-page-sub { font-size:13px; color:#6b7280; font-family:Inter,-apple-system,sans-serif; }
+  .lf-refresh-btn { display:flex; align-items:center; gap:6px; background:#111827; border:1px solid #374151; color:#9ca3af; border-radius:6px; padding:7px 12px; font-size:12px; cursor:pointer; font-family:Inter,-apple-system,sans-serif; flex-shrink:0; transition:all 0.15s; }
+  .lf-refresh-btn:hover { border-color:#6b7280; color:#d1d5db; }
+  .lf-section-label { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.6px; color:#6b7280; margin-bottom:8px; font-family:Inter,-apple-system,sans-serif; }
+  .lf-feed-list { display:flex; flex-direction:column; gap:6px; }
+  .lf-empty { text-align:center; padding:32px 16px; color:#4b5563; font-size:13px; background:#111827; border:1px solid #1f2937; border-radius:10px; font-family:Inter,-apple-system,sans-serif; }
+  .lf-connect-card { background:#111827; border:1px solid #1f2937; border-radius:10px; padding:20px; margin-top:8px; }
+  .lf-builder-row { display:flex; gap:10px; margin-bottom:16px; align-items:flex-end; }
+  .lf-field { display:flex; flex-direction:column; gap:5px; flex:1; }
+  .lf-field-label { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.4px; color:#6b7280; font-family:Inter,-apple-system,sans-serif; }
+  .lf-optional { font-weight:400; text-transform:none; letter-spacing:0; }
+  .lf-tab-bar { display:flex; margin-bottom:12px; background:#0d1117; border:1px solid #1f2937; border-radius:7px; padding:3px; gap:2px; }
+  .lf-tab { flex:1; display:flex; align-items:center; justify-content:center; gap:6px; padding:7px 10px; border-radius:5px; border:none; background:none; color:#6b7280; font-size:12px; font-weight:600; cursor:pointer; font-family:Inter,-apple-system,sans-serif; transition:all 0.15s; }
+  .lf-tab:hover:not(.lf-tab-active) { color:#9ca3af; }
+  .lf-tab-active { background:#1f2937; color:#f9fafb; }
+  .lf-action-row { display:flex; align-items:center; gap:8px; margin-top:10px; }
+  .lf-copy-ok { font-size:12px; color:#4ade80; font-family:Inter,-apple-system,sans-serif; }
+  .lf-token-hint { font-size:12px; color:#4b5563; margin-left:auto; font-family:Inter,-apple-system,sans-serif; }
+  .lf-token-code { color:#6ee7b7; font-size:11px; font-family:'SF Mono','Fira Code','Consolas',monospace; }
+  .lf-ws-status-bar { display:flex; align-items:center; gap:10px; margin-bottom:10px; padding:9px 12px; background:#0d1117; border:1px solid #1f2937; border-radius:7px; }
+  .lf-ws-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .lf-ws-label { font-size:13px; color:#9ca3af; flex:1; font-family:Inter,-apple-system,sans-serif; }
+  .lf-ws-howto { margin-top:12px; padding:12px 14px; background:#0d1117; border:1px solid #1f2937; border-radius:7px; font-size:12px; color:#6b7280; line-height:1.6; font-family:Inter,-apple-system,sans-serif; }
+  .lf-ws-howto-title { color:#9ca3af; font-weight:600; }
+  .lf-code-accent { color:#fbbf24; font-family:'SF Mono','Fira Code','Consolas',monospace; font-size:11px; }
+  .lf-code-green { color:#6ee7b7; font-family:'SF Mono','Fira Code','Consolas',monospace; font-size:11px; }
+  /* ── FEED CARDS ── */
+  .feed-card { background:#111827; border:1px solid #1f2937; border-radius:10px; padding:14px 16px; display:flex; align-items:center; gap:12px; transition:border-color 0.2s; }
+  .feed-card.connected { border-color:#1e3a5f; background:#0f172a; }
+  .feed-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; background:#374151; }
+  .feed-dot.live { background:#22c55e; box-shadow:0 0 6px rgba(34,197,94,.5); }
+  .feed-info { flex:1; min-width:0; }
+  .feed-name { font-size:13px; font-weight:600; color:#f9fafb; font-family:Inter,-apple-system,sans-serif; }
+  .feed-meta { font-size:11px; color:#4b5563; margin-top:2px; font-family:Inter,-apple-system,sans-serif; }
+  .feed-actions { display:flex; gap:6px; flex-shrink:0; }
+  .feed-btn { background:rgba(59,130,246,.12); border:1px solid rgba(96,165,250,.25); color:#60a5fa; border-radius:6px; padding:5px 12px; font-size:12px; font-weight:600; cursor:pointer; font-family:Inter,-apple-system,sans-serif; text-decoration:none; display:inline-flex; align-items:center; transition:all 0.15s; }
+  .feed-btn:hover { background:rgba(59,130,246,.25); }
+  .feed-btn.secondary { background:#1f2937; border-color:#374151; color:#9ca3af; }
+  .feed-btn.secondary:hover { border-color:#6b7280; color:#d1d5db; }
+  .feed-btn.danger { background:none; border-color:#374151; color:#4b5563; }
+  .feed-btn.danger:hover { border-color:#ef4444; color:#ef4444; }
+  .feed-cmd-box { background:#0d1117; border-radius:6px; padding:12px 14px; font-family:'SF Mono','Fira Code','Consolas',monospace; font-size:11px; color:#6ee7b7; white-space:pre; overflow-x:auto; line-height:1.7; border:1px solid #1f2937; }
+  .feed-setup-input { background:#1f2937; border:1px solid #374151; border-radius:6px; padding:7px 10px; color:#f9fafb; font-family:Inter,-apple-system,sans-serif; font-size:12px; outline:none; width:100%; transition:border-color 0.15s; box-sizing:border-box; }
+  .feed-setup-input:focus { border-color:#3b82f6; }
+  .feed-setup-select { background:#1f2937; border:1px solid #374151; border-radius:6px; padding:7px 10px; color:#f9fafb; font-size:12px; font-family:Inter,-apple-system,sans-serif; outline:none; cursor:pointer; }
+  .upload-outer { display:none; }
 
-  .chat-input-area {
-    border-top: 1px solid #30363d; padding: 12px 18px;
-    display: flex; gap: 8px; background: #161b22; flex-shrink: 0; align-items: flex-end;
-  }
-  .chat-input {
-    flex: 1; background: #0d1117; border: 1px solid #30363d; border-radius: 8px;
-    padding: 9px 12px; color: #e6edf3; font-family: inherit; font-size: 12px;
-    resize: none; min-height: 38px; max-height: 110px; transition: border-color 0.2s; line-height: 1.5;
-  }
-  .chat-input:focus { outline: none; border-color: #58a6ff; }
-  .chat-input::placeholder { color: #484f58; }
-  .send-btn {
-    background: #238636; border: 1px solid #2ea043; color: #fff; border-radius: 8px;
-    padding: 9px 14px; font-size: 12px; font-weight: 600; font-family: inherit;
-    cursor: pointer; transition: all 0.2s; white-space: nowrap;
-  }
-  .send-btn:hover:not(:disabled) { background: #2ea043; }
-  .send-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-
-  /* ── SCROLLBARS ── */
-  ::-webkit-scrollbar { width: 5px; height: 5px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: #484f58; }
-
-  /* ── STREAM BUTTON ── */
-  .stream-btn {
-    background: none; border: 1px solid #30363d; color: #58a6ff;
-    border-radius: 4px; padding: 2px 7px; font-size: 10px; cursor: pointer;
-    font-family: inherit; white-space: nowrap; transition: all 0.15s;
-  }
-  .stream-btn:hover { background: #1c2128; border-color: #58a6ff; }
-  /* ── PACKET ROW SELECTION ── */
-  #stream-modal-body tr { transition: background 0.1s; }
-  #stream-modal-body tr:hover { background: rgba(88,166,255,.06) !important; }
-  #stream-modal-body tr.pkt-selected { background: rgba(88,166,255,.14) !important; outline: 1px solid rgba(88,166,255,.3); }
-  /* ── SEND-TO-CHAT BUTTON ── */
-  .chat-to-btn {
-    background: none; border: none; color: #484f58; font-size: 13px;
-    cursor: pointer; padding: 0 2px; line-height: 1; transition: color 0.15s;
-    flex-shrink: 0; margin-left: auto;
-  }
-  .chat-to-btn:hover { color: #58a6ff; }
-
-  /* ── SOURCE COLORS ── */
-  .src-badge {
-    display: inline-block; font-size: 9px; padding: 1px 4px;
-    border-radius: 3px; background: #21262d; margin-right: 3px;
-    white-space: nowrap;
-  }
 </style>
 </head>
 <body>
 
-<!-- HEADER -->
-<div class="header">
-  <div class="header-logo">⬡ PktAnalyzer</div>
-  <div class="header-subtitle">Packet Capture Diagnostic Tool</div>
-  <div class="header-files" id="header-files" style="display:none">
-    <span id="header-file-badges"></span>
-    <button class="reset-btn" onclick="resetApp()">↩ New Analysis</button>
+<!-- SIDEBAR -->
+<div class="sidebar" style="font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+  <div class="sidebar-logo">
+    <img src="data:image/png;base64,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" alt="pktsuite" style="height:64px;width:auto;display:block">
   </div>
-  <a href="/settings" style="margin-left:auto;background:none;border:1px solid #30363d;color:#8b949e;border-radius:4px;padding:3px 10px;font-size:11px;font-family:inherit;text-decoration:none;flex-shrink:0;" onmouseover="this.style.borderColor='#58a6ff';this.style.color='#58a6ff'" onmouseout="this.style.borderColor='#30363d';this.style.color='#8b949e'">⚙ Settings</a>
+  <nav id="sidebar-nav" data-active="dashboard" style="flex:1;padding:16px 8px;display:flex;flex-direction:column;gap:2px"></nav>
+  <div style="padding:10px 12px;border-top:1px solid #1f2937">
+    <div style="display:flex;align-items:center;gap:8px;padding:4px 4px">
+      <div style="width:28px;height:28px;border-radius:50%;background:#2563eb;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;font-family:Inter,sans-serif">R</div>
+      <div style="flex:1;min-width:0;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+        <div style="font-size:12px;font-weight:500;color:#ffffff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">user</div>
+        <div style="font-size:11px;color:#6b7280">Admin</div>
+      </div>
+      <a href="/settings" title="Settings" style="color:#6b7280;flex-shrink:0;display:flex;align-items:center" onmouseover="this.style.color='#9ca3af'" onmouseout="this.style.color='#6b7280'">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </div>
+  </div>
 </div>
+
+<!-- APP RIGHT -->
+<div class="app-right">
+  <!-- TOP BAR -->
+  <div class="top-bar">
+    <span class="top-bar-title">pktPCAP</span>
+    <div class="header-files" id="header-files" style="display:none">
+      <span id="header-file-badges"></span>
+      <button class="reset-btn" onclick="resetApp()">↩ New Analysis</button>
+    </div>
+  </div>
 
 <div class="main">
 
+  <!-- ═══════════════════════════════════════ DASHBOARD SCREEN -->
+  <div id="dashboard-screen" style="flex:1;display:flex;align-items:center;justify-content:center;padding:40px;width:100%">
+    <div style="text-align:center">
+      <img src="data:image/png;base64,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" alt="pktsuite" style="height:128px;width:auto;margin-bottom:28px;display:block;margin-left:auto;margin-right:auto">
+      <div style="font-size:22px;font-weight:700;color:#f9fafb;margin-bottom:8px">pktPCAP</div>
+      <div style="font-size:13px;color:#6b7280;margin-bottom:32px">Upload captures and describe what you want analyzed</div>
+      <div style="display:flex;gap:12px;justify-content:center">
+        <button onclick="showAnalyzer()" style="background:rgba(96,165,250,.12);border:1px solid rgba(96,165,250,.3);color:#60a5fa;border-radius:8px;padding:12px 28px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-2px;margin-right:6px"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Open Analyzer
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ LIVE FEEDS SCREEN -->
+  <div id="live-feeds-screen">
+    <div class="lf-container">
+
+      <!-- Page header -->
+      <div class="lf-page-hdr">
+        <div>
+          <div class="lf-page-title">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+            Live Feeds
+          </div>
+          <div class="lf-page-sub">Receive live packet captures streamed from remote hosts via tshark or Wireshark</div>
+        </div>
+        <button onclick="loadFeeds()" class="lf-refresh-btn">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          Refresh
+        </button>
+      </div>
+
+      <!-- Active feeds -->
+      <div class="lf-section-label">Active Sessions</div>
+      <div id="feeds-list" class="lf-feed-list">
+        <div class="lf-empty">Loading feeds…</div>
+      </div>
+
+      <!-- Connect section -->
+      <div class="lf-section-label" style="margin-top:28px">Connect a Remote Host</div>
+      <div class="lf-connect-card">
+
+        <!-- Builder inputs -->
+        <div class="lf-builder-row">
+          <div class="lf-field">
+            <label class="lf-field-label">Session Name</label>
+            <input id="feed-name-inp" class="feed-setup-input" placeholder="e.g. alice-laptop"
+              oninput="updateFeedCommand()" value="my-capture">
+          </div>
+          <div class="lf-field" style="flex:0 0 auto;min-width:110px">
+            <label class="lf-field-label">Interface</label>
+            <select id="feed-iface-inp" class="feed-setup-select" onchange="updateFeedCommand()">
+              <option>eth0</option><option>eth1</option><option>wlan0</option>
+              <option>en0</option><option>en1</option><option>ens3</option><option>any</option>
+            </select>
+          </div>
+          <div class="lf-field" style="flex:2">
+            <label class="lf-field-label">BPF Filter <span class="lf-optional">(optional)</span></label>
+            <input id="feed-filter-inp" class="feed-setup-input"
+              placeholder="e.g. not port 22" oninput="updateFeedCommand()">
+          </div>
+        </div>
+
+        <!-- Tab switcher -->
+        <div class="lf-tab-bar">
+          <button id="tab-btn-tshark" onclick="switchFeedTab('tshark')" class="lf-tab lf-tab-active">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+            tshark / CLI
+          </button>
+          <button id="tab-btn-wireshark" onclick="switchFeedTab('wireshark')" class="lf-tab">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            Wireshark GUI
+          </button>
+        </div>
+
+        <!-- tshark tab -->
+        <div id="feed-tab-tshark">
+          <div class="feed-cmd-box" id="feed-cmd-box">Loading…</div>
+          <div class="lf-action-row">
+            <button onclick="copyFeedCmd()" class="feed-btn">Copy Command</button>
+            <span id="feed-copy-ok" class="lf-copy-ok" style="display:none">✓ Copied</span>
+            <span class="lf-token-hint">Token: <code id="feed-token-display" class="lf-token-code">loading…</code></span>
+          </div>
+        </div>
+
+        <!-- Wireshark GUI tab -->
+        <div id="feed-tab-wireshark" style="display:none">
+          <div class="lf-ws-status-bar">
+            <span id="ws-status-dot" class="lf-ws-dot" style="background:#4b5563"></span>
+            <span id="ws-status-label" class="lf-ws-label">Disabled — Wireshark remote capture is off</span>
+            <button id="ws-toggle-btn" onclick="toggleWsCapture()" class="feed-btn">Enable</button>
+          </div>
+          <div class="feed-cmd-box" id="ws-config-box" style="line-height:1.8;white-space:pre;color:#6b7280">Loading…</div>
+          <div class="lf-action-row">
+            <button onclick="copyWsConfig()" class="feed-btn">Copy Settings</button>
+            <span id="ws-copy-ok" class="lf-copy-ok" style="display:none">✓ Copied</span>
+          </div>
+          <div class="lf-ws-howto">
+            <span class="lf-ws-howto-title">How it works: </span>
+            Wireshark SSHs into the pktPCAP server and runs the <code class="lf-code-accent">pkt-capture</code> wrapper
+            instead of dumpcap. The wrapper tees the stream — Wireshark gets its live view, and the capture is
+            simultaneously recorded in pktPCAP. The feed appears above as
+            <code class="lf-code-green">ws-&lt;your-ip&gt;-&lt;time&gt;</code>.
+            In Wireshark: Capture → Options → SSH Remote Capture, set the fields above, then start.
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
   <!-- ═══════════════════════════════════════ UPLOAD SCREEN -->
-  <div id="upload-screen">
-    <div class="upload-container">
+  <div id="upload-screen" style="display:none">
+    <div class="az-page-container">
+
+      <div class="az-page-hdr">
+        <div>
+          <div class="az-page-title">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            Packet Analyzer
+          </div>
+          <div class="az-page-sub">Upload .pcap / .pcapng captures — parse, correlate, and analyze with AI</div>
+        </div>
+      </div>
 
       <div class="upload-zone" id="upload-zone"
            onclick="document.getElementById('file-input').click()"
            ondragover="onDragOver(event)"
            ondragleave="onDragLeave(event)"
            ondrop="onDrop(event)">
-        <div class="upload-icon">📦</div>
+        <div class="upload-icon">&#128230;</div>
         <div class="upload-title">Drop packet captures here</div>
-        <div class="upload-sub">Supports <em>.pcap</em> / <em>.pcapng</em> / <em>.cap</em> — drag multiple captures to merge &amp; correlate</div>
+        <div class="upload-sub">Supports <em>.pcap</em> / <em>.pcapng</em> / <em>.cap</em> &mdash; drag multiple to merge &amp; correlate</div>
         <input type="file" id="file-input" accept=".pcap,.pcapng,.cap,.npcap" multiple
                style="display:none" onchange="onFileSelect(event)">
-        <!-- accepts both pcap and pcapng -->
       </div>
 
       <div class="file-list" id="file-list"></div>
 
-      <!-- Mode toggle -->
-      <div class="mode-toggle">
-        <button class="mode-btn active" id="mode-issue" onclick="setMode('issue')">🔍 Specific Issue</button>
-        <button class="mode-btn triage" id="mode-triage" onclick="setMode('triage')">⚡ Auto-Triage</button>
-        <button class="mode-btn security" id="mode-security" onclick="setMode('security')">🛡️ Security Review</button>
-      </div>
-      <div class="mode-desc" id="mode-desc">Describe a known problem — assistant focuses the diagnosis around it</div>
-
-      <!-- Issue input (hidden in triage mode) -->
-      <div id="issue-section">
-        <div class="issue-label">Describe the issue</div>
+      <div class="az-options-card" id="issue-section">
+        <label class="issue-label" for="issue-input">What would you like analyzed?</label>
         <textarea class="issue-input" id="issue-input"
-          placeholder="e.g. Users on VLAN 20 intermittently can't reach web servers at 10.1.1.50–52 since the firewall upgrade Thursday. HTTP and HTTPS fail — pings work fine."></textarea>
+          placeholder="Describe a specific problem, request auto-triage, a security review — or leave blank for general analysis."></textarea>
+        <button class="analyze-btn" id="analyze-btn" onclick="startAnalysis()" disabled>
+          Analyze Captures
+        </button>
       </div>
-
-      <button class="analyze-btn" id="analyze-btn" onclick="startAnalysis()" disabled>
-        Analyze Captures
-      </button>
 
     </div>
-  </div>
+  </div><!-- /upload-screen -->
 
   <!-- ═══════════════════════════════════════ LOADING SCREEN -->
   <div id="loading-screen">
@@ -473,8 +547,9 @@
     <div class="chat-panel">
       <div class="chat-header">
         <div class="chat-status"></div>
-        Diagnostic Assistant
-        <button onclick="clearChat()" style="margin-left:auto;background:none;border:1px solid #30363d;color:#8b949e;font-size:11px;padding:2px 8px;border-radius:4px;cursor:pointer;font-family:inherit" title="Clear conversation">Clear</button>
+        AI Analysis
+        <span style="font-size:10px;color:#4b5563;margin-left:4px;font-weight:400;text-transform:none;letter-spacing:0">Claude</span>
+        <button onclick="clearChat()" style="margin-left:auto;background:none;border:1px solid #374151;color:#9ca3af;font-size:11px;padding:2px 8px;border-radius:4px;cursor:pointer;font-family:inherit" title="Clear conversation">Clear</button>
       </div>
       <div class="chat-messages" id="chat-messages"></div>
       <div class="chat-input-area">
@@ -487,39 +562,431 @@
     </div>
 
   </div><!-- /analysis-screen -->
+
+  <!-- ═══════════════════════════════════════ LOGS SCREEN -->
+  <div id="logs-screen" style="display:none;flex:1;overflow-y:auto;padding:28px 32px;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+
+    <!-- Header -->
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px">
+      <div>
+        <div style="font-size:16px;font-weight:700;color:#f9fafb;margin-bottom:4px">Application Logs</div>
+        <div id="logs-subtitle" style="font-size:13px;color:#6b7280">Loading…</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button id="logs-live-btn" onclick="toggleLogsLive()" style="display:flex;align-items:center;gap:6px;font-size:12px;padding:5px 12px;background:#1f2937;border:1px solid #374151;color:#d1d5db;border-radius:8px;cursor:pointer;font-family:inherit">
+          <svg id="logs-live-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          <span id="logs-live-label">Refresh</span>
+        </button>
+        <button onclick="loadLogs()" style="font-size:12px;padding:5px 12px;background:#1f2937;border:1px solid #374151;color:#d1d5db;border-radius:8px;cursor:pointer;font-family:inherit">Reload</button>
+        <button id="logs-clear-btn" onclick="clearLogs()" style="font-size:12px;padding:5px 12px;background:#1f2937;border:1px solid rgba(127,29,29,.6);color:#f87171;border-radius:8px;cursor:pointer;font-family:inherit">Clear Logs</button>
+      </div>
+    </div>
+
+    <!-- Stats chips -->
+    <div id="logs-stats-row" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px"></div>
+
+    <!-- Filters -->
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+      <!-- Level chips -->
+      <div id="logs-level-chips" style="display:flex;gap:4px"></div>
+      <!-- Logger select -->
+      <select id="logs-logger-select" onchange="loadLogs()" style="font-size:12px;background:#1f2937;border:1px solid #374151;color:#d1d5db;border-radius:8px;padding:4px 10px;font-family:inherit;display:none">
+        <option value="">All loggers</option>
+      </select>
+      <!-- Search -->
+      <input id="logs-search" type="text" placeholder="Search messages…" onkeydown="if(event.key==='Enter')loadLogs()"
+        style="font-size:12px;background:#1f2937;border:1px solid #374151;color:#f9fafb;border-radius:8px;padding:4px 12px;width:200px;font-family:inherit;outline:none">
+      <!-- Capture level (admin) -->
+      <div id="logs-capture-level-wrap" style="margin-left:auto;display:flex;align-items:center;gap:8px;font-size:12px;color:#6b7280;display:none">
+        <span>Capture level:</span>
+        <select id="logs-capture-level-select" onchange="setLogCaptureLevel(this.value)"
+          style="background:#1f2937;border:1px solid #374151;color:#f9fafb;border-radius:8px;padding:4px 8px;font-family:inherit;font-size:12px">
+          <option value="DEBUG">DEBUG</option>
+          <option value="INFO">INFO</option>
+          <option value="WARNING" selected>WARNING</option>
+          <option value="ERROR">ERROR</option>
+          <option value="CRITICAL">CRITICAL</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Error -->
+    <div id="logs-error" style="display:none;background:rgba(127,29,29,.3);border:1px solid rgba(185,28,28,.5);border-radius:8px;padding:8px 14px;font-size:13px;color:#fca5a5;margin-bottom:12px"></div>
+
+    <!-- Table -->
+    <div style="background:#111827;border:1px solid #1f2937;border-radius:12px;overflow:hidden">
+      <div id="logs-loading" style="display:flex;align-items:center;justify-content:center;height:160px;color:#6b7280;font-size:13px">Loading…</div>
+      <div id="logs-empty" style="display:none;flex-direction:column;align-items:center;justify-content:center;height:160px;color:#6b7280;font-size:13px;gap:8px">
+        <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" opacity=".4"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
+        <span>No log records match your filters</span>
+      </div>
+      <div id="logs-table-wrap" style="display:none;overflow-x:auto">
+        <table style="width:100%;font-size:12px;font-family:'SF Mono','Fira Code','Consolas',monospace;border-collapse:collapse">
+          <thead>
+            <tr style="border-bottom:1px solid #1f2937;color:#6b7280;text-align:left">
+              <th style="padding:8px 16px;font-weight:500;width:172px">Timestamp</th>
+              <th style="padding:8px 12px;font-weight:500;width:96px">Level</th>
+              <th style="padding:8px 12px;font-weight:500;width:140px">Logger</th>
+              <th style="padding:8px 12px;font-weight:500">Message</th>
+            </tr>
+          </thead>
+          <tbody id="logs-tbody"></tbody>
+        </table>
+      </div>
+      <div id="logs-footer" style="display:none;padding:8px 16px;border-top:1px solid #1f2937;display:flex;align-items:center;justify-content:space-between;font-size:12px;color:#6b7280">
+        <span id="logs-footer-count"></span>
+        <span id="logs-footer-live" style="display:none;align-items:center;gap:6px;color:#60a5fa">
+          <span style="width:6px;height:6px;border-radius:50%;background:#60a5fa;display:inline-block;animation:pulse 1.5s ease-in-out infinite"></span>
+          Live — refreshing every 5s
+        </span>
+      </div>
+    </div>
+  </div><!-- /logs-screen -->
+
 </div><!-- /main -->
 
 <script>
+fetch('/api/settings').then(r=>r.json()).then(s=>{
+  if(s.app_name){
+    window._appName = s.app_name;
+    document.title = s.app_name;
+    const el = document.querySelector('.top-bar-title');
+    if(el) el.textContent = s.app_name;
+    const wel = document.querySelector('#dashboard-screen [style*="font-size:22px"]');
+    if(wel) wel.textContent = s.app_name;
+  }
+}).catch(()=>{});
 // ================================================================
 //  STATE
 // ================================================================
-const SOURCE_COLORS = ['#58a6ff','#bc8cff','#f78166','#56d364'];
+const SOURCE_COLORS = ['#60a5fa','#bc8cff','#f78166','#56d364'];
 let uploadedFiles = [];
 let analysisResult = null;
 let conversationHistory = [];
 let isThinking = false;
-let analyzeMode = 'issue'; // 'issue' | 'triage'
+// Single analyzer mode — user describes intent in the textarea
 
-function setMode(mode) {
-  analyzeMode = mode;
-  document.getElementById('mode-issue').classList.toggle('active', mode==='issue');
-  document.getElementById('mode-triage').classList.toggle('active', mode==='triage');
-  document.getElementById('mode-security').classList.toggle('active', mode==='security');
-  document.getElementById('issue-section').style.display = mode==='issue' ? 'block' : 'none';
-  const desc = document.getElementById('mode-desc');
-  const btn  = document.getElementById('analyze-btn');
-  if (mode==='issue') {
-    desc.className='mode-desc';
-    desc.innerHTML='Describe a known problem — assistant focuses the diagnosis around it';
-    btn.textContent='Analyze Captures';
-  } else if (mode==='triage') {
-    desc.className='mode-desc triage';
-    desc.innerHTML='<em>No issue needed</em> — assistant scans for anything suspicious and reports findings';
-    btn.textContent='⚡ Run Auto-Triage';
+const _ALL_NAV = ['nav-dashboard','nav-analyzer','nav-feeds','nav-logs'];
+
+function _setActiveNav(activeId) {
+  _ALL_NAV.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.style.background = '';
+    el.style.color = '#ffffff';
+    el.style.fontWeight = '400';
+  });
+  const el = document.getElementById(activeId);
+  if (el) { el.style.background='rgba(37,99,235,.2)'; el.style.color='#93c5fd'; el.style.fontWeight='500'; }
+}
+
+function _stopFeedPoll() {
+  if (window._feedPollTimer) { clearInterval(window._feedPollTimer); window._feedPollTimer = null; }
+}
+
+function _hideAllScreens() {
+  ['dashboard-screen','upload-screen','live-feeds-screen','logs-screen'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.style.display = 'none';
+  });
+  const ls = document.getElementById('loading-screen');
+  const as = document.getElementById('analysis-screen');
+  if (ls) ls.style.display = 'none';
+  if (as) as.style.display = 'none';
+}
+
+function showDashboard() {
+  _stopFeedPoll(); _stopLogsPoll();
+  _hideAllScreens();
+  _setActiveNav('nav-dashboard');
+  document.getElementById('dashboard-screen').style.display = 'flex';
+  document.querySelector('.top-bar-title').textContent = window._appName || 'pktPCAP';
+  document.getElementById('header-files').style.display = 'none';
+}
+
+function showAnalyzer() {
+  _stopFeedPoll(); _stopLogsPoll();
+  _hideAllScreens();
+  _setActiveNav('nav-analyzer');
+  document.getElementById('upload-screen').style.display = 'flex';
+  document.querySelector('.top-bar-title').textContent = (window._appName || 'pktPCAP') + ' — Analyzer';
+}
+
+function showLiveFeeds() {
+  _stopLogsPoll();
+  _hideAllScreens();
+  _setActiveNav('nav-feeds');
+  document.getElementById('live-feeds-screen').style.display = 'flex';
+  document.querySelector('.top-bar-title').textContent = (window._appName || 'pktPCAP') + ' — Live Feeds';
+  document.getElementById('header-files').style.display = 'none';
+  loadFeedToken();
+  loadFeeds();
+  _stopFeedPoll();
+  window._feedPollTimer = setInterval(loadFeeds, 2500);
+}
+
+function showLogs() {
+  _stopFeedPoll();
+  _hideAllScreens();
+  _setActiveNav('nav-logs');
+  document.getElementById('logs-screen').style.display = 'flex';
+  document.getElementById('logs-screen').style.flexDirection = 'column';
+  document.querySelector('.top-bar-title').textContent = (window._appName || 'pktPCAP') + ' — Logs';
+  document.getElementById('header-files').style.display = 'none';
+  _initLogsPage();
+  loadLogs();
+}
+
+// ================================================================
+//  LOGS PAGE
+// ================================================================
+const _LOG_LEVEL_STYLES = {
+  DEBUG:    'background:rgba(107,114,128,.2);color:#d1d5db;border:1px solid rgba(107,114,128,.4)',
+  INFO:     'background:rgba(59,130,246,.2);color:#93c5fd;border:1px solid rgba(59,130,246,.4)',
+  WARNING:  'background:rgba(245,158,11,.2);color:#fbbf24;border:1px solid rgba(245,158,11,.4)',
+  ERROR:    'background:rgba(239,68,68,.2);color:#f87171;border:1px solid rgba(239,68,68,.4)',
+  CRITICAL: 'background:rgba(185,28,28,.3);color:#fca5a5;border:1px solid rgba(239,68,68,.5)',
+};
+const _LOG_DOT_COLORS = {
+  DEBUG:'#9ca3af', INFO:'#60a5fa', WARNING:'#fbbf24', ERROR:'#f87171', CRITICAL:'#fca5a5'
+};
+
+let _logsActiveLevel = 'ALL';
+let _logsLive = false;
+let _logsPollTimer = null;
+let _logsInited = false;
+let _logsExpandedId = null;
+
+function _stopLogsPoll() {
+  if (_logsPollTimer) { clearInterval(_logsPollTimer); _logsPollTimer = null; }
+  _logsLive = false;
+}
+
+function _initLogsPage() {
+  if (_logsInited) return;
+  _logsInited = true;
+  // Build level chips
+  const chips = document.getElementById('logs-level-chips');
+  ['ALL','DEBUG','INFO','WARNING','ERROR','CRITICAL'].forEach(lvl => {
+    const btn = document.createElement('button');
+    btn.id = 'logs-chip-' + lvl;
+    btn.textContent = lvl;
+    btn.style.cssText = 'font-size:11px;padding:3px 10px;border-radius:8px;cursor:pointer;font-family:inherit;transition:all .15s;border:1px solid #374151;background:#1f2937;color:#9ca3af';
+    btn.onclick = () => { _logsActiveLevel = lvl; _updateLevelChips(); loadLogs(); };
+    chips.appendChild(btn);
+  });
+  _updateLevelChips();
+}
+
+function _updateLevelChips() {
+  ['ALL','DEBUG','INFO','WARNING','ERROR','CRITICAL'].forEach(lvl => {
+    const btn = document.getElementById('logs-chip-' + lvl);
+    if (!btn) return;
+    if (lvl === _logsActiveLevel) {
+      const s = _LOG_LEVEL_STYLES[lvl] || 'background:#374151;color:#f9fafb;border:1px solid #6b7280';
+      btn.style.cssText = 'font-size:11px;padding:3px 10px;border-radius:8px;cursor:pointer;font-family:inherit;transition:all .15s;' + s;
+    } else {
+      btn.style.cssText = 'font-size:11px;padding:3px 10px;border-radius:8px;cursor:pointer;font-family:inherit;transition:all .15s;border:1px solid #374151;background:#1f2937;color:#9ca3af';
+    }
+  });
+}
+
+function _fmtLogTs(ts) {
+  const d = new Date(ts);
+  const base = d.toLocaleString([], {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const ms = String(d.getMilliseconds()).padStart(3,'0');
+  return base + '.' + ms;
+}
+
+function _shortLogger(logger) {
+  return logger.replace(/^pktpcap\./, '');
+}
+
+async function loadLogs(silent) {
+  if (!silent) {
+    document.getElementById('logs-loading').style.display = 'flex';
+    document.getElementById('logs-empty').style.display = 'none';
+    document.getElementById('logs-table-wrap').style.display = 'none';
+    document.getElementById('logs-footer').style.display = 'none';
+  }
+  document.getElementById('logs-error').style.display = 'none';
+
+  const search = document.getElementById('logs-search').value;
+  const logger = document.getElementById('logs-logger-select').value;
+  const params = new URLSearchParams({limit:'300'});
+  if (_logsActiveLevel !== 'ALL') params.set('level', _logsActiveLevel);
+  if (logger)  params.set('logger', logger);
+  if (search)  params.set('search', search);
+
+  try {
+    const [logsRes, statsRes] = await Promise.all([
+      fetch('/api/logs?' + params).then(r => r.json()),
+      fetch('/api/logs/stats').then(r => r.json()),
+    ]);
+    _renderLogs(logsRes, statsRes);
+  } catch(e) {
+    const err = document.getElementById('logs-error');
+    err.textContent = e.message || 'Failed to load logs';
+    err.style.display = 'block';
+    document.getElementById('logs-loading').style.display = 'none';
+  }
+}
+
+function _renderLogs(res, stats) {
+  // Subtitle
+  const sub = document.getElementById('logs-subtitle');
+  sub.textContent = (stats.total || 0).toLocaleString() + ' records stored'
+    + (stats.latest_ts ? ' · last entry ' + _fmtLogTs(stats.latest_ts) : '');
+
+  // Stats chips
+  const row = document.getElementById('logs-stats-row');
+  row.innerHTML = '';
+  ['CRITICAL','ERROR','WARNING','INFO','DEBUG'].forEach(lvl => {
+    const cnt = (stats.by_level || {})[lvl] || 0;
+    if (cnt === 0 && lvl === 'DEBUG') return;
+    const chip = document.createElement('div');
+    chip.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:11px;padding:3px 10px;border-radius:8px;' + (_LOG_LEVEL_STYLES[lvl] || '');
+    chip.innerHTML = `<span style="width:6px;height:6px;border-radius:50%;background:${_LOG_DOT_COLORS[lvl]||'#9ca3af'};flex-shrink:0"></span>`
+      + `<span style="font-weight:600">${lvl}</span><span style="opacity:.7">${cnt.toLocaleString()}</span>`;
+    row.appendChild(chip);
+  });
+
+  // Logger select
+  const sel = document.getElementById('logs-logger-select');
+  const curLogger = sel.value;
+  while (sel.options.length > 1) sel.remove(1);
+  (stats.loggers || []).forEach(l => {
+    const opt = document.createElement('option');
+    opt.value = l; opt.textContent = _shortLogger(l);
+    sel.appendChild(opt);
+  });
+  if (curLogger) sel.value = curLogger;
+  sel.style.display = (stats.loggers && stats.loggers.length > 0) ? '' : 'none';
+
+  // Admin capture level control — always show it
+  document.getElementById('logs-capture-level-wrap').style.display = 'flex';
+
+  // Table
+  document.getElementById('logs-loading').style.display = 'none';
+  const records = res.records || [];
+  if (records.length === 0) {
+    document.getElementById('logs-empty').style.display = 'flex';
+    document.getElementById('logs-table-wrap').style.display = 'none';
+    document.getElementById('logs-footer').style.display = 'none';
+    return;
+  }
+
+  const tbody = document.getElementById('logs-tbody');
+  tbody.innerHTML = '';
+  records.forEach(r => {
+    const rowStyle = r.level === 'ERROR' || r.level === 'CRITICAL'
+      ? 'background:rgba(127,29,29,.08)'
+      : r.level === 'WARNING' ? 'background:rgba(120,53,15,.08)' : '';
+    const cursor = r.exc_info ? 'cursor:pointer' : '';
+    const tr = document.createElement('tr');
+    tr.style.cssText = rowStyle + ';border-bottom:1px solid rgba(31,41,55,.6);' + cursor;
+    if (r.exc_info) {
+      tr.title = 'Click to expand traceback';
+      tr.onclick = () => _toggleLogExpand(r.id, r.exc_info);
+    } else {
+      tr.onmouseover = () => { tr.style.background = 'rgba(31,41,55,.4)'; };
+      tr.onmouseout  = () => { tr.style.background = rowStyle; };
+    }
+    const dot = `<span style="width:4px;height:4px;border-radius:50%;background:${_LOG_DOT_COLORS[r.level]||'#9ca3af'};display:inline-block;flex-shrink:0"></span>`;
+    const badge = `<span style="display:inline-flex;align-items:center;gap:4px;padding:1px 6px;border-radius:4px;font-size:11px;${_LOG_LEVEL_STYLES[r.level]||''}">${dot}${r.level}</span>`;
+    tr.innerHTML = `
+      <td style="padding:5px 16px;color:#6b7280;white-space:nowrap">${_fmtLogTs(r.ts)}</td>
+      <td style="padding:5px 12px">${badge}</td>
+      <td style="padding:5px 12px;color:#9ca3af;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.logger}">${_shortLogger(r.logger)}</td>
+      <td style="padding:5px 12px;color:#f3f4f6;max-width:0">
+        <div style="display:flex;align-items:center;gap:8px;overflow:hidden">
+          <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${r.message.replace(/</g,'&lt;')}</span>
+          ${r.exc_info ? '<span style="flex-shrink:0;color:#f87171;opacity:.6;font-size:11px">▼</span>' : ''}
+        </div>
+      </td>`;
+    tr.id = 'log-row-' + r.id;
+    tbody.appendChild(tr);
+
+    if (r.exc_info && _logsExpandedId === r.id) {
+      _insertExpandRow(tbody, r.id, r.exc_info);
+    }
+  });
+
+  document.getElementById('logs-table-wrap').style.display = 'block';
+  const footer = document.getElementById('logs-footer');
+  footer.style.display = 'flex';
+  document.getElementById('logs-footer-count').textContent =
+    'Showing ' + records.length.toLocaleString() + ' of ' + (res.total||0).toLocaleString() + ' records (newest first)';
+  const liveEl = document.getElementById('logs-footer-live');
+  liveEl.style.display = _logsLive ? 'flex' : 'none';
+}
+
+function _insertExpandRow(tbody, id, excInfo) {
+  const exp = document.createElement('tr');
+  exp.id = 'log-exp-' + id;
+  exp.style.cssText = 'background:rgba(127,29,29,.15)';
+  exp.innerHTML = `<td colspan="4" style="padding:8px 16px"><pre style="font-size:11px;color:#fca5a5;white-space:pre-wrap;word-break:break-all;line-height:1.6;margin:0">${excInfo.replace(/</g,'&lt;')}</pre></td>`;
+  const baseRow = document.getElementById('log-row-' + id);
+  if (baseRow && baseRow.nextSibling) tbody.insertBefore(exp, baseRow.nextSibling);
+  else tbody.appendChild(exp);
+}
+
+function _toggleLogExpand(id, excInfo) {
+  const tbody = document.getElementById('logs-tbody');
+  const existing = document.getElementById('log-exp-' + id);
+  if (existing) {
+    existing.remove();
+    _logsExpandedId = null;
   } else {
-    desc.className='mode-desc triage';
-    desc.innerHTML='<em>No issue needed</em> — scans for threats: port scans, lateral movement, exfiltration, brute force, cleartext credentials, DNS tunneling';
-    btn.textContent='🛡️ Run Security Review';
+    // Close any other open one
+    const prev = tbody.querySelector('[id^="log-exp-"]');
+    if (prev) prev.remove();
+    _logsExpandedId = id;
+    _insertExpandRow(tbody, id, excInfo);
+  }
+}
+
+function toggleLogsLive() {
+  _logsLive = !_logsLive;
+  const btn = document.getElementById('logs-live-btn');
+  const label = document.getElementById('logs-live-label');
+  const icon  = document.getElementById('logs-live-icon');
+  if (_logsLive) {
+    btn.style.cssText = btn.style.cssText.replace(/background:[^;]+/, 'background:rgba(37,99,235,.2)');
+    btn.style.border = '1px solid rgba(59,130,246,.5)';
+    btn.style.color = '#93c5fd';
+    label.textContent = 'Live';
+    icon.style.animation = 'spin 3s linear infinite';
+    _logsPollTimer = setInterval(() => loadLogs(true), 5000);
+  } else {
+    btn.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:12px;padding:5px 12px;background:#1f2937;border:1px solid #374151;color:#d1d5db;border-radius:8px;cursor:pointer;font-family:inherit';
+    label.textContent = 'Refresh';
+    icon.style.animation = '';
+    _stopLogsPoll(); _logsLive = false;
+  }
+  loadLogs(true);
+  const liveEl = document.getElementById('logs-footer-live');
+  if (liveEl) liveEl.style.display = _logsLive ? 'flex' : 'none';
+}
+
+async function clearLogs() {
+  if (!confirm('Clear all app logs?')) return;
+  const btn = document.getElementById('logs-clear-btn');
+  btn.disabled = true; btn.textContent = 'Clearing…';
+  try {
+    await fetch('/api/logs', {method:'DELETE'});
+    loadLogs();
+  } catch(e) {
+    alert('Clear failed: ' + e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Clear Logs';
+  }
+}
+
+async function setLogCaptureLevel(level) {
+  try {
+    await fetch('/api/logs/level?level=' + encodeURIComponent(level), {method:'POST'});
+  } catch(e) {
+    console.error('setLogCaptureLevel:', e);
   }
 }
 
@@ -1146,14 +1613,14 @@ function renderUI(){
 
   // Protocol bars
   const ptotal=R.protocols.reduce((s,[,n])=>s+n,0);
-  const pcol={'TCP':'#58a6ff','UDP':'#bc8cff','ICMP':'#f78166','ARP':'#56d364','IPv6':'#79c0ff'};
+  const pcol={'TCP':'#60a5fa','UDP':'#bc8cff','ICMP':'#f78166','ARP':'#56d364','IPv6':'#93c5fd'};
   document.getElementById('proto-bars').innerHTML=R.protocols.slice(0,8).map(([p,n])=>
-    bar(p,n.toLocaleString()+' ('+((n/ptotal)*100).toFixed(1)+'%)',(n/ptotal*100).toFixed(1),pcol[p]||'#484f58')).join('');
+    bar(p,n.toLocaleString()+' ('+((n/ptotal)*100).toFixed(1)+'%)',(n/ptotal*100).toFixed(1),pcol[p]||'#6b7280')).join('');
 
   // Top talkers
   const maxB=R.topTalkers[0]?.[1]||1;
   document.getElementById('top-talkers').innerHTML=R.topTalkers.map(([ip,b])=>
-    bar(ip,fmtBytes(b),(b/maxB*100).toFixed(1),'#388bfd')).join('');
+    bar(ip,fmtBytes(b),(b/maxB*100).toFixed(1),'#3b82f6')).join('');
 
   // Ports / Services
   const PORT_NAMES={
@@ -1173,11 +1640,11 @@ function renderUI(){
         <tbody>${R.ports.map(p=>{
           const svc=PORT_NAMES[p.port]||'';
           const pct=(p.pkts/maxPkts*100).toFixed(0);
-          const col=p.proto==='TCP'?'#58a6ff':'#bc8cff';
+          const col=p.proto==='TCP'?'#60a5fa':'#bc8cff';
           return`<tr>
-            <td style="font-weight:700;color:#e6edf3">${p.port}</td>
-            <td><span style="font-size:10px;padding:1px 5px;border-radius:3px;background:${p.proto==='TCP'?'rgba(88,166,255,.15)':'rgba(188,140,255,.15)'};color:${col}">${p.proto}</span></td>
-            <td style="color:${svc?'#e3b341':'#484f58'}">${svc||'—'}</td>
+            <td style="font-weight:700;color:#f9fafb">${p.port}</td>
+            <td><span style="font-size:10px;padding:1px 5px;border-radius:3px;background:${p.proto==='TCP'?'rgba(96,165,250,.15)':'rgba(188,140,255,.15)'};color:${col}">${p.proto}</span></td>
+            <td style="color:${svc?'#f59e0b':'#6b7280'}">${svc||'—'}</td>
             <td>${p.pkts.toLocaleString()}</td>
             <td><div class="bar-track" style="margin-top:2px"><div class="bar-fill" style="width:${pct}%;background:${col}"></div></div></td>
           </tr>`;
@@ -1189,8 +1656,8 @@ function renderUI(){
   const sec=R.security;
   const threatTabBtn=document.getElementById('tab-btn-threats');
   threatTabBtn.textContent=sec.summary.total>0?`Threats (${sec.summary.total})`:'Threats';
-  if(sec.summary.high>0) threatTabBtn.style.color='#f85149';
-  else if(sec.summary.medium>0) threatTabBtn.style.color='#e3b341';
+  if(sec.summary.high>0) threatTabBtn.style.color='#ef4444';
+  else if(sec.summary.medium>0) threatTabBtn.style.color='#f59e0b';
 
   document.getElementById('threats-summary').innerHTML=sec.summary.total===0
     ?`<div class="no-anomalies"><div class="no-anomalies-icon">🛡️</div>No threat indicators detected</div>`
@@ -1201,10 +1668,10 @@ function renderUI(){
         ${mc('LOW',sec.summary.low,'')}
       </div>`;
 
-  const catColors={Reconnaissance:'#f85149','Credential Risk':'#e3b341','Brute Force':'#f85149','Data Transfer':'#bc8cff','Lateral Movement':'#f85149','Covert Channel':'#e3b341',DNS:'#58a6ff'};
+  const catColors={Reconnaissance:'#ef4444','Credential Risk':'#f59e0b','Brute Force':'#ef4444','Data Transfer':'#bc8cff','Lateral Movement':'#ef4444','Covert Channel':'#f59e0b',DNS:'#60a5fa'};
   document.getElementById('threats-list').innerHTML=sec.threats.length
     ?sec.threats.map(t=>renderCard(t,
-        `<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:rgba(255,255,255,.05);color:${catColors[t.category]||'#8b949e'}">${esc(t.category)}</span>`
+        `<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:rgba(255,255,255,.05);color:${catColors[t.category]||'#9ca3af'}">${esc(t.category)}</span>`
       )).join('')
     :'';
 
@@ -1259,20 +1726,20 @@ function renderUI(){
           <div class="detail-title">${esc(s.key)}</div>
           <div class="detail-meta">
             <span>${s.pkts} pkts</span>
-            <span style="color:#8b949e">${fmtBytes(s.bytes)}</span>
+            <span style="color:#9ca3af">${fmtBytes(s.bytes)}</span>
             ${s.failedHS?'<span class="tag-danger">NO SYN-ACK</span>':''}
             ${s.rsts?`<span class="tag-danger">RST:${s.rsts}</span>`:''}
             ${s.retrans?`<span class="tag-warn">RETR:${s.retrans}</span>`:''}
             ${s.zeroWin?`<span class="tag-warn">ZWIN:${s.zeroWin}</span>`:''}
           </div>
-          <div class="bar-track" style="margin-top:4px"><div class="bar-fill" style="width:${(s.pkts/maxTcpPkts*100).toFixed(0)}%;background:#58a6ff"></div></div>
+          <div class="bar-track" style="margin-top:4px"><div class="bar-fill" style="width:${(s.pkts/maxTcpPkts*100).toFixed(0)}%;background:#60a5fa"></div></div>
         </div>
         <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0;margin-top:2px">
           <button class="stream-btn" onclick="openStreamByTcpKey(window._tcpIssueKeys[${i}])">▶ Stream</button>
           <button class="chat-to-btn" style="margin:0" onclick="sendFlowToAssistant(window._tcpIssueItems[${i}])" title="Send to Diagnostic Assistant">\u{1F4AC}</button>
         </div>
       </div>`).join('')
-    :'<div class="empty-state">No streams with notable TCP issues</div>';
+    :'<div class="empty-state">No streams with notable TCP issues</div></div><!-- /app-right -->';
 
   // UDP
   const us=R.udpStats;
@@ -1298,7 +1765,7 @@ function renderUI(){
           <div class="detail-title">${esc(f.key)}</div>
           <div class="detail-meta">
             <span>${f.pkts} pkts</span>
-            <span style="color:#8b949e">${fmtBytes(f.bytes)}</span>
+            <span style="color:#e6edf3">${fmtBytes(f.bytes)}</span>
             ${f.largeCount?`<span class="tag-warn">LARGE:${f.largeCount}</span>`:''}
             ${f.oneSided?'<span class="tag-warn">ONE-SIDED</span>':''}
             ${f.pkts>200?'<span class="tag-warn">HIGH-RATE</span>':''}
@@ -1461,27 +1928,12 @@ function captureContext(){
 
 async function generateInitialMessage(issue){
   const ctx=captureContext();
-  const isTriage   = analyzeMode==='triage';
-  const isSecurity = analyzeMode==='security';
 
-  const sysPrompt = isSecurity
-    ? `You are an expert network security analyst performing a threat-hunting review of packet capture data.
+  const sysPrompt = `You are an expert network engineer and security analyst reviewing packet capture data.
 
-Files: ${ctx.files.join(', ')}
+A network engineer has provided ${ctx.files.length>1?ctx.files.length+' merged packet captures':'a packet capture'} and described what they want analyzed:
 
-Capture data + security findings:
-${JSON.stringify(ctx,null,2)}
-
-Instructions:
-- You are talking to a network engineer — technical language is appropriate
-- Go through the security findings and explain each one clearly: what was detected, what it means, how confident you are
-- For each threat: state EVIDENCE (what the packets show), RISK (what it could mean), and RECOMMENDED ACTION
-- Rate severity honestly — don't over-alarm on low-confidence signals
-- Flag cleartext credentials and exposed services as explicit risks
-- Identify any patterns that suggest coordinated attack vs. misconfiguration vs. normal noise
-- End by asking one question that would help you confirm or rule out the highest-severity finding`
-    : isTriage
-    ? `You are an expert network engineer performing a proactive traffic review. No specific issue has been reported — your job is a comprehensive triage: find anything suspicious, anomalous, or worth investigating.
+"${issue||'Perform a comprehensive analysis — check for connectivity issues, anomalies, security threats, protocol errors, and anything unusual'}"
 
 Files: ${ctx.files.join(', ')}
 
@@ -1490,28 +1942,13 @@ ${JSON.stringify(ctx,null,2)}
 
 Instructions:
 - You are talking to a network engineer — technical language is appropriate
-- Do a structured triage across these areas: connectivity, performance, security, protocol errors, unusual patterns
-- For EACH finding: state what the evidence shows, what it could indicate, and severity (HIGH / MEDIUM / LOW)
+- If a specific problem is described, focus your analysis on it and reference evidence from the capture
+- If a security review is requested, look for threats: port scans, lateral movement, data exfiltration, brute force, cleartext credentials, DNS tunneling; rate each finding HIGH/MEDIUM/LOW
+- If general triage or no description is given, do a structured review across: connectivity, performance, security, protocol errors, unusual patterns
+- For each finding state: EVIDENCE (what the capture shows), INTERPRETATION (what it likely means), and SEVERITY or RECOMMENDED ACTION
 - Reference specifics: IPs, ports, packet counts, stream keys
 - Clearly separate EVIDENCE from HYPOTHESIS
-- If you find nothing concerning, say so explicitly — a clean capture is a valid result
-- End with 1-2 targeted questions if you need more context to assess a finding, or ask if the engineer wants to drill into anything specific`
-    : `You are an expert network engineer analyzing packet captures. A network engineer has provided ${ctx.files.length>1?ctx.files.length+' merged packet captures':'a packet capture'} and this issue description:
-
-"${issue||'(None provided — perform general triage)'}"
-
-Files: ${ctx.files.join(', ')}
-
-Capture data:
-${JSON.stringify(ctx,null,2)}
-
-Instructions:
-- You are talking to a network engineer — be technical, precise, use correct terminology
-- Start with the 1-2 most relevant findings from the data given the issue described
-- Reference specific evidence: IPs, packet counts, stream details, anomaly types
-- Clearly distinguish EVIDENCE (what the capture shows) vs HYPOTHESIS (what you suspect)
-- Ask exactly ONE focused follow-up question to narrow down the root cause
-- Keep this initial response tight: 3-5 sentences + the question`;
+- End with one focused follow-up question or ask if the engineer wants to drill into a specific area`;
 
   appendMsg('assistant',null,true);
   try {
@@ -1655,7 +2092,7 @@ function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')
 
 function resetApp(){
   uploadedFiles=[]; analysisResult=null; conversationHistory=[]; isThinking=false;
-  setMode('issue');
+  showAnalyzer();
   document.getElementById('file-list').innerHTML='';
   document.getElementById('chat-messages').innerHTML='';
   document.getElementById('issue-input').value='';
@@ -1727,21 +2164,21 @@ function renderStreamModal(title, flowPkts){
     const relT=((p.timestamp-t0)*1000).toFixed(1)+'ms';
     const flags=flagStr(p.flags)||'';
     const fs=flags?flags.split(' ').map(f=>{
-      const fc=f==='RST'?'#f85149':f==='SYN'?'#2ea043':f==='FIN'?'#e3b341':'#484f58';
+      const fc=f==='RST'?'#f85149':f==='SYN'?'#2ea043':f==='FIN'?'#e3b341':'#c9d1d9';
       return`<span style="font-size:9px;color:${fc};border:1px solid ${fc};border-radius:2px;padding:0 3px;margin-right:2px">${f}</span>`;
     }).join(''):'';
     const ascii=p.payload?payloadToAscii(p.payload).slice(0,80):'';
-    const payDisplay=ascii?`<span style="color:#6e7681;font-size:10px;margin-left:6px;word-break:break-all">${esc(ascii)}${p.payload&&p.payload.length>80?'…':''}</span>`:'';
+    const payDisplay=ascii?`<span style="color:#c9d1d9;font-size:10px;margin-left:6px;word-break:break-all">${esc(ascii)}${p.payload&&p.payload.length>80?'…':''}</span>`:'';
     const retransBadge=(p.flags&&i>0&&shown.slice(0,i).some(pp=>pp.srcIP===p.srcIP&&pp.srcPort===p.srcPort&&pp.seqNum===p.seqNum&&p.seqNum!==undefined&&p.seqNum!==0))
       ?`<span style="font-size:9px;color:#f85149;margin-left:4px">RETR</span>`:'';
     return`<tr id="spkt_${i}" onclick="showPacketDetail(${i})" style="cursor:pointer">
-      <td style="color:#484f58;white-space:nowrap">${relT}</td>
+      <td style="color:#e6edf3;white-space:nowrap">${relT}</td>
       <td style="color:${dirColor};font-weight:700;text-align:center">${dirArrow}</td>
-      <td style="color:#8b949e;white-space:nowrap">${esc(p.srcIP)}:${p.srcPort||'?'}</td>
-      <td style="color:#484f58">→</td>
-      <td style="color:#8b949e;white-space:nowrap">${esc(p.dstIP)}:${p.dstPort||'?'}</td>
+      <td style="color:#e6edf3;white-space:nowrap">${esc(p.srcIP)}:${p.srcPort||'?'}</td>
+      <td style="color:#e6edf3">→</td>
+      <td style="color:#e6edf3;white-space:nowrap">${esc(p.dstIP)}:${p.dstPort||'?'}</td>
       <td>${fs}${retransBadge}</td>
-      <td style="color:#c9d1d9;text-align:right">${p.capturedLen}</td>
+      <td style="color:#e6edf3;text-align:right">${p.capturedLen}</td>
       <td>${payDisplay}</td>
     </tr>`;
   }).join('');
@@ -1813,14 +2250,14 @@ function closePacketDetail(){
 }
 
 function hexDumpPayload(payload){
-  if(!payload||!payload.length) return '<em style="color:#484f58;font-size:11px">No payload captured</em>';
+  if(!payload||!payload.length) return '<em style="color:#e6edf3;font-size:11px">No payload captured</em>';
   const rows=[];
   for(let i=0;i<payload.length;i+=16){
     const chunk=Array.from(payload.slice(i,i+16));
     const offset=i.toString(16).padStart(4,'0');
     const hexPart=chunk.map(b=>b.toString(16).padStart(2,'0')).join(' ').padEnd(47);
     const ascPart=chunk.map(b=>(b>=32&&b<127)?String.fromCharCode(b):'.').join('');
-    rows.push(`<div style="display:flex;gap:14px;line-height:1.7"><span style="color:#484f58;min-width:34px;font-size:10px">${offset}</span><span style="color:#58a6ff;letter-spacing:1px;font-size:10px;min-width:150px">${esc(hexPart)}</span><span style="color:#c9d1d9;font-size:10px">${esc(ascPart)}</span></div>`);
+    rows.push(`<div style="display:flex;gap:14px;line-height:1.7"><span style="color:#e6edf3;min-width:34px;font-size:10px">${offset}</span><span style="color:#58a6ff;letter-spacing:1px;font-size:10px;min-width:150px">${esc(hexPart)}</span><span style="color:#e6edf3;font-size:10px">${esc(ascPart)}</span></div>`);
   }
   return`<div style="font-family:monospace">${rows.join('')}</div>`;
 }
@@ -1845,22 +2282,22 @@ function showPacketDetail(i){
   // Build detail content
   const flags=flagStr(p.flags)||'';
   const flagBadges=flags?flags.split(' ').map(f=>{
-    const fc=f==='RST'?'#f85149':f==='SYN'?'#2ea043':f==='FIN'?'#e3b341':f==='ACK'?'#58a6ff':'#8b949e';
+    const fc=f==='RST'?'#f85149':f==='SYN'?'#2ea043':f==='FIN'?'#e3b341':f==='ACK'?'#58a6ff':'#e6edf3';
     return`<span style="font-size:10px;color:${fc};border:1px solid ${fc};border-radius:3px;padding:1px 5px;margin-right:3px">${f}</span>`;
-  }).join(''):'<span style="color:#484f58;font-size:10px">none</span>';
+  }).join(''):'<span style="color:#e6edf3;font-size:10px">none</span>';
   const relMs=((p.timestamp-t0)*1000).toFixed(3);
   const absTime=safeIso(p.timestamp);
-  const sec=(label,content)=>`<div style="margin-bottom:10px"><div style="font-size:10px;font-weight:700;color:#484f58;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:4px;border-bottom:1px solid #21262d;padding-bottom:3px">${label}</div>${content}</div>`;
-  const field=(label,val,color='#c9d1d9')=>`<div style="display:flex;gap:8px;font-size:11px;margin-bottom:2px"><span style="color:#6e7681;min-width:110px;flex-shrink:0">${label}</span><span style="color:${color};word-break:break-all">${val}</span></div>`;
+  const sec=(label,content)=>`<div style="margin-bottom:10px"><div style="font-size:10px;font-weight:700;color:#e6edf3;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:4px;border-bottom:1px solid #21262d;padding-bottom:3px">${label}</div>${content}</div>`;
+  const field=(label,val,color='#c9d1d9')=>`<div style="display:flex;gap:8px;font-size:11px;margin-bottom:2px"><span style="color:#c9d1d9;min-width:110px;flex-shrink:0">${label}</span><span style="color:${color};word-break:break-all">${val}</span></div>`;
   let transportSection='';
   if(p.protocol==='TCP'){
     transportSection=sec('TCP',
       field('Src Port',p.srcPort||'?','#58a6ff')+
       field('Dst Port',p.dstPort||'?','#e3b341')+
       field('Flags',flagBadges)+
-      (p.seqNum!==undefined?field('Seq Number',p.seqNum.toLocaleString(),'#8b949e'):'')+
-      (p.ackNum!==undefined&&p.flags?.ack?field('Ack Number',p.ackNum.toLocaleString(),'#8b949e'):'')+
-      (p.windowSize!==undefined?field('Window Size',p.windowSize.toLocaleString()+' bytes','#8b949e'):''));
+      (p.seqNum!==undefined?field('Seq Number',p.seqNum.toLocaleString(),'#e6edf3'):'')+
+      (p.ackNum!==undefined&&p.flags?.ack?field('Ack Number',p.ackNum.toLocaleString(),'#e6edf3'):'')+
+      (p.windowSize!==undefined?field('Window Size',p.windowSize.toLocaleString()+' bytes','#e6edf3'):''));
   } else if(p.protocol==='UDP'){
     transportSection=sec('UDP',
       field('Src Port',p.srcPort||'?','#58a6ff')+
@@ -1874,7 +2311,7 @@ function showPacketDetail(i){
   const appProto=detectProtocol(p.payload);
   const detailContent=
     sec('Frame',field('Packet #',i+1)+field('Timestamp (abs)',absTime)+field('Relative Time',relMs+' ms')+field('Captured Length',p.capturedLen+' bytes'))+
-    sec('IP',field('Source',p.srcIP||'?','#58a6ff')+field('Destination',p.dstIP||'?','#e3b341')+field('Protocol',p.protocol||'?',(p.protocol==='TCP'?'#58a6ff':p.protocol==='UDP'?'#bc8cff':'#8b949e'))+(p.ttl!==undefined?field('TTL',p.ttl):''))+
+    sec('IP',field('Source',p.srcIP||'?','#58a6ff')+field('Destination',p.dstIP||'?','#e3b341')+field('Protocol',p.protocol||'?',(p.protocol==='TCP'?'#58a6ff':p.protocol==='UDP'?'#bc8cff':'#e6edf3'))+(p.ttl!==undefined?field('TTL',p.ttl):''))+
     transportSection+
     (appProto?sec('Application',field('Detected Protocol',appProto,'#2ea043')):'')+
     sec(`Payload (${p.payload?p.payload.length:0} bytes${p.payload&&p.capturedLen>p.payload.length?' truncated':''})`,hexDumpPayload(p.payload));
@@ -1889,8 +2326,8 @@ function showPacketDetail(i){
     <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 14px;background:#161b22;border-bottom:1px solid #21262d;position:sticky;top:0;z-index:2">
       <span style="font-size:11px;font-weight:700;color:#58a6ff">Packet #${i+1} — ${esc(p.srcIP||'?')}:${p.srcPort||'?'} → ${esc(p.dstIP||'?')}:${p.dstPort||'?'}</span>
       <div style="display:flex;gap:8px;align-items:center">
-        <button onclick="sendPacketToAssistant()" title="Send to Diagnostic Assistant" style="background:none;border:none;color:#484f58;font-size:13px;cursor:pointer;padding:0;line-height:1;transition:color 0.15s" onmouseover="this.style.color='#58a6ff'" onmouseout="this.style.color='#484f58'">\u{1F4AC}</button>
-        <button onclick="closePacketDetail()" title="Close" style="background:none;border:none;color:#484f58;font-size:15px;cursor:pointer;padding:0;line-height:1">✕</button>
+        <button onclick="sendPacketToAssistant()" title="Send to Diagnostic Assistant" style="background:none;border:none;color:#e6edf3;font-size:13px;cursor:pointer;padding:0;line-height:1;transition:color 0.15s" onmouseover="this.style.color='#58a6ff'" onmouseout="this.style.color='#c9d1d9'">\u{1F4AC}</button>
+        <button onclick="closePacketDetail()" title="Close" style="background:none;border:none;color:#e6edf3;font-size:15px;cursor:pointer;padding:0;line-height:1">✕</button>
       </div>
     </div>
     <div style="padding:10px 14px;overflow-y:auto" id="inline-detail-content">${detailContent}</div>`;
@@ -1935,6 +2372,219 @@ function sendPacketToAssistant(){
   sendToAssistant(`Packet #${i+1} (${p.srcIP}:${p.srcPort} → ${p.dstIP}:${p.dstPort})`, data);
 }
 
+// ================================================================
+//  LIVE FEEDS
+// ================================================================
+window._feedPollTimer = null;
+
+async function loadFeedToken() {
+  try {
+    const resp = await fetch('/api/settings');
+    const cfg  = await resp.json();
+    window._feedToken    = cfg.feed_token  || '';
+    window._serverIp     = cfg.server_ip   || window.location.hostname;
+    window._serverPort   = cfg.port        || 8765;
+    window._sslEnabled   = !!cfg.ssl_enabled;
+    window._wsEnabled    = !!cfg.wireshark_capture_enabled;
+    _updateWsToggleUI();
+    const el = document.getElementById('feed-token-display');
+    if (el) el.textContent = window._feedToken
+      ? window._feedToken.slice(0,8) + '…'
+      : '(none)';
+    updateFeedCommand();
+  } catch(e) { /* ignore */ }
+}
+
+async function loadFeeds() {
+  try {
+    const resp  = await fetch('/api/feeds');
+    const feeds = await resp.json();
+    renderFeeds(feeds);
+  } catch(e) {
+    const list = document.getElementById('feeds-list');
+    if (list) list.innerHTML = '<div style="text-align:center;padding:24px;color:#ef4444;font-size:12px">Could not reach server</div>';
+  }
+}
+
+function _esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function _fmtBytes(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+  return (b/1048576).toFixed(1) + ' MB';
+}
+
+function _fmtDur(s) {
+  s = Math.floor(s);
+  if (s < 60) return s + 's';
+  if (s < 3600) return Math.floor(s/60) + 'm ' + (s%60) + 's';
+  return Math.floor(s/3600) + 'h ' + Math.floor((s%3600)/60) + 'm';
+}
+
+function renderFeeds(feeds) {
+  const list = document.getElementById('feeds-list');
+  if (!list) return;
+  if (!feeds.length) {
+    list.innerHTML = '<div style="text-align:center;padding:32px;color:#4b5563;font-size:12px">No active or recent feeds — run the command below on a remote host to start streaming.</div>';
+    return;
+  }
+  list.innerHTML = feeds.map(f => {
+    const hasData = f.bytes_buffered > 0;
+    const statusColor = f.connected ? '#22c55e' : '#374151';
+    const statusGlow  = f.connected ? 'box-shadow:0 0 6px #22c55e55;' : '';
+    const borderClass = f.connected ? 'connected' : '';
+    const statusText  = f.connected
+      ? '<span style="color:#4ade80">live</span>'
+      : 'disconnected ' + _fmtDur(Date.now()/1000 - f.last_seen) + ' ago';
+    const truncWarning = f.truncated
+      ? ' · <span style="color:#f59e0b" title="Buffer full — oldest data was dropped">⚠ buffer full</span>' : '';
+    return `
+    <div class="feed-card ${borderClass}">
+      <div class="feed-dot ${f.connected?'live':''}" style="background:${statusColor};${statusGlow}"></div>
+      <div class="feed-info">
+        <div class="feed-name">${_esc(f.name)}</div>
+        <div class="feed-meta">
+          ${_esc(f.remote_addr)} · ${_fmtBytes(f.bytes_buffered)} buffered
+          (${_fmtBytes(f.bytes_received)} received) · ${_fmtDur(f.duration)}
+          · ${statusText}${truncWarning}
+        </div>
+      </div>
+      <div class="feed-actions">
+        ${hasData ? `<button onclick="analyzeFeed('${_esc(f.name)}')" class="feed-btn">▶ Analyze</button>` : ''}
+        ${hasData ? `<a href="/api/feeds/${encodeURIComponent(f.name)}/download" download="${_esc(f.name)}.pcapng" class="feed-btn secondary">↓ Save</a>` : ''}
+        <button onclick="deleteFeed('${_esc(f.name)}')" class="feed-btn danger" title="Remove session">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function analyzeFeed(name) {
+  try {
+    const resp = await fetch('/api/feeds/' + encodeURIComponent(name) + '/download');
+    if (!resp.ok) throw new Error('Download failed');
+    const blob = await resp.blob();
+    const file = new File([blob], name + '.pcapng', {type: 'application/octet-stream'});
+    _stopFeedPoll();
+    // Reset analyzer and load file
+    uploadedFiles = [];
+    addFiles([file]);
+    showAnalyzer();
+    // Brief delay so the UI updates, then auto-analyze
+    setTimeout(() => startAnalysis(), 100);
+  } catch(e) {
+    alert('Could not load capture: ' + e.message);
+  }
+}
+
+async function deleteFeed(name) {
+  await fetch('/api/feeds/' + encodeURIComponent(name), {method: 'DELETE'});
+  loadFeeds();
+}
+
+let _feedTab = 'tshark';
+
+function switchFeedTab(tab) {
+  _feedTab = tab;
+  document.getElementById('feed-tab-tshark').style.display    = tab === 'tshark'    ? '' : 'none';
+  document.getElementById('feed-tab-wireshark').style.display = tab === 'wireshark' ? '' : 'none';
+  const btnTs = document.getElementById('tab-btn-tshark');
+  const btnWs = document.getElementById('tab-btn-wireshark');
+  if (btnTs) btnTs.classList.toggle('lf-tab-active', tab === 'tshark');
+  if (btnWs) btnWs.classList.toggle('lf-tab-active', tab === 'wireshark');
+}
+
+function updateWsConfig() {
+  const box = document.getElementById('ws-config-box');
+  if (!box) return;
+  const iface  = document.getElementById('feed-iface-inp')?.value || 'eth0';
+  const filter = (document.getElementById('feed-filter-inp')?.value || '').trim();
+  const ip     = window._serverIp || '(server-ip)';
+  box.textContent = [
+    `SSH Host:   ${ip}`,
+    `SSH Port:   22`,
+    `SSH User:   <ssh-user>  `,
+    `Auth:       SSH Key file (<your-key.pem>  )`,
+    `Command:    <remote-deploy-path>  /pkt-capture`,
+    `Interface:  ${iface}`,
+    `Filter:     ${filter || '(none)'}`,
+  ].join('\n');
+}
+
+function _updateWsToggleUI() {
+  const enabled = !!window._wsEnabled;
+  const dot   = document.getElementById('ws-status-dot');
+  const label = document.getElementById('ws-status-label');
+  const btn   = document.getElementById('ws-toggle-btn');
+  const box   = document.getElementById('ws-config-box');
+  if (dot)   { dot.style.background = enabled ? '#22c55e' : '#4b5563'; dot.style.boxShadow = enabled ? '0 0 6px #22c55e55' : 'none'; }
+  if (label) label.textContent = enabled ? 'Active — Wireshark remote capture is enabled' : 'Disabled — enable to allow Wireshark to connect';
+  if (btn)   { btn.textContent = enabled ? 'Disable' : 'Enable'; btn.style.background = enabled ? 'rgba(239,68,68,.15)' : ''; btn.style.color = enabled ? '#f87171' : ''; btn.style.borderColor = enabled ? 'rgba(239,68,68,.3)' : ''; }
+  if (box)   { box.style.opacity = '1'; box.style.color = enabled ? '#6ee7b7' : '#6b7280'; }
+}
+
+async function toggleWsCapture() {
+  const btn = document.getElementById('ws-toggle-btn');
+  if (btn) btn.disabled = true;
+  try {
+    const resp = await fetch('/api/settings', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({wireshark_capture_enabled: !window._wsEnabled})
+    });
+    if (resp.ok) {
+      window._wsEnabled = !window._wsEnabled;
+      _updateWsToggleUI();
+    }
+  } catch(e) { /* ignore */ }
+  if (btn) btn.disabled = false;
+}
+
+function copyWsConfig() {
+  const box = document.getElementById('ws-config-box');
+  if (!box) return;
+  navigator.clipboard.writeText(box.textContent).then(() => {
+    const ok = document.getElementById('ws-copy-ok');
+    if (!ok) return;
+    ok.style.display = 'inline';
+    setTimeout(() => { ok.style.display = 'none'; }, 2000);
+  });
+}
+
+function updateFeedCommand() {
+  const box = document.getElementById('feed-cmd-box');
+  if (!box) return;
+  const name   = (document.getElementById('feed-name-inp')?.value   || 'my-capture').trim() || 'my-capture';
+  const iface  = (document.getElementById('feed-iface-inp')?.value  || 'eth0');
+  const filter = (document.getElementById('feed-filter-inp')?.value || '').trim();
+  const token  = window._feedToken  || 'YOUR_TOKEN_HERE';
+  const scheme = window._sslEnabled ? 'https' : 'http';
+  const ip     = window._serverIp   || window.location.hostname;
+  const port   = window._serverPort || 8765;
+  const defaultPort = scheme === 'https' ? 443 : 80;
+  const host   = port === defaultPort ? ip : `${ip}:${port}`;
+  const fArg   = filter ? ` -f "${filter}"` : '';
+  box.textContent =
+    `tshark -i ${iface}${fArg} -w - | curl -X POST \\\n` +
+    `  -H "Authorization: Bearer ${token}" \\\n` +
+    `  -H "Content-Type: application/octet-stream" \\\n` +
+    `  --data-binary @- \\\n` +
+    `  "${scheme}://${host}/api/feed/${name}"`;
+  updateWsConfig();
+}
+
+function copyFeedCmd() {
+  const box = document.getElementById('feed-cmd-box');
+  if (!box) return;
+  navigator.clipboard.writeText(box.textContent).then(() => {
+    const ok = document.getElementById('feed-copy-ok');
+    if (!ok) return;
+    ok.style.display = 'inline';
+    setTimeout(() => { ok.style.display = 'none'; }, 2000);
+  });
+}
+
 async function localAsk(prompt, dataArr){
   const resp = await fetch('/api/ai', {
     method: 'POST',
@@ -1957,13 +2607,146 @@ async function localAsk(prompt, dataArr){
     <!-- locked title bar -->
     <div style="background:#0d1117;border-bottom:1px solid #30363d;padding:12px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0">
       <span style="font-size:13px;font-weight:700;color:#58a6ff;flex:1;word-break:break-all" id="stream-modal-title"></span>
-      <button onclick="closeStream()" style="background:none;border:1px solid #30363d;color:#8b949e;border-radius:6px;padding:3px 10px;cursor:pointer;font-family:inherit;font-size:12px">✕ Close</button>
+      <button onclick="closeStream()" style="background:none;border:1px solid #30363d;color:#e6edf3;border-radius:6px;padding:3px 10px;cursor:pointer;font-family:inherit;font-size:12px">✕ Close</button>
     </div>
     <!-- locked meta bar -->
-    <div style="padding:8px 16px;background:#0d1117;border-bottom:1px solid #21262d;font-size:11px;color:#8b949e;display:flex;flex-wrap:wrap;gap:4px;flex-shrink:0" id="stream-modal-meta"></div>
+    <div style="padding:8px 16px;background:#0d1117;border-bottom:1px solid #21262d;font-size:11px;color:#e6edf3;display:flex;flex-wrap:wrap;gap:4px;flex-shrink:0" id="stream-modal-meta"></div>
     <!-- scrollable packet list (detail row injected inline on click) -->
     <div style="overflow-y:auto;overflow-x:auto;flex:1;padding:0;min-height:0" id="stream-modal-body"></div>
   </div>
 </div>
+
+<!-- ═══════════════════════════════════ FLOATING AI ASSISTANT (pktFlow-style) -->
+<button id="ai-fab" onclick="toggleAI()" title="AI Assistant"
+  style="position:fixed;bottom:24px;right:24px;z-index:9999;width:48px;height:48px;border-radius:50%;background:#2563eb;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 25px rgba(0,0,0,.5);color:white;font-size:20px;transition:background .2s;font-family:inherit">
+  ✦
+</button>
+
+<div id="ai-panel" style="display:none;position:fixed;bottom:88px;right:24px;z-index:9999;width:384px;max-width:calc(100vw - 3rem);height:448px;background:#111827;border:1px solid #374151;border-radius:16px;box-shadow:0 25px 50px rgba(0,0,0,.8);flex-direction:column;overflow:hidden">
+  <!-- Header -->
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #1f2937;flex-shrink:0">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="color:#3b82f6;font-size:14px">✦</span>
+      <span style="font-size:13px;font-weight:600;color:#f9fafb">AI Assistant</span>
+      <span style="font-size:11px;color:#6b7280">Claude</span>
+    </div>
+    <button id="ai-clear-btn" onclick="clearAIChat()" style="display:none;background:none;border:none;color:#6b7280;cursor:pointer;font-size:12px;font-family:inherit;padding:2px 6px;border-radius:4px">Clear</button>
+  </div>
+
+  <!-- Messages -->
+  <div id="ai-msgs" style="flex:1;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:10px;font-size:12px">
+    <div id="ai-welcome" style="color:#9ca3af;line-height:1.6">
+      Ask anything about your network traffic:
+      <div style="margin-top:8px;display:flex;flex-direction:column;gap:6px">
+        <button onclick="aiQuickAsk(this)" style="text-align:left;background:#1f2937;border:1px solid #374151;color:#d1d5db;border-radius:8px;padding:7px 10px;cursor:pointer;font-size:11px;font-family:inherit">Why is this device sending so much traffic?</button>
+        <button onclick="aiQuickAsk(this)" style="text-align:left;background:#1f2937;border:1px solid #374151;color:#d1d5db;border-radius:8px;padding:7px 10px;cursor:pointer;font-size:11px;font-family:inherit">Are there any unusual flow patterns right now?</button>
+        <button onclick="aiQuickAsk(this)" style="text-align:left;background:#1f2937;border:1px solid #374151;color:#d1d5db;border-radius:8px;padding:7px 10px;cursor:pointer;font-size:11px;font-family:inherit">What does it mean if packets are much higher than bytes?</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Input -->
+  <div style="padding:10px 12px;border-top:1px solid #1f2937;display:flex;gap:8px;flex-shrink:0">
+    <textarea id="ai-input-fab" rows="1" placeholder="Ask about your network traffic…"
+      style="flex:1;background:#1f2937;border:1px solid #374151;border-radius:8px;color:#f9fafb;padding:8px 10px;font-family:inherit;font-size:12px;resize:none;outline:none;min-height:36px;max-height:96px;overflow-y:auto;line-height:1.5"
+      onkeydown="onAIFabKey(event)" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,96)+'px'"></textarea>
+    <button onclick="sendAIFab()" id="ai-send-fab"
+      style="background:#2563eb;border:none;color:#fff;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;align-self:flex-end;height:36px">→</button>
+  </div>
+</div>
+
+<script>
+(function() {
+  var _aiOpen = false;
+  var _aiLoading = false;
+
+  window.toggleAI = function() {
+    _aiOpen = !_aiOpen;
+    var panel = document.getElementById('ai-panel');
+    var fab   = document.getElementById('ai-fab');
+    panel.style.display = _aiOpen ? 'flex' : 'none';
+    fab.style.background = _aiOpen ? '#374151' : '#2563eb';
+    fab.textContent = _aiOpen ? '✕' : '✦';
+    if (_aiOpen) setTimeout(function(){ document.getElementById('ai-input-fab').focus(); }, 50);
+  };
+
+  window.clearAIChat = function() {
+    var msgs = document.getElementById('ai-msgs');
+    msgs.innerHTML = '<div id="ai-welcome" style="color:#9ca3af;line-height:1.6">Ask anything about your network traffic:<div style="margin-top:8px;display:flex;flex-direction:column;gap:6px"><button onclick="aiQuickAsk(this)" style="text-align:left;background:#1f2937;border:1px solid #374151;color:#d1d5db;border-radius:8px;padding:7px 10px;cursor:pointer;font-size:11px;font-family:inherit">Why is this device sending so much traffic?</button><button onclick="aiQuickAsk(this)" style="text-align:left;background:#1f2937;border:1px solid #374151;color:#d1d5db;border-radius:8px;padding:7px 10px;cursor:pointer;font-size:11px;font-family:inherit">Are there any unusual flow patterns right now?</button><button onclick="aiQuickAsk(this)" style="text-align:left;background:#1f2937;border:1px solid #374151;color:#d1d5db;border-radius:8px;padding:7px 10px;cursor:pointer;font-size:11px;font-family:inherit">What does it mean if packets are much higher than bytes?</button></div></div>';
+    document.getElementById('ai-clear-btn').style.display = 'none';
+  };
+
+  window.aiQuickAsk = function(btn) {
+    document.getElementById('ai-input-fab').value = btn.textContent;
+    sendAIFab();
+  };
+
+  window.onAIFabKey = function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendAIFab(); }
+  };
+
+  window.sendAIFab = function() {
+    var inp = document.getElementById('ai-input-fab');
+    var q = (inp.value || '').trim();
+    if (!q || _aiLoading) return;
+    inp.value = '';
+    inp.style.height = 'auto';
+    _aiLoading = true;
+
+    var welcome = document.getElementById('ai-welcome');
+    if (welcome) welcome.remove();
+    document.getElementById('ai-clear-btn').style.display = 'block';
+
+    var msgs = document.getElementById('ai-msgs');
+
+    // User bubble
+    var ub = document.createElement('div');
+    ub.style.cssText = 'display:flex;justify-content:flex-end';
+    ub.innerHTML = '<div style="max-width:85%;background:#2563eb;color:#fff;border-radius:12px;padding:7px 10px;font-size:11px;line-height:1.5">' + escAI(q) + '</div>';
+    msgs.appendChild(ub);
+
+    // Thinking bubble
+    var tb = document.createElement('div');
+    tb.style.cssText = 'display:flex;justify-content:flex-start';
+    tb.innerHTML = '<div style="background:#1f2937;color:#9ca3af;border-radius:12px;padding:7px 10px;font-size:11px;font-style:italic">Thinking…</div>';
+    msgs.appendChild(tb);
+    msgs.scrollTop = msgs.scrollHeight;
+
+    fetch('/api/ai', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ prompt: q, data: [] })
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d) {
+      tb.remove();
+      var ab = document.createElement('div');
+      ab.style.cssText = 'display:flex;justify-content:flex-start';
+      if (d.error) {
+        ab.innerHTML = '<div style="max-width:85%;background:#450a0a;color:#fca5a5;border:1px solid #7f1d1d;border-radius:12px;padding:7px 10px;font-size:11px;line-height:1.5">' + escAI(d.error) + '</div>';
+      } else {
+        ab.innerHTML = '<div style="max-width:85%;background:#1f2937;color:#d1d5db;border-radius:12px;padding:7px 10px;font-size:11px;line-height:1.5;white-space:pre-wrap">' + escAI(d.content) + '</div>';
+      }
+      msgs.appendChild(ab);
+      msgs.scrollTop = msgs.scrollHeight;
+    })
+    .catch(function(e) {
+      tb.remove();
+      var ab = document.createElement('div');
+      ab.style.cssText = 'display:flex;justify-content:flex-start';
+      ab.innerHTML = '<div style="max-width:85%;background:#450a0a;color:#fca5a5;border:1px solid #7f1d1d;border-radius:12px;padding:7px 10px;font-size:11px">Network error — could not reach AI service.</div>';
+      msgs.appendChild(ab);
+      msgs.scrollTop = msgs.scrollHeight;
+    })
+    .finally(function(){ _aiLoading = false; });
+  };
+
+  function escAI(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+})();
+</script>
+<script src="/static/nav.js"></script>
+
 </body>
 </html>

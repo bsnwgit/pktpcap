@@ -1,4 +1,4 @@
-# PktAnalyzer
+# PktPCAP
 
 
 
@@ -15,14 +15,14 @@ Already a pro? Just edit this README.md and make it your own. Want to make it ea
 
 ```
 cd existing_repo
-git remote add origin https://gitlab.com/example/pktanalyzer.git
+git remote add origin https://gitlab.com/your-username/pktpcap  .git
 git branch -M main
 git push -uf origin main
 ```
 
 ## Integrate with your tools
 
-* [Set up project integrations](https://gitlab.com/example/pktanalyzer/-/settings/integrations)
+* [Set up project integrations](https://gitlab.com/your-username/pktpcap  /-/settings/integrations)
 
 ## Collaborate with your team
 
