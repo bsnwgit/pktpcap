@@ -2,7 +2,7 @@
 setlocal
 
 set SRC=%~dp0service
-set DEST=C:\apps\packet-analyzer
+set DEST=C:\apps\pktpcap
 
 echo.
 echo  Deploying Packet Capture Analyzer to %DEST%
@@ -22,7 +22,7 @@ copy /Y "%SRC%\templates\settings.html" "%DEST%\templates\settings.html" >nul
 echo  Writing start.bat...
 (
 echo @echo off
-echo cd /d "C:\apps\packet-analyzer"
+echo cd /d "C:\apps\pktpcap"
 echo echo Installing dependencies...
 echo pip install -r requirements.txt --quiet
 echo echo.
@@ -32,7 +32,7 @@ echo pause
 ) > "%DEST%\start.bat"
 
 echo.
-echo  Done!  App is at C:\apps\packet-analyzer
-echo  Run:   C:\apps\packet-analyzer\start.bat
+echo  Done!  App is at C:\apps\pktpcap
+echo  Run:   C:\apps\pktpcap\start.bat
 echo.
 pause
