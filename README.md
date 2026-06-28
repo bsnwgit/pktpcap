@@ -518,12 +518,6 @@ pktpcap/
 
 ---
 
-## Git workflow
-
-Changes go to a feature branch — never directly to `main`. Open a PR for review before merging.
-
----
-
 ## License
 
 MIT
