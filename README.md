@@ -22,6 +22,240 @@ pktPCAP is a locally-hosted packet capture analyzer. Drop a `.pcap` or `.pcapng`
 
 ---
 
+## Data Flow
+
+pktPCAP supports two capture delivery modes: **local file upload** and **remote live capture**. Both paths ultimately produce a pcapng byte stream that the browser parses and analyzes.
+
+---
+
+### Mode 1 — Local File Analysis
+
+The simplest path. You already have a capture file.
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  Your Machine                                                    │
+│                                                                  │
+│  [.pcap / .pcapng file]                                          │
+│         │                                                        │
+│         ▼ drag-and-drop / file picker                            │
+│  [Browser — index.html]                                          │
+│         │                                                        │
+│         ├─ parsePcap() ──► JS packet parser (pure client-side)   │
+│         │                  builds flows, TCP stats, DNS, threats  │
+│         │                                                        │
+│         ├─ Rule engine ──► anomaly detection (no server needed)  │
+│         │                                                        │
+│         └─ POST /api/ai ─► [pktPCAP Flask server]                │
+│                                  │                               │
+│                                  ▼                               │
+│                     [Anthropic / OpenAI API]  (optional)         │
+│                                  │                               │
+│                                  ▼                               │
+│                         AI findings panel                        │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+**What happens step by step:**
+
+1. User drops a `.pcap` or `.pcapng` file on the browser UI.
+2. The browser reads the file entirely client-side — bytes never leave the machine via the network.
+3. `parsePcap()` in `index.html` walks every packet record and builds in-memory data structures: flow tuples, TCP flag counters, DNS query tables, and threat indicators.
+4. Rule-based analysis runs immediately in the browser — no server round-trip needed.
+5. If an AI key is configured, the browser POSTs the parsed summary to `/api/ai`. The Flask server proxies the request to Anthropic or OpenAI and returns the model's response.
+6. Results are rendered across seven analysis tabs.
+
+**Server role in local mode:** the Flask server is only involved for the AI proxy (`/api/ai`) and serving static files. Packet parsing is entirely client-side.
+
+---
+
+### Mode 2 — Remote Live Capture (Live Feed)
+
+Use this when you want to capture traffic on a remote host and analyze it without physically moving a file.
+
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  Remote Capture Host                                                         │
+│                                                                              │
+│  NIC / tap ──► [tshark]                                                      │
+│                  │  raw pcapng bytes on stdout                               │
+│                  │  (-w - flag writes to stdout instead of a file)           │
+│                  ▼                                                           │
+│               [curl]                                                         │
+│                  │  HTTP POST, chunked transfer encoding                     │
+│                  │  Authorization: Bearer <feed-token>                       │
+│                  │  Content-Type: application/octet-stream                   │
+└──────────────────┼───────────────────────────────────────────────────────────┘
+                   │  (network — LAN or VPN tunnel)
+                   ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│  pktPCAP Host                                                                │
+│                                                                              │
+│  POST /api/feed/<session-name>                                               │
+│         │                                                                    │
+│         ├─ Bearer token validated against feed_token in DB                   │
+│         │                                                                    │
+│         ├─ FeedSession.append() ─► in-memory ring buffer (200 MB cap)        │
+│         │   (thread-safe, chunked 64 KB reads from request.stream)           │
+│         │                                                                    │
+│         └─ Session stays "connected" until curl closes the connection        │
+│                                                                              │
+│  GET /api/feeds                 ─► list active sessions + bytes buffered     │
+│  GET /api/feeds/<name>/download ─► download buffered pcapng as a file        │
+│  DELETE /api/feeds/<name>       ─► clear and remove session                  │
+│                                                                              │
+│  [User loads buffered capture in UI] ──► same parse/analysis path as Mode 1 │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+**What happens step by step:**
+
+1. User retrieves the feed token from **Settings → Live Feed Token**.
+2. On the remote capture host, `tshark` captures packets on the chosen interface and writes raw pcapng to stdout.
+3. The output is piped to `curl`, which streams it as an HTTP POST to the pktPCAP feed endpoint.
+4. pktPCAP validates the Bearer token and appends incoming chunks to a named `FeedSession` buffer (up to 200 MB; bytes beyond the cap are silently dropped and `truncated` is flagged).
+5. While the feed is active, `GET /api/feeds` shows session status and byte count.
+6. When capture is complete (or at any point), the user clicks **Load from Feed** in the UI, which fetches the buffered bytes and runs the same client-side parse/analysis as Mode 1.
+7. The session can be cleared with `DELETE /api/feeds/<name>` to free memory.
+
+---
+
+### Remote Collector — Software & Configuration
+
+The remote capture host needs only two tools: **tshark** and **curl**. Both are available on Linux, macOS, and Windows.
+
+#### tshark
+
+tshark is the command-line interface to Wireshark. It handles raw packet capture, decoding, and pcapng output.
+
+| Package | Install |
+|---|---|
+| Debian / Ubuntu | `sudo apt install tshark` |
+| RHEL / CentOS | `sudo yum install wireshark-cli` |
+| macOS (Homebrew) | `brew install wireshark` |
+| Windows | Wireshark installer includes tshark |
+
+**Key flags used in the feed pipeline:**
+
+| Flag | Purpose |
+|---|---|
+| `-i <interface>` | Network interface to capture on (e.g., `eth0`, `en0`) |
+| `-w -` | Write pcapng output to stdout instead of a file |
+| `-f "<filter>"` | BPF capture filter — limits what gets captured |
+| `-s <bytes>` | Snap length — truncates packets to N bytes (reduce bandwidth) |
+| `-b filesize:<MB>` | *(optional)* rotate buffer when used standalone |
+
+**Listing available interfaces:**
+```bash
+tshark -D
+```
+
+#### curl
+
+curl handles the HTTP transport to pktPCAP. The `--data-binary @-` flag tells curl to read the POST body from stdin, enabling the pipe.
+
+#### Feed command (generic template)
+
+```bash
+tshark -i <interface> -w - | curl -s \
+  -H "Authorization: Bearer <feed-token>" \
+  -H "Content-Type: application/octet-stream" \
+  --data-binary @- \
+  "http://<pktpcap-host>:<port>/api/feed/<session-name>"
+```
+
+Replace:
+- `<interface>` — capture interface name (see `tshark -D`)
+- `<feed-token>` — token from pktPCAP Settings page
+- `<pktpcap-host>` — hostname or IP of the machine running pktPCAP
+- `<port>` — pktPCAP port (default `8765`)
+- `<session-name>` — alphanumeric label for this capture session (e.g., `edge-fw-20260628`)
+
+**With a BPF filter (capture only HTTP and DNS):**
+```bash
+tshark -i eth0 -f "port 80 or port 443 or port 53" -w - | curl -s \
+  -H "Authorization: Bearer <feed-token>" \
+  -H "Content-Type: application/octet-stream" \
+  --data-binary @- \
+  "http://<pktpcap-host>:8765/api/feed/my-session"
+```
+
+**With snap length (first 256 bytes of each packet — reduces bandwidth):**
+```bash
+tshark -i eth0 -s 256 -w - | curl -s \
+  -H "Authorization: Bearer <feed-token>" \
+  -H "Content-Type: application/octet-stream" \
+  --data-binary @- \
+  "http://<pktpcap-host>:8765/api/feed/my-session"
+```
+
+**HTTPS (if pktPCAP has SSL enabled):**
+```bash
+tshark -i eth0 -w - | curl -s -k \
+  -H "Authorization: Bearer <feed-token>" \
+  -H "Content-Type: application/octet-stream" \
+  --data-binary @- \
+  "https://<pktpcap-host>:8765/api/feed/my-session"
+```
+
+(`-k` skips cert verification for self-signed certs; use `--cacert <cert.pem>` for proper validation.)
+
+#### Running as a background service (Linux systemd)
+
+To run the feed continuously and restart automatically:
+
+**`/etc/systemd/system/pktpcap-feed.service`:**
+```ini
+[Unit]
+Description=pktPCAP Live Feed — <interface>
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/bin/bash -c 'tshark -i <interface> -w - | curl -s \
+  -H "Authorization: Bearer <feed-token>" \
+  -H "Content-Type: application/octet-stream" \
+  --data-binary @- \
+  "http://<pktpcap-host>:<port>/api/feed/<session-name>"'
+Restart=on-failure
+RestartSec=5s
+User=<capture-user>
+
+[Install]
+WantedBy=multi-user.target
+```
+
+> **Note:** on Linux, tshark requires either `root` or a user in the `wireshark` group with `dumpcap` setuid permissions. Run `sudo dpkg-reconfigure wireshark-common` (Debian/Ubuntu) or `sudo usermod -aG wireshark <user>` and log out/in.
+
+**Enable and start:**
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable pktpcap-feed
+sudo systemctl start pktpcap-feed
+sudo systemctl status pktpcap-feed
+```
+
+---
+
+### Feed Session Lifecycle
+
+```
+tshark starts → POST /api/feed/<name> opens → session.connected = True
+                                                    │
+                               data flows in chunks (64 KB reads)
+                                                    │
+tshark stops → curl closes connection → session.connected = False
+                                                    │
+                               buffer persists in memory until:
+                               - user loads it in the UI
+                               - DELETE /api/feeds/<name>
+                               - server restart
+```
+
+Buffer limit is **200 MB per named session**. If the stream exceeds this, the session's `truncated` flag is set and additional bytes are discarded. Monitor usage via `GET /api/feeds`.
+
+---
+
 ## Features
 
 | Feature | Description |
@@ -52,7 +286,7 @@ pktPCAP is a locally-hosted packet capture analyzer. Drop a `.pcap` or `.pcapng`
 ### 1. Clone
 
 ```bash
-git clone https://github.com/your-username/pktpcap  .git
+git clone <your-repo-url>
 cd pktpcap
 ```
 
@@ -284,17 +518,6 @@ pktpcap/
 
 ---
 
-## Git workflow
-
-Changes go to a feature branch — never directly to `main`. PRs are opened on both GitHub and GitLab for review before merging.
-
-| Remote | URL |
-|---|---|
-| GitHub | https://github.com/your-username/pktpcap   |
-| GitLab | https://gitlab.com/your-username/pktpcap   |
-
----
-
 ## License
 
-Internal tool — <your-org>  .
+MIT
