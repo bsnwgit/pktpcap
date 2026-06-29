@@ -3,399 +3,1585 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Settings — Packet Capture Analyzer</title>
+<title>pktPCAP</title>
 <style>
   :root { color-scheme: dark; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
-    background: #0d1117; color: #e6edf3;
-    min-height: 100vh; display: flex; flex-direction: column;
-    font-size: 13px;
-  }
-  .header {
-    background: #161b22; border-bottom: 1px solid #30363d;
-    padding: 12px 24px; display: flex; align-items: center; gap: 12px;
-  }
-  .header-logo { font-size: 15px; font-weight: 700; color: #58a6ff; }
-  .header-back {
-    margin-left: auto; background: none; border: 1px solid #30363d;
-    color: #e6edf3; border-radius: 4px; padding: 4px 12px;
-    cursor: pointer; font-family: inherit; font-size: 11px; text-decoration: none;
-  }
-  .header-back:hover { border-color: #58a6ff; color: #58a6ff; }
-
-  .content { flex: 1; padding: 32px 24px; max-width: 640px; margin: 0 auto; width: 100%; }
-  h1 { font-size: 16px; font-weight: 700; color: #e6edf3; margin-bottom: 6px; }
-  .subtitle { font-size: 11px; color: #e6edf3; margin-bottom: 28px; }
-
-  .section {
-    background: #161b22; border: 1px solid #30363d; border-radius: 10px;
-    padding: 20px; margin-bottom: 16px;
-  }
-  .section-title {
-    font-size: 10px; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.5px; color: #e6edf3; margin-bottom: 16px;
-    padding-bottom: 8px; border-bottom: 1px solid #21262d;
+    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #030712; color: #f9fafb;
+    height: 100vh; display: flex; overflow: hidden;
   }
 
-  .field { margin-bottom: 14px; }
-  .field:last-child { margin-bottom: 0; }
-  label {
-    display: block; font-size: 11px; font-weight: 600; color: #e6edf3;
-    text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 5px;
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 220px; flex-shrink: 0; background: #111827;
+    border-right: 1px solid #1f2937; display: flex; flex-direction: column;
+    height: 100vh; overflow-y: auto;
   }
-  input[type="text"], input[type="number"], input[type="password"], select {
-    width: 100%; background: #0d1117; border: 1px solid #30363d; border-radius: 6px;
-    padding: 8px 12px; color: #e6edf3; font-family: inherit; font-size: 13px;
-    transition: border-color 0.2s;
+  .sidebar-logo {
+    padding: 16px; border-bottom: 1px solid #1f2937;
+    font-size: 14px; font-weight: 700; color: #60a5fa;
+    font-family: 'SF Mono','Fira Code','Consolas',monospace; letter-spacing: -0.3px;
   }
-  input:focus, select:focus { outline: none; border-color: #58a6ff; }
-  input::placeholder { color: #e6edf3; }
-  .field-hint { font-size: 10px; color: #e6edf3; margin-top: 4px; }
+  .sidebar-logo span { color: #f9fafb; }
+  .sidebar-nav-section { padding: 12px 8px 4px; }
+  .sidebar-nav-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #4b5563; padding: 0 8px 6px; }
 
-  .provider-toggle {
-    display: flex; background: #0d1117; border: 1px solid #30363d;
-    border-radius: 8px; padding: 3px; gap: 2px;
+  /* ── Main ── */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .top-bar {
+    height: 48px; flex-shrink: 0; background: #111827; border-bottom: 1px solid #1f2937;
+    display: flex; align-items: center; padding: 0 20px; gap: 12px;
+  }
+  .top-bar-title { font-size: 13px; font-weight: 600; color: #f9fafb; }
+  .content { flex: 1; overflow-y: auto; padding: 24px; min-height: 0; }
+
+  /* ── Tab bar ── */
+  .tab-bar {
+    display: flex; gap: 2px; background: #111827; border: 1px solid #1f2937;
+    border-radius: 12px; padding: 4px; width: fit-content; margin-bottom: 20px;
+    overflow-x: auto;
+  }
+  .tab-btn {
+    font-size: 13px; padding: 6px 16px; border-radius: 8px; border: none;
+    cursor: pointer; white-space: nowrap; transition: all 0.15s; font-family: inherit;
+    background: none; color: #9ca3af;
+  }
+  .tab-btn:hover { color: #f9fafb; }
+  .tab-btn.active { background: #374151; color: #f9fafb; }
+
+  /* ── Section card ── */
+  .section-card {
+    background: #111827; border: 1px solid #1f2937; border-radius: 12px;
+    overflow: hidden; margin-bottom: 16px;
+  }
+  .section-header {
+    padding: 14px 24px; border-bottom: 1px solid #1f2937;
+  }
+  .section-header h2 { font-size: 13px; font-weight: 600; color: #f9fafb; }
+  .section-body { padding: 0 24px; }
+  .section-footer {
+    padding: 14px 24px; border-top: 1px solid #1f2937;
+    display: flex; align-items: center; gap: 12px;
+  }
+
+  /* ── Field row: 3-col grid ── */
+  .field-row {
+    display: grid; grid-template-columns: 1fr 2fr; gap: 16px;
+    align-items: start; padding: 16px 0; border-bottom: 1px solid #1f2937;
+  }
+  .field-row:last-child { border-bottom: none; }
+  .field-label { font-size: 13px; font-weight: 500; color: #f9fafb; }
+  .field-hint { font-size: 11px; color: #6b7280; margin-top: 2px; line-height: 1.4; }
+  .field-input { display: flex; flex-direction: column; gap: 6px; }
+  .field-input-row { display: flex; gap: 8px; align-items: flex-start; }
+  .field-input-row input { flex: 1; }
+
+  /* ── Inputs ── */
+  input[type="text"], input[type="number"], input[type="password"],
+  input[type="email"], select, textarea {
+    width: 100%; background: #1f2937; border: 1px solid #374151; border-radius: 8px;
+    padding: 8px 12px; color: #f9fafb; font-family: inherit; font-size: 13px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none; border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,.2);
+  }
+  input::placeholder, textarea::placeholder { color: #4b5563; }
+  textarea { resize: vertical; min-height: 80px; font-family: 'SF Mono','Fira Code',monospace; font-size: 12px; }
+  select option { background: #1f2937; }
+
+  /* ── Toggle ── */
+  .toggle {
+    position: relative; display: inline-flex; height: 24px; width: 44px;
+    align-items: center; border-radius: 999px; cursor: pointer; flex-shrink: 0;
+    background: #374151; transition: background 0.2s; border: none;
+  }
+  .toggle.on { background: #2563eb; }
+  .toggle-knob {
+    display: inline-block; height: 18px; width: 18px; border-radius: 50%;
+    background: #fff; transition: transform 0.2s; transform: translateX(3px);
+  }
+  .toggle.on .toggle-knob { transform: translateX(23px); }
+
+  /* ── Buttons ── */
+  .btn {
+    background: none; border: 1px solid #374151; color: #d1d5db;
+    border-radius: 8px; padding: 7px 14px; cursor: pointer; font-family: inherit;
+    font-size: 12px; white-space: nowrap; transition: all 0.15s; flex-shrink: 0;
+  }
+  .btn:hover:not(:disabled) { border-color: #6b7280; color: #f9fafb; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-primary {
+    background: #2563eb; border-color: #2563eb; color: #fff;
+    padding: 8px 20px; font-size: 13px; font-weight: 500;
+  }
+  .btn-primary:hover:not(:disabled) { background: #3b82f6; border-color: #3b82f6; color: #fff; }
+  .btn-danger { border-color: #7f1d1d; color: #fca5a5; }
+  .btn-danger:hover:not(:disabled) { border-color: #ef4444; color: #ef4444; }
+  .btn-amber { border-color: #92400e; color: #fcd34d; }
+  .btn-amber:hover:not(:disabled) { background: #d97706; border-color: #d97706; color: #fff; }
+
+  /* ── Status text ── */
+  .status-ok   { font-size: 12px; color: #4ade80; }
+  .status-err  { font-size: 12px; color: #f87171; }
+  .status-info { font-size: 12px; color: #93c5fd; }
+  .status-warn { font-size: 12px; color: #fbbf24; }
+
+  /* ── Inline result pill ── */
+  .result {
+    font-size: 11px; padding: 5px 10px; border-radius: 6px; display: none;
+  }
+  .result.ok   { display: block; background: rgba(34,197,94,.1); color: #4ade80; border: 1px solid rgba(34,197,94,.2); }
+  .result.err  { display: block; background: rgba(239,68,68,.1); color: #f87171; border: 1px solid rgba(239,68,68,.2); }
+  .result.info { display: block; background: rgba(59,130,246,.1); color: #93c5fd; border: 1px solid rgba(59,130,246,.2); }
+
+  /* ── Provider toggle ── */
+  .prov-bar {
+    display: flex; background: #0d1117; border: 1px solid #374151;
+    border-radius: 8px; padding: 3px; gap: 2px; width: fit-content;
   }
   .prov-btn {
-    flex: 1; padding: 7px 12px; border-radius: 6px; border: none; cursor: pointer;
-    font-family: inherit; font-size: 12px; font-weight: 600; transition: all 0.2s;
-    background: none; color: #e6edf3;
+    padding: 6px 16px; border-radius: 6px; border: none; cursor: pointer;
+    font-family: inherit; font-size: 12px; font-weight: 600; background: none; color: #9ca3af; transition: all 0.15s;
   }
-  .prov-btn.active { background: #21262d; color: #58a6ff; }
-  .prov-btn:hover:not(.active) { color: #e6edf3; }
+  .prov-btn.active { background: #374151; color: #f9fafb; }
 
-  .key-row { display: flex; gap: 8px; align-items: flex-start; }
-  .key-row input { flex: 1; }
-  .test-btn {
-    background: none; border: 1px solid #30363d; color: #e6edf3;
-    border-radius: 6px; padding: 8px 14px; cursor: pointer; font-family: inherit;
-    font-size: 11px; white-space: nowrap; transition: all 0.2s; flex-shrink: 0;
+  /* ── SSL drop zone ── */
+  .drop-zone {
+    border: 2px dashed #374151; border-radius: 8px; padding: 20px;
+    text-align: center; cursor: pointer; transition: all 0.2s; background: #0d1117;
+    position: relative;
   }
-  .test-btn:hover { border-color: #58a6ff; color: #58a6ff; }
-  .test-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .drop-zone.drag-over { border-color: #3b82f6; background: rgba(59,130,246,.05); }
+  .drop-zone.has-file  { border-color: #16a34a; border-style: solid; background: rgba(22,163,74,.05); }
+  .drop-zone-icon { font-size: 24px; margin-bottom: 6px; }
+  .drop-zone-label { font-size: 12px; color: #9ca3af; }
+  .drop-zone-file  { font-size: 12px; color: #4ade80; font-weight: 500; }
+  .drop-zone input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 
-  .test-result {
-    font-size: 11px; margin-top: 5px; padding: 5px 10px;
-    border-radius: 5px; display: none;
+  /* ── SSL status badge ── */
+  .ssl-status {
+    display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+    background: #1f2937; border: 1px solid #374151; border-radius: 8px; margin-bottom: 12px;
   }
-  .test-result.ok  { background: rgba(46,160,67,.15); color: #2ea043; border: 1px solid rgba(46,160,67,.3); }
-  .test-result.err { background: rgba(248,81,73,.15); color: #f85149; border: 1px solid rgba(248,81,73,.3); }
+  .ssl-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .ssl-dot.green { background: #22c55e; }
+  .ssl-dot.gray  { background: #6b7280; }
 
-  .actions { display: flex; gap: 10px; margin-top: 20px; }
-  .save-btn {
-    background: #238636; border: 1px solid #2ea043; color: #fff;
-    border-radius: 8px; padding: 10px 28px; font-size: 13px; font-weight: 600;
-    font-family: inherit; cursor: pointer; transition: all 0.2s;
+  /* ── Mode tabs (PFX/PEM) ── */
+  .mode-bar { display: flex; gap: 4px; margin-bottom: 14px; }
+  .mode-btn {
+    padding: 5px 14px; font-size: 12px; font-weight: 500; border-radius: 6px;
+    border: none; cursor: pointer; font-family: inherit; transition: all 0.15s;
+    background: none; color: #9ca3af;
   }
-  .save-btn:hover:not(:disabled) { background: #2ea043; }
-  .save-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-  .status-msg {
-    font-size: 11px; padding: 8px 14px; border-radius: 6px;
-    display: none; align-items: center;
-  }
-  .status-msg.ok  { display: flex; background: rgba(46,160,67,.15); color: #2ea043; border: 1px solid rgba(46,160,67,.3); }
-  .status-msg.err { display: flex; background: rgba(248,81,73,.15); color: #f85149; border: 1px solid rgba(248,81,73,.3); }
+  .mode-btn.active { background: #2563eb; color: #fff; }
 
-  .provider-sections .prov-section { display: none; }
-  .provider-sections .prov-section.visible { display: block; }
-
-  .port-restart-note {
-    font-size: 10px; color: #e6edf3; margin-top: 5px;
+  /* ── Notification subsection ── */
+  .notif-block {
+    border: 1px solid #1f2937; border-radius: 8px; overflow: hidden; margin-bottom: 10px;
   }
-
-  /* ── SSL path row ── */
-  .ssl-fields { margin-top: 12px; }
-  .ssl-fields.hidden { display: none; }
-
-  /* ── Toggle switch ── */
-  .toggle-row { display: flex; align-items: center; justify-content: space-between; }
-  .toggle-label { font-size: 12px; color: #e6edf3; }
-  .toggle-hint  { font-size: 10px; color: #e6edf3; margin-top: 4px; }
-  .switch { position: relative; display: inline-block; width: 40px; height: 22px; flex-shrink: 0; }
-  .switch input { opacity: 0; width: 0; height: 0; }
-  .slider {
-    position: absolute; cursor: pointer; inset: 0;
-    background: #30363d; border-radius: 22px; transition: background 0.2s;
+  .notif-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px; background: #1a2234; cursor: pointer;
   }
-  .slider:before {
-    content: ''; position: absolute; height: 16px; width: 16px;
-    left: 3px; bottom: 3px; background: #8b949e; border-radius: 50%; transition: transform 0.2s, background 0.2s;
+  .notif-title { font-size: 13px; font-weight: 500; color: #f9fafb; }
+  .notif-body  { padding: 0 16px; }
+  .notif-body .field-row { grid-template-columns: 160px 1fr; }
+
+  /* ── Cert textarea with status ── */
+  .cert-saved {
+    display: flex; align-items: center; gap: 8px;
+    background: #1f2937; border: 1px solid #374151; border-radius: 8px; padding: 10px 12px;
   }
-  input:checked + .slider { background: #238636; }
-  input:checked + .slider:before { transform: translateX(18px); background: #fff; }
+  .cert-saved span { font-size: 12px; color: #4ade80; flex: 1; }
+
+  .hidden { display: none !important; }
+
+  /* ── Users table ── */
+  .users-table { width: 100%; border-collapse: collapse; }
+  .users-table th { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: #6b7280; padding: 10px 16px; text-align: left; border-bottom: 1px solid #1f2937; }
+  .users-table td { padding: 12px 16px; border-bottom: 1px solid #1f2937; font-size: 13px; vertical-align: middle; }
+  .users-table tr:last-child td { border-bottom: none; }
+  .user-avatar { width: 32px; height: 32px; border-radius: 50%; background: #1d4ed8; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #fff; flex-shrink: 0; }
+  .user-cell { display: flex; align-items: center; gap: 10px; }
+  .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 500; }
+  .badge-admin   { background: rgba(37,99,235,.15);  color: #60a5fa; border: 1px solid rgba(37,99,235,.3); }
+  .badge-analyst { background: rgba(124,58,237,.15); color: #a78bfa; border: 1px solid rgba(124,58,237,.3); }
+  .badge-viewer  { background: #1f2937; color: #9ca3af; border: 1px solid #374151; }
+  .badge-active  { background: rgba(22,163,74,.15);  color: #4ade80; border: 1px solid rgba(22,163,74,.3); }
+  .badge-inactive{ background: #1f2937; color: #9ca3af; border: 1px solid #374151; }
+
+  /* ── Modal ── */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.7); display: flex; align-items: center; justify-content: center; z-index: 100; }
+  .modal-box { background: #111827; border: 1px solid #374151; border-radius: 12px; width: 440px; max-width: 95vw; }
+  .modal-header { padding: 16px 20px; border-bottom: 1px solid #1f2937; display: flex; align-items: center; justify-content: space-between; }
+  .modal-header h3 { font-size: 14px; font-weight: 600; }
+  .modal-close { background: none; border: none; color: #6b7280; cursor: pointer; font-size: 20px; line-height: 1; padding: 0 4px; }
+  .modal-close:hover { color: #f9fafb; }
+  .modal-body { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+  .modal-footer { padding: 14px 20px; border-top: 1px solid #1f2937; display: flex; justify-content: flex-end; gap: 8px; }
+  .modal-label { font-size: 12px; font-weight: 500; color: #d1d5db; margin-bottom: 4px; }
 </style>
 </head>
 <body>
 
-<div class="header">
-  <div class="header-logo">⚙ Packet Capture Analyzer — Settings</div>
-  <a href="/" class="header-back">← Back to App</a>
+<!-- Sidebar -->
+<div class="sidebar" style="font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+  <div class="sidebar-logo">
+    <img src="/static/logo.png" alt="pktsuite" style="height:64px;width:auto;display:block">
+  </div>
+  <nav id="sidebar-nav" data-active="settings" style="flex:1;padding:16px 8px;display:flex;flex-direction:column;gap:2px"></nav>
+  <div style="padding:10px 12px;border-top:1px solid #1f2937">
+    <div style="display:flex;align-items:center;gap:8px;padding:4px 4px">
+      <div id="nav-user-avatar" style="width:28px;height:28px;border-radius:50%;background:#2563eb;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;font-family:Inter,sans-serif">—</div>
+      <div style="flex:1;min-width:0;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+        <div id="nav-user-name" style="font-size:12px;font-weight:500;color:#ffffff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
+        <div id="nav-user-role" style="font-size:11px;color:#6b7280">—</div>
+      </div>
+      <a href="#" title="Sign out" onclick="doSignOut();return false;" style="color:#6b7280;flex-shrink:0;display:flex;align-items:center" onmouseover="this.style.color='#9ca3af'" onmouseout="this.style.color='#6b7280'">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </div>
+  </div>
 </div>
 
-<div class="content">
-  <h1>Configuration</h1>
-  <p class="subtitle">API keys are stored in <code>config.json</code> and never sent to the browser in full.</p>
-
-  <!-- Server -->
-  <div class="section">
-    <div class="section-title">Server</div>
-    <div class="field">
-      <label>Port</label>
-      <input type="number" id="port" min="1024" max="65535" value="8765">
-      <p class="port-restart-note">Restart the server after changing the port.</p>
-    </div>
-    <div class="field" style="margin-top:6px">
-      <div style="display:flex;gap:10px;align-items:center">
-        <button class="test-btn" id="restart-btn" onclick="restartServer()" style="border-color:#e3b341;color:#e3b341;">↺ Restart Server</button>
-        <div class="test-result" id="restart-result" style="display:none;flex:1"></div>
-      </div>
-    </div>
+<!-- Main -->
+<div class="main">
+  <div class="top-bar">
+    <div class="top-bar-title">Settings</div>
   </div>
 
-  <!-- SSL / HTTPS -->
-  <div class="section">
-    <div class="section-title">SSL / HTTPS</div>
-    <div class="field">
-      <div class="toggle-row">
-        <span class="toggle-label">Enable HTTPS</span>
-        <label class="switch">
-          <input type="checkbox" id="ssl-toggle" onchange="toggleSslFields(this.checked)">
-          <span class="slider"></span>
-        </label>
-      </div>
-      <p class="toggle-hint">Requires a valid certificate and key file. Restart the server to apply.</p>
+  <div class="content">
+    <div class="tab-bar" id="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('general')">General</button>
+      <button class="tab-btn" onclick="switchTab('storage')">Storage</button>
+      <button class="tab-btn" onclick="switchTab('backup')">Backup</button>
+      <button class="tab-btn" onclick="switchTab('auth')">Auth</button>
+      <button class="tab-btn" onclick="switchTab('notifications')">Notifications</button>
+      <button class="tab-btn" onclick="switchTab('integrations')">Integrations</button>
+      <button class="tab-btn" onclick="switchTab('database')">Database</button>
+      <button class="tab-btn" onclick="switchTab('users')">Users</button>
     </div>
-    <div class="ssl-fields hidden" id="ssl-fields">
-      <div class="field">
-        <label>Certificate File (.crt / .pem)</label>
-        <input type="text" id="ssl_cert" placeholder="C:\path\to\cert.pem" autocomplete="off">
-        <p class="field-hint">Full path to the PEM-encoded certificate file.</p>
-      </div>
-      <div class="field">
-        <label>Private Key File (.key / .pem)</label>
-        <input type="text" id="ssl_key" placeholder="C:\path\to\key.pem" autocomplete="off">
-        <p class="field-hint">Full path to the private key file. Keep this file secure.</p>
-      </div>
-    </div>
-  </div>
 
-  <!-- AI Provider -->
-  <div class="section">
-    <div class="section-title">AI Provider</div>
-    <div class="field">
-      <label>Provider</label>
-      <div class="provider-toggle">
-        <button class="prov-btn active" id="btn-anthropic" onclick="setProvider('anthropic')">Anthropic (Claude)</button>
-        <button class="prov-btn" id="btn-openai" onclick="setProvider('openai')">OpenAI</button>
-      </div>
-    </div>
-    <input type="hidden" id="provider" value="anthropic">
+    <!-- ══ GENERAL ══ -->
+    <div id="tab-general">
 
-    <div class="provider-sections">
-
-      <!-- Anthropic -->
-      <div class="prov-section visible" id="section-anthropic">
-        <div class="field">
-          <label>Anthropic API Key</label>
-          <div class="key-row">
-            <input type="password" id="anthropic_key" placeholder="sk-ant-…" autocomplete="off">
-            <button class="test-btn" id="test-ant-btn" onclick="testKey('anthropic')">Test</button>
+      <div class="section-card">
+        <div class="section-header"><h2>General</h2></div>
+        <div class="section-body">
+          <div class="field-row">
+            <div><p class="field-label">App name</p><p class="field-hint">Displayed in browser tab and header</p></div>
+            <div class="field-input"><input type="text" id="app_name" placeholder="pktPCAP"></div>
           </div>
-          <div class="test-result" id="test-ant-result"></div>
-          <p class="field-hint">Get your key at console.anthropic.com → API Keys</p>
-        </div>
-        <div class="field">
-          <label>Model</label>
-          <select id="anthropic_model">
-            <option value="claude-opus-4-8">claude-opus-4-8 (most capable)</option>
-            <option value="claude-sonnet-4-6">claude-sonnet-4-6 (balanced)</option>
-            <option value="claude-haiku-4-5-20251001">claude-haiku-4-5 (fastest)</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- OpenAI -->
-      <div class="prov-section" id="section-openai">
-        <div class="field">
-          <label>OpenAI API Key</label>
-          <div class="key-row">
-            <input type="password" id="openai_key" placeholder="sk-…" autocomplete="off">
-            <button class="test-btn" id="test-oai-btn" onclick="testKey('openai')">Test</button>
+          <div class="field-row">
+            <div><p class="field-label">Port</p><p class="field-hint">Restart required after changing</p></div>
+            <div class="field-input"><input type="number" id="port" min="1024" max="65535" value="8765"></div>
           </div>
-          <div class="test-result" id="test-oai-result"></div>
-          <p class="field-hint">Get your key at platform.openai.com → API Keys</p>
+          <div class="field-row">
+            <div><p class="field-label">Timezone</p><p class="field-hint">Affects display of timestamps</p></div>
+            <div class="field-input">
+              <select id="timezone">
+                <option value="UTC">UTC</option>
+                <option value="America/New_York">America/New_York</option>
+                <option value="America/Chicago">America/Chicago</option>
+                <option value="America/Denver">America/Denver</option>
+                <option value="America/Los_Angeles">America/Los_Angeles</option>
+                <option value="Europe/London">Europe/London</option>
+                <option value="Europe/Paris">Europe/Paris</option>
+                <option value="Asia/Tokyo">Asia/Tokyo</option>
+              </select>
+            </div>
+          </div>
+          <div class="field-row">
+            <div><p class="field-label">Restart Service</p><p class="field-hint">Apply backend changes or recover from errors</p></div>
+            <div class="field-input">
+              <div style="display:flex;align-items:center;gap:12px">
+                <button class="btn btn-amber" id="restart-btn" onclick="restartServer()">Restart Service</button>
+                <span id="restart-result"></span>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="field">
-          <label>Model</label>
-          <select id="openai_model">
-            <option value="gpt-4o">gpt-4o (recommended)</option>
-            <option value="gpt-4o-mini">gpt-4o-mini (faster / cheaper)</option>
-            <option value="o1">o1 (reasoning)</option>
-          </select>
+        <div class="section-footer">
+          <button class="btn btn-primary" onclick="saveSection('general')">Save</button>
+          <span id="save-general-result"></span>
         </div>
       </div>
 
+      <div class="section-card">
+        <div class="section-header"><h2>AI Provider</h2></div>
+        <div class="section-body">
+          <div class="field-row">
+            <div><p class="field-label">Provider</p></div>
+            <div class="field-input">
+              <div class="prov-bar">
+                <button class="prov-btn active" id="btn-anthropic" onclick="setProvider('anthropic')">Anthropic (Claude)</button>
+                <button class="prov-btn" id="btn-openai" onclick="setProvider('openai')">OpenAI</button>
+              </div>
+              <input type="hidden" id="provider" value="anthropic">
+            </div>
+          </div>
+          <div id="section-anthropic">
+            <div class="field-row">
+              <div><p class="field-label">Anthropic API Key</p><p class="field-hint">console.anthropic.com → API Keys</p></div>
+              <div class="field-input">
+                <div class="field-input-row">
+                  <input type="password" id="anthropic_key" placeholder="sk-ant-…" autocomplete="off">
+                  <button class="btn" onclick="testKey('anthropic')">Test</button>
+                </div>
+                <div class="result" id="test-ant-result"></div>
+              </div>
+            </div>
+            <div class="field-row">
+              <div><p class="field-label">Model</p></div>
+              <div class="field-input">
+                <select id="anthropic_model">
+                  <option value="claude-opus-4-8">claude-opus-4-8 (most capable)</option>
+                  <option value="claude-sonnet-4-6">claude-sonnet-4-6 (balanced)</option>
+                  <option value="claude-haiku-4-5-20251001">claude-haiku-4-5 (fastest)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div id="section-openai" class="hidden">
+            <div class="field-row">
+              <div><p class="field-label">OpenAI API Key</p><p class="field-hint">platform.openai.com → API Keys</p></div>
+              <div class="field-input">
+                <div class="field-input-row">
+                  <input type="password" id="openai_key" placeholder="sk-…" autocomplete="off">
+                  <button class="btn" onclick="testKey('openai')">Test</button>
+                </div>
+                <div class="result" id="test-oai-result"></div>
+              </div>
+            </div>
+            <div class="field-row">
+              <div><p class="field-label">Model</p></div>
+              <div class="field-input">
+                <select id="openai_model">
+                  <option value="gpt-4o">gpt-4o</option>
+                  <option value="gpt-4o-mini">gpt-4o-mini</option>
+                  <option value="o1">o1</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="section-footer">
+          <button class="btn btn-primary" onclick="saveSection('ai')">Save</button>
+          <span id="save-ai-result"></span>
+        </div>
+      </div>
+
+    </div><!-- /tab-general -->
+
+    <!-- ══ STORAGE ══ -->
+    <div id="tab-storage" class="hidden">
+      <div class="section-card">
+        <div class="section-header"><h2>Storage</h2></div>
+        <div class="section-body">
+          <div class="field-row">
+            <div><p class="field-label">Storage path</p><p class="field-hint">Directory where capture files are stored</p></div>
+            <div class="field-input"><input type="text" id="storage_path" placeholder="/mnt/captures"></div>
+          </div>
+          <div class="field-row">
+            <div><p class="field-label">Max upload size</p><p class="field-hint">Maximum size per uploaded capture file</p></div>
+            <div class="field-input" style="flex-direction:row;align-items:center;gap:8px">
+              <input type="number" id="max_upload_mb" min="1" style="max-width:120px">
+              <span style="font-size:12px;color:#6b7280">MB</span>
+            </div>
+          </div>
+          <div class="field-row">
+            <div><p class="field-label">Storage quota</p><p class="field-hint">Total disk quota for all captures</p></div>
+            <div class="field-input" style="flex-direction:row;align-items:center;gap:8px">
+              <input type="number" id="storage_quota_gb" min="1" style="max-width:120px">
+              <span style="font-size:12px;color:#6b7280">GB</span>
+            </div>
+          </div>
+          <div class="field-row">
+            <div><p class="field-label">Retention period</p><p class="field-hint">Delete captures older than this</p></div>
+            <div class="field-input" style="flex-direction:row;align-items:center;gap:8px">
+              <input type="number" id="retention_days" min="1" style="max-width:120px">
+              <span style="font-size:12px;color:#6b7280">days</span>
+            </div>
+          </div>
+          <div class="field-row">
+            <div><p class="field-label">Auto-purge</p><p class="field-hint">Automatically delete captures older than the retention period</p></div>
+            <div class="field-input">
+              <button type="button" class="toggle" id="toggle-auto_purge" onclick="toggleBool('auto_purge')"><span class="toggle-knob"></span></button>
+              <input type="hidden" id="auto_purge" value="false">
+            </div>
+          </div>
+        </div>
+        <div class="section-footer">
+          <button class="btn btn-primary" onclick="saveSection('storage')">Save</button>
+          <span id="save-storage-result"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ BACKUP ══ -->
+    <div id="tab-backup" class="hidden">
+      <div class="section-card">
+        <div class="section-header"><h2>Backup</h2></div>
+        <div class="section-body">
+          <div class="field-row">
+            <div><p class="field-label">Auto backup</p><p class="field-hint">Enable scheduled automatic backups</p></div>
+            <div class="field-input">
+              <button type="button" class="toggle" id="toggle-auto_backup" onclick="toggleBool('auto_backup')"><span class="toggle-knob"></span></button>
+              <input type="hidden" id="auto_backup" value="false">
+            </div>
+          </div>
+          <div class="field-row">
+            <div><p class="field-label">Backup path</p><p class="field-hint">Directory to write backup archives</p></div>
+            <div class="field-input"><input type="text" id="backup_path" placeholder="/mnt/backups"></div>
+          </div>
+          <div class="field-row">
+            <div><p class="field-label">Backup interval</p><p class="field-hint">How often to run a backup</p></div>
+            <div class="field-input" style="flex-direction:row;align-items:center;gap:8px">
+              <input type="number" id="backup_interval_hours" min="1" style="max-width:120px">
+              <span style="font-size:12px;color:#6b7280">hours</span>
+            </div>
+          </div>
+          <div class="field-row">
+            <div><p class="field-label">Keep backups</p><p class="field-hint">Number of backups to retain before rotating</p></div>
+            <div class="field-input" style="flex-direction:row;align-items:center;gap:8px">
+              <input type="number" id="backup_rotation" min="1" style="max-width:120px">
+              <span style="font-size:12px;color:#6b7280">copies</span>
+            </div>
+          </div>
+          <div class="field-row">
+            <div><p class="field-label">Include captures</p><p class="field-hint">Include capture files in backup (large)</p></div>
+            <div class="field-input">
+              <button type="button" class="toggle" id="toggle-backup_include_captures" onclick="toggleBool('backup_include_captures')"><span class="toggle-knob"></span></button>
+              <input type="hidden" id="backup_include_captures" value="false">
+            </div>
+          </div>
+        </div>
+        <div class="section-footer">
+          <button class="btn btn-primary" onclick="saveSection('backup')">Save</button>
+          <span id="save-backup-result"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ AUTH ══ -->
+    <div id="tab-auth" class="hidden">
+      <div class="section-card">
+        <div class="section-header"><h2>Authentication</h2></div>
+        <div class="section-body">
+
+          <div class="field-row">
+            <div><p class="field-label">Local auth</p><p class="field-hint">Username/password login using local accounts</p></div>
+            <div class="field-input">
+              <button type="button" class="toggle" id="toggle-local_auth_enabled" onclick="toggleBool('local_auth_enabled')"><span class="toggle-knob"></span></button>
+              <input type="hidden" id="local_auth_enabled" value="true">
+            </div>
+          </div>
+          <div class="field-row">
+            <div><p class="field-label">Session timeout</p></div>
+            <div class="field-input" style="flex-direction:row;align-items:center;gap:8px">
+              <input type="number" id="session_timeout_minutes" min="5" max="10080" style="max-width:120px">
+              <span style="font-size:12px;color:#6b7280">minutes</span>
+            </div>
+          </div>
+
+          <div style="padding:16px 0 4px">
+            <p style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#4b5563">Okta SAML 2.0 SSO</p>
+          </div>
+
+          <div class="field-row">
+            <div><p class="field-label">Enable SAML SSO</p></div>
+            <div class="field-input">
+              <button type="button" class="toggle" id="toggle-okta_saml_enabled" onclick="toggleBool('okta_saml_enabled');updateSamlVisibility()"><span class="toggle-knob"></span></button>
+              <input type="hidden" id="okta_saml_enabled" value="false">
+            </div>
+          </div>
+
+          <div id="saml-fields" class="hidden">
+            <div class="field-row">
+              <div><p class="field-label">Paste IdP Metadata XML</p><p class="field-hint">Paste the full XML from Okta → Sign On → Identity Provider metadata. Fields below will auto-fill.</p></div>
+              <div class="field-input">
+                <textarea id="okta_metadata_xml" rows="5" placeholder='&lt;md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" …&gt;' oninput="parseMetadata(this.value)"></textarea>
+                <div class="result" id="metadata-parse-result"></div>
+              </div>
+            </div>
+            <div class="field-row">
+              <div><p class="field-label">IdP Entity ID</p><p class="field-hint">From Okta metadata: Identity Provider Issuer</p></div>
+              <div class="field-input"><input type="text" id="okta_entity_id" placeholder="http://www.okta.com/..." style="font-family:'SF Mono','Fira Code',monospace;font-size:12px"></div>
+            </div>
+            <div class="field-row">
+              <div><p class="field-label">IdP SSO URL</p><p class="field-hint">From Okta metadata: Identity Provider Single Sign-On URL</p></div>
+              <div class="field-input"><input type="text" id="okta_sso_url" placeholder="https://yourorg.okta.com/app/…/sso/saml" style="font-family:'SF Mono','Fira Code',monospace;font-size:12px"></div>
+            </div>
+            <div class="field-row">
+              <div><p class="field-label">IdP X.509 Certificate</p><p class="field-hint">PEM headers are stripped automatically</p></div>
+              <div class="field-input" id="cert-wrap-okta_cert"></div>
+            </div>
+            <div class="field-row">
+              <div><p class="field-label">SP Entity ID</p><p class="field-hint">Leave blank to use the auto-generated metadata URL</p></div>
+              <div class="field-input"><input type="text" id="okta_sp_entity_id" placeholder="" style="font-family:'SF Mono','Fira Code',monospace;font-size:12px"></div>
+            </div>
+            <div class="field-row">
+              <div><p class="field-label">ACS URL (read-only)</p><p class="field-hint">Register this URL as the Single Sign-On URL in your Okta app</p></div>
+              <div class="field-input">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <input type="text" id="acs_url_display" readonly style="flex:1;background:#0d1117;border:1px solid #374151;border-radius:8px;padding:8px 12px;color:#6b7280;font-family:'SF Mono','Fira Code',monospace;font-size:12px;cursor:default">
+                  <a id="sp-metadata-link" href="#" target="_blank" style="font-size:11px;color:#60a5fa;white-space:nowrap;text-decoration:none">View SP metadata ↗</a>
+                </div>
+              </div>
+            </div>
+            <div class="field-row">
+              <div><p class="field-label">SP Certificate</p><p class="field-hint">Optional: for signed authentication requests</p></div>
+              <div class="field-input" id="cert-wrap-okta_sp_cert"></div>
+            </div>
+            <div class="field-row" style="border-bottom:none">
+              <div><p class="field-label">SP Private Key</p><p class="field-hint">Optional: private key for signing requests (kept secret)</p></div>
+              <div class="field-input" id="cert-wrap-okta_sp_key"></div>
+            </div>
+          </div>
+
+        </div>
+        <div class="section-footer">
+          <button class="btn btn-primary" onclick="saveSection('auth')">Save</button>
+          <span id="save-auth-result"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ NOTIFICATIONS ══ -->
+    <div id="tab-notifications" class="hidden">
+      <div class="section-card">
+        <div class="section-header"><h2>Notifications</h2></div>
+        <div class="section-body" style="padding-top:8px;padding-bottom:8px">
+
+          <!-- Slack -->
+          <div class="notif-block">
+            <div class="notif-header" onclick="toggleNotif('slack')">
+              <span class="notif-title">Slack</span>
+              <button type="button" class="toggle" id="toggle-notify_slack_enabled" onclick="event.stopPropagation();toggleBool('notify_slack_enabled')"><span class="toggle-knob"></span></button>
+              <input type="hidden" id="notify_slack_enabled" value="false">
+            </div>
+            <div id="notif-slack" class="notif-body hidden">
+              <div class="field-row">
+                <div><p class="field-label">Webhook URL</p></div>
+                <div class="field-input"><input type="text" id="notify_slack_webhook_url" placeholder="https://hooks.slack.com/services/…"></div>
+              </div>
+              <div class="field-row">
+                <div><p class="field-label">Channel</p></div>
+                <div class="field-input"><input type="text" id="notify_slack_channel" placeholder="#alerts"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Email -->
+          <div class="notif-block">
+            <div class="notif-header" onclick="toggleNotif('email')">
+              <span class="notif-title">Email (SMTP)</span>
+              <button type="button" class="toggle" id="toggle-notify_email_enabled" onclick="event.stopPropagation();toggleBool('notify_email_enabled')"><span class="toggle-knob"></span></button>
+              <input type="hidden" id="notify_email_enabled" value="false">
+            </div>
+            <div id="notif-email" class="notif-body hidden">
+              <div class="field-row">
+                <div><p class="field-label">SMTP Host</p></div>
+                <div class="field-input field-input-row" style="flex-direction:row">
+                  <input type="text" id="notify_email_smtp_host" placeholder="smtp.example.com">
+                  <input type="number" id="notify_email_smtp_port" style="max-width:90px" placeholder="587">
+                </div>
+              </div>
+              <div class="field-row">
+                <div><p class="field-label">Use TLS</p></div>
+                <div class="field-input">
+                  <button type="button" class="toggle" id="toggle-notify_smtp_tls" onclick="toggleBool('notify_smtp_tls')"><span class="toggle-knob"></span></button>
+                  <input type="hidden" id="notify_smtp_tls" value="true">
+                </div>
+              </div>
+              <div class="field-row">
+                <div><p class="field-label">Credentials</p></div>
+                <div class="field-input">
+                  <div class="field-input-row">
+                    <input type="text" id="notify_email_username" placeholder="username">
+                    <input type="password" id="notify_email_password" placeholder="password" autocomplete="off">
+                  </div>
+                </div>
+              </div>
+              <div class="field-row">
+                <div><p class="field-label">From / Default To</p></div>
+                <div class="field-input">
+                  <div class="field-input-row">
+                    <input type="email" id="notify_email_from" placeholder="from@example.com">
+                    <input type="email" id="notify_email_default_to" placeholder="to@example.com">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- PagerDuty -->
+          <div class="notif-block">
+            <div class="notif-header" onclick="toggleNotif('pd')">
+              <span class="notif-title">PagerDuty</span>
+              <button type="button" class="toggle" id="toggle-notify_pagerduty_enabled" onclick="event.stopPropagation();toggleBool('notify_pagerduty_enabled')"><span class="toggle-knob"></span></button>
+              <input type="hidden" id="notify_pagerduty_enabled" value="false">
+            </div>
+            <div id="notif-pd" class="notif-body hidden">
+              <div class="field-row">
+                <div><p class="field-label">Integration Key</p></div>
+                <div class="field-input"><input type="password" id="notify_pagerduty_integration_key" placeholder="••••••••" autocomplete="off"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Webhook -->
+          <div class="notif-block">
+            <div class="notif-header" onclick="toggleNotif('webhook')">
+              <span class="notif-title">Generic Webhook</span>
+              <button type="button" class="toggle" id="toggle-notify_webhook_enabled" onclick="event.stopPropagation();toggleBool('notify_webhook_enabled')"><span class="toggle-knob"></span></button>
+              <input type="hidden" id="notify_webhook_enabled" value="false">
+            </div>
+            <div id="notif-webhook" class="notif-body hidden">
+              <div class="field-row">
+                <div><p class="field-label">URL</p></div>
+                <div class="field-input field-input-row" style="flex-direction:row">
+                  <input type="text" id="notify_webhook_url" placeholder="https://…">
+                  <select id="notify_webhook_method" style="max-width:90px">
+                    <option value="POST">POST</option><option value="PUT">PUT</option><option value="GET">GET</option>
+                  </select>
+                </div>
+              </div>
+              <div class="field-row">
+                <div><p class="field-label">Payload template</p><p class="field-hint">JSON with {{message}} placeholder</p></div>
+                <div class="field-input"><textarea id="notify_webhook_payload_template" placeholder='{"text":"{{message}}"}'></textarea></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tracecat -->
+          <div class="notif-block">
+            <div class="notif-header" onclick="toggleNotif('tracecat')">
+              <span class="notif-title">Tracecat</span>
+              <button type="button" class="toggle" id="toggle-notify_tracecat_enabled" onclick="event.stopPropagation();toggleBool('notify_tracecat_enabled')"><span class="toggle-knob"></span></button>
+              <input type="hidden" id="notify_tracecat_enabled" value="false">
+            </div>
+            <div id="notif-tracecat" class="notif-body hidden">
+              <div class="field-row">
+                <div><p class="field-label">Webhook URL</p></div>
+                <div class="field-input"><input type="text" id="notify_tracecat_webhook_url" placeholder="https://…"></div>
+              </div>
+              <div class="field-row">
+                <div><p class="field-label">API Token</p></div>
+                <div class="field-input"><input type="password" id="notify_tracecat_api_token" placeholder="••••••••" autocomplete="off"></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+        <div class="section-footer">
+          <button class="btn btn-primary" onclick="saveSection('notifications')">Save</button>
+          <span id="save-notifications-result"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ INTEGRATIONS ══ -->
+    <div id="tab-integrations" class="hidden">
+
+      <!-- SSL panel -->
+      <div class="section-card">
+        <div class="section-header"><h2>SSL / TLS</h2></div>
+        <div class="section-body">
+          <div class="field-row">
+            <div><p class="field-label">Enable HTTPS</p><p class="field-hint">Restart service after installing certificate</p></div>
+            <div class="field-input">
+              <button type="button" class="toggle" id="toggle-ssl_enabled" onclick="toggleBool('ssl_enabled')"><span class="toggle-knob"></span></button>
+              <input type="hidden" id="ssl_enabled" value="false">
+            </div>
+          </div>
+
+          <!-- SSL status -->
+          <div class="field-row" style="border-bottom:none;padding-bottom:0">
+            <div><p class="field-label">Certificate</p><p class="field-hint">Upload a certificate to enable HTTPS</p></div>
+            <div class="field-input">
+
+              <div class="ssl-status" id="ssl-status-bar">
+                <div class="ssl-dot gray" id="ssl-dot"></div>
+                <span id="ssl-status-text" style="font-size:12px;color:#9ca3af">No certificate installed · running HTTP</span>
+                <button class="btn btn-danger" id="ssl-remove-btn" onclick="removeSsl()" style="display:none;margin-left:auto;padding:4px 10px;font-size:11px">× Remove</button>
+              </div>
+
+              <!-- Mode selector -->
+              <div class="mode-bar">
+                <button class="mode-btn active" id="mode-pfx" onclick="setSslMode('pfx')">PFX / P12</button>
+                <button class="mode-btn" id="mode-pem" onclick="setSslMode('pem')">PEM (cert + key)</button>
+              </div>
+
+              <!-- PFX upload -->
+              <div id="ssl-pfx">
+                <div class="drop-zone" id="dz-pfx" ondragover="dzDragOver(event,'pfx')" ondragleave="dzDragLeave('pfx')" ondrop="dzDrop(event,'pfx')">
+                  <input type="file" accept=".pfx,.p12" onchange="dzPick(event,'pfx')">
+                  <div class="drop-zone-icon">📄</div>
+                  <div class="drop-zone-label" id="dz-pfx-label">Drop .pfx / .p12 here or click to browse</div>
+                </div>
+                <div style="margin-top:10px">
+                  <input type="password" id="pfx_passphrase" placeholder="PFX passphrase (required)">
+                </div>
+                <div style="margin-top:8px;display:flex;align-items:center;gap:10px">
+                  <button class="btn btn-primary" id="pfx-upload-btn" onclick="uploadPfx()" disabled>Upload &amp; Install</button>
+                  <span id="pfx-upload-result"></span>
+                </div>
+              </div>
+
+              <!-- PEM upload -->
+              <div id="ssl-pem" class="hidden">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                  <div>
+                    <p style="font-size:11px;color:#6b7280;margin-bottom:6px">Certificate (.pem / .crt)</p>
+                    <div class="drop-zone" id="dz-cert" ondragover="dzDragOver(event,'cert')" ondragleave="dzDragLeave('cert')" ondrop="dzDrop(event,'cert')">
+                      <input type="file" accept=".pem,.crt,.cer" onchange="dzPick(event,'cert')">
+                      <div class="drop-zone-icon">📜</div>
+                      <div class="drop-zone-label" id="dz-cert-label">Drop cert or click</div>
+                    </div>
+                  </div>
+                  <div>
+                    <p style="font-size:11px;color:#6b7280;margin-bottom:6px">Private Key (.pem / .key)</p>
+                    <div class="drop-zone" id="dz-key" ondragover="dzDragOver(event,'key')" ondragleave="dzDragLeave('key')" ondrop="dzDrop(event,'key')">
+                      <input type="file" accept=".pem,.key" onchange="dzPick(event,'key')">
+                      <div class="drop-zone-icon">🔑</div>
+                      <div class="drop-zone-label" id="dz-key-label">Drop key or click</div>
+                    </div>
+                  </div>
+                </div>
+                <div style="margin-top:8px;display:flex;align-items:center;gap:10px">
+                  <button class="btn btn-primary" id="pem-upload-btn" onclick="uploadPem()" disabled>Upload &amp; Install</button>
+                  <span id="pem-upload-result"></span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+        <div class="section-footer">
+          <button class="btn btn-primary" onclick="saveSection('ssl')">Save SSL settings</button>
+          <span id="save-ssl-result"></span>
+        </div>
+      </div>
+
+      <!-- Other integrations -->
+      <div class="section-card">
+        <div class="section-header"><h2>Integrations</h2></div>
+        <div class="section-body">
+          <div class="field-row">
+            <div><p class="field-label">Lucid API Token</p><p class="field-hint">Used for diagram export to Lucidchart</p></div>
+            <div class="field-input"><input type="password" id="lucid_api_token" placeholder="••••••••" autocomplete="off"></div>
+          </div>
+          <div class="field-row">
+            <div><p class="field-label">Wireshark remote capture</p><p class="field-hint">Enable live feed ingestion from remote tshark / pkt-capture hosts</p></div>
+            <div class="field-input">
+              <button type="button" class="toggle" id="toggle-wireshark_capture_enabled" onclick="toggleBool('wireshark_capture_enabled');updateWsToggleUI()"><span class="toggle-knob"></span></button>
+              <input type="hidden" id="wireshark_capture_enabled" value="false">
+            </div>
+          </div>
+
+          <!-- Live feed connection details -->
+          <div id="ws-config-box" style="margin:10px 0 4px;background:#111827;border:1px solid #1f2937;border-radius:8px;padding:14px 16px;display:none">
+            <div id="ws-disabled-banner" style="display:none;background:#374151;border-radius:4px;padding:6px 10px;font-size:11px;color:#9ca3af;margin-bottom:10px">
+              ⚠ Wireshark capture is disabled — enable the toggle above to accept live feeds
+            </div>
+            <p style="font-size:11px;color:#6b7280;margin-bottom:10px">Configure your remote host to push pcapng data to this server:</p>
+
+            <div style="margin-bottom:8px">
+              <p style="font-size:11px;color:#9ca3af;margin-bottom:4px">Feed endpoint</p>
+              <div style="display:flex;align-items:center;gap:8px">
+                <code id="ws-endpoint" style="font-size:11px;color:#58a6ff;background:#1f2937;padding:4px 8px;border-radius:4px;flex:1;word-break:break-all"></code>
+                <button class="btn" style="font-size:11px;padding:3px 8px;flex-shrink:0" onclick="copyWsEndpoint()">Copy</button>
+              </div>
+            </div>
+
+            <div style="margin-bottom:8px">
+              <p style="font-size:11px;color:#9ca3af;margin-bottom:4px">Bearer token</p>
+              <div style="display:flex;align-items:center;gap:8px">
+                <code id="ws-token" style="font-size:11px;color:#56d364;background:#1f2937;padding:4px 8px;border-radius:4px;flex:1;word-break:break-all;font-family:monospace"></code>
+                <button class="btn" style="font-size:11px;padding:3px 8px;flex-shrink:0" onclick="copyWsToken()">Copy</button>
+                <button class="btn" style="font-size:11px;padding:3px 8px;flex-shrink:0" onclick="rotateFeedToken()">Rotate</button>
+              </div>
+            </div>
+
+            <div>
+              <p style="font-size:11px;color:#9ca3af;margin-bottom:4px">pkt-capture command (run on remote host)</p>
+              <code id="ws-cmd" style="display:block;font-size:10px;color:#e6edf3;background:#1f2937;padding:8px 10px;border-radius:4px;white-space:pre-wrap;word-break:break-all;font-family:monospace"></code>
+            </div>
+          </div>
+        </div>
+        <div class="section-footer">
+          <button class="btn btn-primary" onclick="saveSection('integrations')">Save</button>
+          <span id="save-integrations-result"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ DATABASE ══ -->
+    <div id="tab-database" class="hidden">
+      <div class="section-card">
+        <div class="section-header"><h2>Database</h2></div>
+        <div class="section-body">
+          <div class="field-row">
+            <div><p class="field-label">SQLite path</p><p class="field-hint">Database file path. Restart required after changing.</p></div>
+            <div class="field-input">
+              <div class="field-input-row">
+                <input type="text" id="db_path" placeholder="pktpcap.db">
+                <button class="btn" onclick="testDb()">Test</button>
+                <button class="btn" onclick="applyDb()">Apply</button>
+              </div>
+              <div class="result" id="db-result"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ USERS ══ -->
+    <div id="tab-users" class="hidden">
+      <div class="section-card">
+        <div class="section-header" style="display:flex;align-items:center;justify-content:space-between">
+          <h2>Users</h2>
+          <button class="btn btn-primary" style="font-size:12px;padding:6px 14px" onclick="openUserModal(null)">+ Add User</button>
+        </div>
+        <div class="section-body" style="padding:0">
+          <div id="users-loading" style="padding:24px;text-align:center;font-size:13px;color:#6b7280">Loading…</div>
+          <table class="users-table" id="users-table" style="display:none">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Last Login</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="users-tbody"></tbody>
+          </table>
+          <div id="users-empty" style="display:none;padding:40px;text-align:center;font-size:13px;color:#6b7280">No users found. Add one to get started.</div>
+        </div>
+      </div>
+      <p style="font-size:11px;color:#6b7280;margin-top:10px">
+        Roles: <strong style="color:#f9fafb">admin</strong> — full access &nbsp;·&nbsp;
+        <strong style="color:#f9fafb">analyst</strong> — read + export &nbsp;·&nbsp;
+        <strong style="color:#f9fafb">viewer</strong> — read-only
+      </p>
+    </div><!-- /tab-users -->
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- ── User Create/Edit Modal ── -->
+<div id="user-modal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="user-modal-title">Add User</h3>
+      <button class="modal-close" onclick="closeUserModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div>
+        <p class="modal-label">Username</p>
+        <input type="text" id="um-username" placeholder="username" autocomplete="off">
+      </div>
+      <div>
+        <p class="modal-label">Email</p>
+        <input type="email" id="um-email" placeholder="user@example.com">
+      </div>
+      <div>
+        <p class="modal-label" id="um-pw-label">Password</p>
+        <input type="password" id="um-password" placeholder="••••••••" autocomplete="new-password">
+        <p id="um-pw-hint" style="font-size:11px;color:#6b7280;margin-top:4px;display:none">Leave blank to keep existing password</p>
+      </div>
+      <div>
+        <p class="modal-label">Role</p>
+        <select id="um-role">
+          <option value="admin">Admin</option>
+          <option value="analyst">Analyst</option>
+          <option value="viewer" selected>Viewer</option>
+        </select>
+      </div>
+      <div class="result" id="um-result"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeUserModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="submitUserModal()">Save</button>
     </div>
   </div>
+</div>
 
-  <div class="actions">
-    <button class="save-btn" id="save-btn" onclick="saveSettings()">Save Settings</button>
-    <div class="status-msg" id="status-msg"></div>
+<!-- ── Reset Password Modal ── -->
+<div id="reset-modal" class="modal-overlay hidden">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="reset-modal-name">Reset Password</h3>
+      <button class="modal-close" onclick="closeResetModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div>
+        <p class="modal-label">New Password</p>
+        <input type="password" id="rm-password" placeholder="••••••••" autocomplete="new-password">
+      </div>
+      <div>
+        <p class="modal-label">Confirm Password</p>
+        <input type="password" id="rm-confirm" placeholder="••••••••" autocomplete="new-password">
+      </div>
+      <div class="result" id="rm-result"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeResetModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="submitResetModal()">Reset Password</button>
+    </div>
   </div>
 </div>
 
 <script>
-let currentSettings = {};
+// ── State ─────────────────────────────────────────────────────────────────────
+let cfg = {}
+const BULLET = '•'
+let sslMode = 'pfx'
+let pfxFile = null, certFile = null, keyFile = null
 
+// ── Tab switching ─────────────────────────────────────────────────────────────
+const TABS = ['general','storage','backup','auth','notifications','integrations','database','users']
+function switchTab(id) {
+  TABS.forEach(t => {
+    document.getElementById('tab-' + t).classList.toggle('hidden', t !== id)
+  })
+  document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+    btn.classList.toggle('active', TABS[i] === id)
+  })
+  if (id === 'integrations') loadSslStatus()
+  if (id === 'users') loadUsers()
+}
+
+// ── Load ──────────────────────────────────────────────────────────────────────
 async function load() {
   try {
-    const r = await fetch('/api/settings');
-    const cfg = await r.json();
-    currentSettings = cfg;
-    document.getElementById('port').value = cfg.port || 8765;
-    document.getElementById('anthropic_key').value = cfg.anthropic_key || '';
-    document.getElementById('openai_key').value    = cfg.openai_key    || '';
+    const [sr, dr] = await Promise.all([fetch('/api/settings'), fetch('/api/db-config')])
+    cfg = await sr.json()
+    const dbc = await dr.json()
 
-    const sslEnabled = !!cfg.ssl_enabled;
-    document.getElementById('ssl-toggle').checked = sslEnabled;
-    document.getElementById('ssl_cert').value = cfg.ssl_cert || '';
-    document.getElementById('ssl_key').value  = cfg.ssl_key  || '';
-    toggleSslFields(sslEnabled);
-
-    const antModel = document.getElementById('anthropic_model');
-    if (cfg.anthropic_model) antModel.value = cfg.anthropic_model;
-
-    const oaiModel = document.getElementById('openai_model');
-    if (cfg.openai_model) oaiModel.value = cfg.openai_model;
-
-    setProvider(cfg.provider || 'anthropic');
-  } catch(e) {
-    showStatus('err', 'Failed to load settings: ' + e.message);
-  }
+    setVal('app_name', cfg.app_name || 'pktPCAP')
+    document.title = cfg.app_name || 'pktPCAP'
+    setVal('port', cfg.port || 8765)
+    setVal('timezone', cfg.timezone || 'UTC')
+    setProvider(cfg.provider || 'anthropic')
+    setVal('anthropic_key', cfg.anthropic_key || '')
+    setVal('openai_key', cfg.openai_key || '')
+    setVal('anthropic_model', cfg.anthropic_model || 'claude-opus-4-8')
+    setVal('openai_model', cfg.openai_model || 'gpt-4o')
+    setVal('storage_path', cfg.storage_path || '')
+    setVal('max_upload_mb', cfg.max_upload_mb || 500)
+    setVal('storage_quota_gb', cfg.storage_quota_gb || 50)
+    setVal('retention_days', cfg.retention_days || 90)
+    setBool('auto_purge', !!cfg.auto_purge)
+    setBool('auto_backup', !!cfg.auto_backup)
+    setVal('backup_path', cfg.backup_path || '')
+    setVal('backup_interval_hours', cfg.backup_interval_hours || 24)
+    setVal('backup_rotation', cfg.backup_rotation || 7)
+    setBool('backup_include_captures', !!cfg.backup_include_captures)
+    setBool('local_auth_enabled', cfg.local_auth_enabled !== false)
+    setVal('session_timeout_minutes', cfg.session_timeout_minutes || 480)
+    setBool('okta_saml_enabled', !!cfg.okta_saml_enabled)
+    setVal('okta_entity_id', cfg.okta_entity_id || '')
+    setVal('okta_sso_url', cfg.okta_sso_url || '')
+    setVal('okta_metadata_xml', cfg.okta_metadata_xml || '')
+    setVal('okta_sp_entity_id', cfg.okta_sp_entity_id || '')
+    initCertField('okta_cert', cfg.okta_cert || '')
+    initCertField('okta_sp_cert', cfg.okta_sp_cert || '')
+    initCertField('okta_sp_key', cfg.okta_sp_key || '')
+    updateSamlVisibility()
+    setBool('notify_slack_enabled', !!cfg.notify_slack_enabled)
+    setVal('notify_slack_webhook_url', cfg.notify_slack_webhook_url || '')
+    setVal('notify_slack_channel', cfg.notify_slack_channel || '')
+    setBool('notify_email_enabled', !!cfg.notify_email_enabled)
+    setVal('notify_email_smtp_host', cfg.notify_email_smtp_host || '')
+    setVal('notify_email_smtp_port', cfg.notify_email_smtp_port || 587)
+    setBool('notify_smtp_tls', cfg.notify_smtp_tls !== false)
+    setVal('notify_email_username', cfg.notify_email_username || '')
+    setVal('notify_email_password', cfg.notify_email_password || '')
+    setVal('notify_email_from', cfg.notify_email_from || '')
+    setVal('notify_email_default_to', cfg.notify_email_default_to || '')
+    setBool('notify_pagerduty_enabled', !!cfg.notify_pagerduty_enabled)
+    setVal('notify_pagerduty_integration_key', cfg.notify_pagerduty_integration_key || '')
+    setBool('notify_webhook_enabled', !!cfg.notify_webhook_enabled)
+    setVal('notify_webhook_url', cfg.notify_webhook_url || '')
+    setVal('notify_webhook_method', cfg.notify_webhook_method || 'POST')
+    setVal('notify_webhook_payload_template', cfg.notify_webhook_payload_template || '')
+    setBool('notify_tracecat_enabled', !!cfg.notify_tracecat_enabled)
+    setVal('notify_tracecat_webhook_url', cfg.notify_tracecat_webhook_url || '')
+    setVal('notify_tracecat_api_token', cfg.notify_tracecat_api_token || '')
+    setVal('lucid_api_token', cfg.lucid_api_token || '')
+    setBool('wireshark_capture_enabled', !!cfg.wireshark_capture_enabled)
+    setBool('ssl_enabled', !!cfg.ssl_enabled)
+    setVal('db_path', dbc.db_path || 'pktpcap.db')
+    updateWsToggleUI()
+  } catch(e) { console.error('load failed', e) }
 }
 
-function toggleSslFields(enabled) {
-  document.getElementById('ssl-fields').classList.toggle('hidden', !enabled);
+// ── Wireshark / Live Feed ─────────────────────────────────────────────────────
+function updateWsToggleUI() {
+  const enabled = getBool('wireshark_capture_enabled')
+  const box = document.getElementById('ws-config-box')
+  const banner = document.getElementById('ws-disabled-banner')
+  if (!box) return
+  box.style.display = 'block'
+  banner.style.display = enabled ? 'none' : 'block'
+
+  const ip = cfg.server_ip || location.hostname
+  const proto = cfg.ssl_enabled ? 'https' : 'http'
+  const port = cfg.port || 8765
+  const token = cfg.feed_token || '(save settings to generate token)'
+
+  document.getElementById('ws-endpoint').textContent = `${proto}://${ip}:${port}/api/feed/<session-name>`
+  document.getElementById('ws-token').textContent = token
+  document.getElementById('ws-cmd').textContent =
+    `/mnt/software/pktpcap/pkt-capture \\\n  --host ${ip} \\\n  --port ${port} \\\n  --token ${token} \\\n  --name my-capture`
 }
 
+function copyWsEndpoint() {
+  const el = document.getElementById('ws-endpoint')
+  navigator.clipboard.writeText(el.textContent).catch(() => {})
+}
+
+function copyWsToken() {
+  const el = document.getElementById('ws-token')
+  navigator.clipboard.writeText(el.textContent).catch(() => {})
+}
+
+async function rotateFeedToken() {
+  if (!confirm('Rotate the feed token? Any active capture scripts will stop working until updated.')) return
+  const r = await fetch('/api/settings', {method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({feed_token: null})})
+  if (r.ok) { const d = await r.json(); location.reload() }
+}
+
+function setVal(id, v) { const el = document.getElementById(id); if (el) el.value = v }
+function getVal(id) { const el = document.getElementById(id); return el ? el.value : '' }
+function setBool(id, v) {
+  const el = document.getElementById(id); if (el) el.value = v ? 'true' : 'false'
+  const btn = document.getElementById('toggle-' + id)
+  if (btn) btn.classList.toggle('on', v)
+}
+function getBool(id) { return document.getElementById(id)?.value === 'true' }
+function toggleBool(id) { setBool(id, !getBool(id)) }
+function toggleNotif(id) { document.getElementById('notif-' + id).classList.toggle('hidden') }
+
+// ── AI Provider ───────────────────────────────────────────────────────────────
 function setProvider(p) {
-  document.getElementById('provider').value = p;
-  document.getElementById('btn-anthropic').classList.toggle('active', p === 'anthropic');
-  document.getElementById('btn-openai').classList.toggle('active', p === 'openai');
-  document.getElementById('section-anthropic').classList.toggle('visible', p === 'anthropic');
-  document.getElementById('section-openai').classList.toggle('visible', p === 'openai');
+  document.getElementById('provider').value = p
+  document.getElementById('btn-anthropic').classList.toggle('active', p === 'anthropic')
+  document.getElementById('btn-openai').classList.toggle('active', p === 'openai')
+  document.getElementById('section-anthropic').classList.toggle('hidden', p !== 'anthropic')
+  document.getElementById('section-openai').classList.toggle('hidden', p !== 'openai')
 }
 
-async function saveSettings() {
-  const btn = document.getElementById('save-btn');
-  btn.disabled = true;
-  btn.textContent = 'Saving…';
+// ── Section saves ─────────────────────────────────────────────────────────────
+async function saveSection(section) {
+  const resultId = 'save-' + section + '-result'
+  const res = document.getElementById(resultId)
+  if (res) { res.className = 'status-info'; res.textContent = 'Saving…' }
   try {
-    const body = {
-      port:             parseInt(document.getElementById('port').value) || 8765,
-      provider:         document.getElementById('provider').value,
-      anthropic_key:    document.getElementById('anthropic_key').value,
-      anthropic_model:  document.getElementById('anthropic_model').value,
-      openai_key:       document.getElementById('openai_key').value,
-      openai_model:     document.getElementById('openai_model').value,
-      ssl_enabled:      document.getElementById('ssl-toggle').checked,
-      ssl_cert:         document.getElementById('ssl_cert').value,
-      ssl_key:          document.getElementById('ssl_key').value,
-    };
+    const body = buildBody(section)
     const r = await fetch('/api/settings', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(body)
-    });
-    const result = await r.json();
-    if (result.ok) {
-      showStatus('ok', '✓ Settings saved');
-      if (result.port !== currentSettings.port) {
-        showStatus('ok', `✓ Saved — port changed to ${result.port}. Restart the server to apply.`);
-      }
-    } else {
-      showStatus('err', result.error || 'Save failed');
+      method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body)
+    })
+    const result = await r.json()
+    if (res) {
+      res.className = result.ok ? 'status-ok' : 'status-err'
+      res.textContent = result.ok ? 'Saved' : (result.error || 'Save failed')
+      if (result.ok) setTimeout(() => { res.textContent = '' }, 3000)
     }
   } catch(e) {
-    showStatus('err', 'Error: ' + e.message);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Save Settings';
+    if (res) { res.className = 'status-err'; res.textContent = e.message }
   }
 }
 
+function buildBody(section) {
+  const secretFields = ['anthropic_key','openai_key','notify_email_password',
+    'notify_pagerduty_integration_key','notify_tracecat_api_token','lucid_api_token']
+  const bodies = {
+    general: {
+      app_name: getVal('app_name'), port: parseInt(getVal('port'))||8765, timezone: getVal('timezone'),
+      provider: getVal('provider'),
+      anthropic_model: getVal('anthropic_model'), openai_model: getVal('openai_model'),
+    },
+    ai: {
+      provider: getVal('provider'),
+      anthropic_model: getVal('anthropic_model'), openai_model: getVal('openai_model'),
+      anthropic_key: getVal('anthropic_key'), openai_key: getVal('openai_key'),
+    },
+    storage: {
+      storage_path: getVal('storage_path'),
+      max_upload_mb: parseInt(getVal('max_upload_mb'))||500,
+      storage_quota_gb: parseInt(getVal('storage_quota_gb'))||50,
+      retention_days: parseInt(getVal('retention_days'))||90,
+      auto_purge: getBool('auto_purge'),
+    },
+    backup: {
+      auto_backup: getBool('auto_backup'),
+      backup_path: getVal('backup_path'),
+      backup_interval_hours: parseInt(getVal('backup_interval_hours'))||24,
+      backup_rotation: parseInt(getVal('backup_rotation'))||7,
+      backup_include_captures: getBool('backup_include_captures'),
+    },
+    auth: {
+      local_auth_enabled: getBool('local_auth_enabled'),
+      session_timeout_minutes: parseInt(getVal('session_timeout_minutes'))||480,
+      okta_saml_enabled: getBool('okta_saml_enabled'),
+      okta_entity_id: getVal('okta_entity_id'),
+      okta_sso_url: getVal('okta_sso_url'),
+      okta_metadata_xml: getVal('okta_metadata_xml'),
+      okta_sp_entity_id: getVal('okta_sp_entity_id'),
+      okta_cert: getCertValue('okta_cert'),
+      okta_sp_cert: getCertValue('okta_sp_cert'),
+      okta_sp_key: getCertValue('okta_sp_key'),
+    },
+    notifications: {
+      notify_slack_enabled: getBool('notify_slack_enabled'),
+      notify_slack_webhook_url: getVal('notify_slack_webhook_url'),
+      notify_slack_channel: getVal('notify_slack_channel'),
+      notify_email_enabled: getBool('notify_email_enabled'),
+      notify_email_smtp_host: getVal('notify_email_smtp_host'),
+      notify_email_smtp_port: parseInt(getVal('notify_email_smtp_port'))||587,
+      notify_smtp_tls: getBool('notify_smtp_tls'),
+      notify_email_username: getVal('notify_email_username'),
+      notify_email_from: getVal('notify_email_from'),
+      notify_email_default_to: getVal('notify_email_default_to'),
+      notify_pagerduty_enabled: getBool('notify_pagerduty_enabled'),
+      notify_webhook_enabled: getBool('notify_webhook_enabled'),
+      notify_webhook_url: getVal('notify_webhook_url'),
+      notify_webhook_method: getVal('notify_webhook_method'),
+      notify_webhook_payload_template: getVal('notify_webhook_payload_template'),
+      notify_tracecat_enabled: getBool('notify_tracecat_enabled'),
+      notify_tracecat_webhook_url: getVal('notify_tracecat_webhook_url'),
+      notify_email_password: getVal('notify_email_password'),
+      notify_pagerduty_integration_key: getVal('notify_pagerduty_integration_key'),
+      notify_tracecat_api_token: getVal('notify_tracecat_api_token'),
+    },
+    ssl: { ssl_enabled: getBool('ssl_enabled') },
+    integrations: {
+      lucid_api_token: getVal('lucid_api_token'),
+      wireshark_capture_enabled: getBool('wireshark_capture_enabled'),
+    },
+  }
+  const body = bodies[section] || {}
+  // strip masked secret values
+  for (const k of secretFields) {
+    if (k in body && body[k] && body[k].includes(BULLET)) delete body[k]
+  }
+  return body
+}
+
+// ── AI test ───────────────────────────────────────────────────────────────────
 async function testKey(provider) {
-  const resultEl = document.getElementById('test-' + (provider === 'anthropic' ? 'ant' : 'oai') + '-result');
-  const btn      = document.getElementById('test-' + (provider === 'anthropic' ? 'ant' : 'oai') + '-btn');
-  btn.disabled = true;
-  btn.textContent = 'Testing…';
-  resultEl.style.display = 'none';
+  const sfx = provider === 'anthropic' ? 'ant' : 'oai'
+  const res = document.getElementById('test-' + sfx + '-result')
+  res.className = 'result info'; res.textContent = 'Connecting…'
   try {
-    const body = {
-      provider,
-      anthropic_key:   document.getElementById('anthropic_key').value,
-      anthropic_model: document.getElementById('anthropic_model').value,
-      openai_key:      document.getElementById('openai_key').value,
-      openai_model:    document.getElementById('openai_model').value,
-    };
-    const r = await fetch('/api/ai/test', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(body)
-    });
-    const result = await r.json();
-    resultEl.style.display = 'block';
-    if (result.ok) {
-      resultEl.className = 'test-result ok';
-      resultEl.textContent = '✓ Connected — ' + (result.reply || 'OK');
+    const body = { provider }
+    body[provider === 'anthropic' ? 'anthropic_key' : 'openai_key'] = getVal(provider === 'anthropic' ? 'anthropic_key' : 'openai_key')
+    body[provider === 'anthropic' ? 'anthropic_model' : 'openai_model'] = getVal(provider === 'anthropic' ? 'anthropic_model' : 'openai_model')
+    const r = await fetch('/api/ai/test', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+    const result = await r.json()
+    res.className = 'result ' + (result.ok ? 'ok' : 'err')
+    res.textContent = result.ok ? ('✓ Connected — ' + (result.reply||'OK')) : ('✗ ' + (result.error||'Failed'))
+  } catch(e) { res.className = 'result err'; res.textContent = '✗ ' + e.message }
+}
+
+// ── SSL ───────────────────────────────────────────────────────────────────────
+function setSslMode(m) {
+  sslMode = m
+  document.getElementById('mode-pfx').classList.toggle('active', m === 'pfx')
+  document.getElementById('mode-pem').classList.toggle('active', m === 'pem')
+  document.getElementById('ssl-pfx').classList.toggle('hidden', m !== 'pfx')
+  document.getElementById('ssl-pem').classList.toggle('hidden', m !== 'pem')
+}
+
+async function loadSslStatus() {
+  try {
+    const r = await fetch('/api/ssl/status')
+    if (!r.ok) return
+    const s = await r.json()
+    const dot  = document.getElementById('ssl-dot')
+    const text = document.getElementById('ssl-status-text')
+    const rmBtn = document.getElementById('ssl-remove-btn')
+    if (s.installed) {
+      dot.className = 'ssl-dot green'
+      text.style.color = '#f9fafb'
+      text.textContent = 'Certificate installed' + (s.subject ? ' · ' + s.subject : '') + (s.expires ? ' · expires ' + s.expires : '')
+      rmBtn.style.display = 'block'
     } else {
-      resultEl.className = 'test-result err';
-      resultEl.textContent = '✗ ' + (result.error || 'Failed');
+      dot.className = 'ssl-dot gray'
+      text.style.color = '#9ca3af'
+      text.textContent = 'No certificate installed · running HTTP'
+      rmBtn.style.display = 'none'
     }
-  } catch(e) {
-    resultEl.style.display = 'block';
-    resultEl.className = 'test-result err';
-    resultEl.textContent = '✗ ' + e.message;
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Test';
+  } catch {}
+}
+
+// Drop zone helpers
+function dzDragOver(e, role) { e.preventDefault(); document.getElementById('dz-'+role).classList.add('drag-over') }
+function dzDragLeave(role) { document.getElementById('dz-'+role).classList.remove('drag-over') }
+function dzDrop(e, role) { e.preventDefault(); dzDragLeave(role); setDzFile(role, e.dataTransfer.files[0]) }
+function dzPick(e, role) { setDzFile(role, e.target.files[0]) }
+
+function setDzFile(role, file) {
+  if (!file) return
+  if (role === 'pfx') { pfxFile = file }
+  else if (role === 'cert') { certFile = file }
+  else if (role === 'key')  { keyFile  = file }
+  const dz = document.getElementById('dz-' + role)
+  dz.classList.add('has-file')
+  document.getElementById('dz-' + role + '-label').textContent = '✓ ' + file.name
+  // Enable upload button
+  if (role === 'pfx') document.getElementById('pfx-upload-btn').disabled = false
+  if (role === 'cert' || role === 'key') {
+    document.getElementById('pem-upload-btn').disabled = !(certFile && keyFile)
   }
 }
 
-function showStatus(type, msg) {
-  const el = document.getElementById('status-msg');
-  el.textContent = msg;
-  el.className = 'status-msg ' + type;
-  setTimeout(() => { el.className = 'status-msg'; }, 5000);
-}
-
-async function restartServer() {
-  const btn = document.getElementById('restart-btn');
-  const res = document.getElementById('restart-result');
-  btn.disabled = true;
-  btn.textContent = 'Restarting…';
-  res.style.display = 'none';
+async function uploadPfx() {
+  if (!pfxFile) return
+  const pass = getVal('pfx_passphrase')
+  const res = document.getElementById('pfx-upload-result')
+  res.className = 'status-info'; res.textContent = 'Uploading…'
   try {
-    await fetch('/api/restart', { method: 'POST' });
-    res.style.display = 'block';
-    res.className = 'test-result ok';
-    res.textContent = '✓ Restarting — page will reload in 3 s';
-    setTimeout(() => location.reload(), 3000);
-  } catch(e) {
-    // fetch may throw when the server drops — that's expected
-    res.style.display = 'block';
-    res.className = 'test-result ok';
-    res.textContent = '✓ Server restarting — reloading…';
-    setTimeout(() => location.reload(), 3000);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '↺ Restart Server';
+    const fd = new FormData()
+    fd.append('role', 'pfx')
+    fd.append('file', pfxFile)
+    if (pass) fd.append('passphrase', pass)
+    const r = await fetch('/api/ssl/upload', {method:'POST', body:fd})
+    const result = await r.json()
+    if (result.ok) {
+      res.className = 'status-ok'
+      res.textContent = '✓ Installed — restart service to enable HTTPS'
+      pfxFile = null
+      loadSslStatus()
+    } else {
+      res.className = 'status-err'; res.textContent = '✗ ' + (result.error || 'Upload failed')
+    }
+  } catch(e) { res.className = 'status-err'; res.textContent = '✗ ' + e.message }
+}
+
+async function uploadPem() {
+  if (!certFile || !keyFile) return
+  const res = document.getElementById('pem-upload-result')
+  res.className = 'status-info'; res.textContent = 'Uploading…'
+  try {
+    const fd = new FormData()
+    fd.append('role', 'pem')
+    fd.append('cert', certFile)
+    fd.append('key', keyFile)
+    const r = await fetch('/api/ssl/upload', {method:'POST', body:fd})
+    const result = await r.json()
+    if (result.ok) {
+      res.className = 'status-ok'
+      res.textContent = '✓ Installed — restart service to enable HTTPS'
+      certFile = null; keyFile = null
+      loadSslStatus()
+    } else {
+      res.className = 'status-err'; res.textContent = '✗ ' + (result.error || 'Upload failed')
+    }
+  } catch(e) { res.className = 'status-err'; res.textContent = '✗ ' + e.message }
+}
+
+async function removeSsl() {
+  if (!confirm('Remove the installed certificate?')) return
+  try {
+    await fetch('/api/ssl/remove', {method:'DELETE'})
+    loadSslStatus()
+  } catch {}
+}
+
+// ── Cert fields ───────────────────────────────────────────────────────────────
+const certState = {}
+
+function initCertField(id, value) {
+  certState[id] = { value: value || '', editMode: !value }
+  renderCertField(id)
+}
+
+function renderCertField(id) {
+  const wrap = document.getElementById('cert-wrap-' + id)
+  if (!wrap) return
+  const state = certState[id]
+  if (!state) return
+  if (state.value && !state.editMode) {
+    wrap.innerHTML = `
+      <div class="cert-saved">
+        <span>✓ Certificate saved</span>
+        <button type="button" class="btn" onclick="certReplace('${id}')">Replace</button>
+        <button type="button" class="btn btn-danger" style="font-size:11px;padding:4px 10px" onclick="certClear('${id}')">Clear</button>
+      </div>`
+  } else {
+    const escaped = (state.value || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    const cancelBtn = (state.value && state.editMode)
+      ? `<button type="button" class="btn" style="margin-top:6px" onclick="certCancel('${id}')">Cancel</button>`
+      : ''
+    wrap.innerHTML = `
+      <textarea id="cert-input-${id}" rows="4" placeholder="MIIDp…"
+        style="width:100%;background:#1f2937;border:1px solid #374151;border-radius:8px;padding:8px 12px;color:#f9fafb;font-family:'SF Mono','Fira Code',monospace;font-size:12px;resize:vertical">${escaped}</textarea>
+      ${cancelBtn}
+      <p style="font-size:11px;color:#4b5563;margin-top:4px">Paste content or drag &amp; drop a .pem / .crt / .cer file</p>`
+    const ta = document.getElementById('cert-input-' + id)
+    if (ta) ta.addEventListener('input', () => { certState[id].value = ta.value })
   }
 }
 
-load();
+function certReplace(id) { certState[id].editMode = true; renderCertField(id) }
+function certClear(id)   { certState[id] = { value: '', editMode: true }; renderCertField(id) }
+function certCancel(id)  { certState[id].editMode = false; renderCertField(id) }
+function certUpdate(id, value) { certState[id] = { value: value || '', editMode: !value }; renderCertField(id) }
+function getCertValue(id) {
+  const state = certState[id]
+  if (!state) return ''
+  if (!state.editMode) return state.value
+  const ta = document.getElementById('cert-input-' + id)
+  return ta ? ta.value : state.value
+}
+
+// ── SAML visibility ───────────────────────────────────────────────────────────
+function updateSamlVisibility() {
+  const enabled = getBool('okta_saml_enabled')
+  document.getElementById('saml-fields').classList.toggle('hidden', !enabled)
+  if (enabled) {
+    const base = location.origin
+    const acsEl = document.getElementById('acs_url_display')
+    const metaEl = document.getElementById('sp-metadata-link')
+    if (acsEl) acsEl.value = base + '/api/auth/saml/callback'
+    if (metaEl) metaEl.href = base + '/api/auth/saml/metadata'
+  }
+}
+
+// ── Okta metadata parser ──────────────────────────────────────────────────────
+function parseMetadata(xml) {
+  const res = document.getElementById('metadata-parse-result')
+  if (!xml.trim()) { res.className = 'result'; return }
+  try {
+    const doc = new DOMParser().parseFromString(xml, 'application/xml')
+    if (doc.querySelector('parsererror')) { res.className = 'result err'; res.textContent = '✗ Invalid XML'; return }
+    const root = doc.querySelector('EntityDescriptor') ?? doc.documentElement
+    const entity_id = root.getAttribute('entityID') ?? ''
+    const ssoNodes = Array.from(doc.querySelectorAll('SingleSignOnService'))
+    const redirect = ssoNodes.find(n => (n.getAttribute('Binding')||'').includes('HTTP-Redirect'))
+    const sso_url = (redirect ?? ssoNodes[0])?.getAttribute('Location') ?? ''
+    const x509 = doc.querySelector('X509Certificate')
+    const cert = x509?.textContent?.replace(/\s+/g,'') ?? ''
+    if (entity_id) setVal('okta_entity_id', entity_id)
+    if (sso_url)   setVal('okta_sso_url', sso_url)
+    if (cert)      certUpdate('okta_cert', cert)
+    res.className = 'result ok'; res.textContent = '✓ Entity ID, SSO URL, and certificate populated'
+  } catch(e) { res.className = 'result err'; res.textContent = '✗ Parse error: ' + e.message }
+}
+
+// ── Restart ───────────────────────────────────────────────────────────────────
+async function restartServer() {
+  const btn = document.getElementById('restart-btn')
+  const res = document.getElementById('restart-result')
+  btn.disabled = true; btn.textContent = 'Restarting…'
+  res.className = 'status-info'; res.textContent = 'Service is restarting…'
+  try {
+    await fetch('/api/restart', {method:'POST'})
+    res.textContent = 'Restarting — reload the page in ~5 seconds'
+    setTimeout(() => window.location.reload(), 5000)
+  } catch {
+    res.className = 'status-err'; res.textContent = 'Restart failed — check logs'
+    btn.disabled = false; btn.textContent = 'Restart Service'
+  }
+}
+
+// ── Database ──────────────────────────────────────────────────────────────────
+async function testDb() {
+  const res = document.getElementById('db-result')
+  res.className = 'result info'; res.textContent = 'Testing…'
+  try {
+    const r = await fetch('/api/db-config/test', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({db_type:'sqlite',db_path:getVal('db_path')})})
+    const result = await r.json()
+    res.className = 'result ' + (result.ok ? 'ok' : 'err')
+    res.textContent = result.ok ? '✓ Database OK' : '✗ ' + result.error
+  } catch(e) { res.className = 'result err'; res.textContent = '✗ ' + e.message }
+}
+async function applyDb() {
+  const res = document.getElementById('db-result')
+  res.className = 'result info'; res.textContent = 'Applying…'
+  try {
+    const r = await fetch('/api/db-config', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({db_type:'sqlite',db_path:getVal('db_path')})})
+    const result = await r.json()
+    res.className = 'result ' + (result.ok ? 'ok' : 'err')
+    res.textContent = result.ok ? '✓ Updated — restart to apply' : '✗ ' + result.error
+  } catch(e) { res.className = 'result err'; res.textContent = '✗ ' + e.message }
+}
+
+// ── Users ─────────────────────────────────────────────────────────────────────
+let _users = []
+let _userEditId = null
+let _resetUserId = null
+
+async function loadUsers() {
+  const loading = document.getElementById('users-loading')
+  loading.style.display = 'block'
+  document.getElementById('users-table').style.display = 'none'
+  document.getElementById('users-empty').style.display = 'none'
+  try {
+    const r = await fetch('/api/users')
+    _users = await r.json()
+    renderUsers()
+  } catch(e) {
+    loading.textContent = 'Failed to load users: ' + e.message
+  }
+}
+
+function renderUsers() {
+  const loading = document.getElementById('users-loading')
+  const table   = document.getElementById('users-table')
+  const empty   = document.getElementById('users-empty')
+  const tbody   = document.getElementById('users-tbody')
+  loading.style.display = 'none'
+  if (!_users.length) { table.style.display = 'none'; empty.style.display = 'block'; return }
+  table.style.display = 'table'; empty.style.display = 'none'
+  tbody.innerHTML = _users.map(u => {
+    const initial    = (u.username || '?')[0].toUpperCase()
+    const role       = u.role || 'viewer'
+    const status     = u.status || 'active'
+    const isActive   = status === 'active'
+    const lastLogin  = u.last_login ? new Date(u.last_login).toLocaleDateString() : '—'
+    return `<tr>
+      <td><div class="user-cell"><div class="user-avatar">${initial}</div><span>${esc(u.username)}</span></div></td>
+      <td style="color:#9ca3af">${esc(u.email || '—')}</td>
+      <td><span class="badge badge-${role}">${role}</span></td>
+      <td><span class="badge badge-${status}">${status}</span></td>
+      <td style="color:#6b7280;font-size:12px">${lastLogin}</td>
+      <td>
+        <div style="display:flex;gap:6px;justify-content:flex-end">
+          <button class="btn" style="font-size:11px;padding:4px 10px" onclick="openResetModal(${u.id},'${esc(u.username)}')">Reset PW</button>
+          <button class="btn" style="font-size:11px;padding:4px 10px" onclick="openUserModal(${u.id})">Edit</button>
+          <button class="btn ${isActive ? '' : 'btn-amber'}" style="font-size:11px;padding:4px 10px" onclick="toggleUserStatus(${u.id},'${status}')">${isActive ? 'Disable' : 'Enable'}</button>
+          <button class="btn btn-danger" style="font-size:11px;padding:4px 10px" onclick="deleteUser(${u.id},'${esc(u.username)}')">Delete</button>
+        </div>
+      </td>
+    </tr>`
+  }).join('')
+}
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')
+}
+
+function openUserModal(uid) {
+  _userEditId = uid
+  const u = uid != null ? _users.find(x => x.id === uid) : null
+  document.getElementById('user-modal-title').textContent = u ? 'Edit User' : 'Add User'
+  document.getElementById('um-username').value = u ? u.username : ''
+  document.getElementById('um-email').value    = u ? (u.email || '') : ''
+  document.getElementById('um-password').value = ''
+  document.getElementById('um-role').value     = u ? u.role : 'viewer'
+  document.getElementById('um-pw-label').textContent = u ? 'Password (optional)' : 'Password'
+  document.getElementById('um-pw-hint').style.display = u ? 'block' : 'none'
+  const res = document.getElementById('um-result')
+  res.className = 'result'; res.textContent = ''
+  document.getElementById('user-modal').classList.remove('hidden')
+  setTimeout(() => document.getElementById('um-username').focus(), 50)
+}
+
+function closeUserModal() { document.getElementById('user-modal').classList.add('hidden') }
+
+async function submitUserModal() {
+  const res      = document.getElementById('um-result')
+  const username = document.getElementById('um-username').value.trim()
+  const email    = document.getElementById('um-email').value.trim()
+  const password = document.getElementById('um-password').value
+  const role     = document.getElementById('um-role').value
+  if (!username)                  { res.className = 'result err'; res.textContent = 'Username required'; return }
+  if (_userEditId == null && !password) { res.className = 'result err'; res.textContent = 'Password required'; return }
+  res.className = 'result info'; res.textContent = 'Saving…'
+  try {
+    const body = { username, email, role }
+    if (password) body.password = password
+    const url    = _userEditId != null ? `/api/users/${_userEditId}` : '/api/users'
+    const method = _userEditId != null ? 'PUT' : 'POST'
+    const r      = await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) })
+    const result = await r.json()
+    if (result.ok) { closeUserModal(); loadUsers() }
+    else { res.className = 'result err'; res.textContent = '✗ ' + (result.error || 'Save failed') }
+  } catch(e) { res.className = 'result err'; res.textContent = '✗ ' + e.message }
+}
+
+function openResetModal(uid, username) {
+  _resetUserId = uid
+  document.getElementById('reset-modal-name').textContent = `Reset Password — ${username}`
+  document.getElementById('rm-password').value = ''
+  document.getElementById('rm-confirm').value  = ''
+  const res = document.getElementById('rm-result')
+  res.className = 'result'; res.textContent = ''
+  document.getElementById('reset-modal').classList.remove('hidden')
+  setTimeout(() => document.getElementById('rm-password').focus(), 50)
+}
+
+function closeResetModal() { document.getElementById('reset-modal').classList.add('hidden') }
+
+async function submitResetModal() {
+  const res  = document.getElementById('rm-result')
+  const pw   = document.getElementById('rm-password').value
+  const conf = document.getElementById('rm-confirm').value
+  if (!pw)           { res.className = 'result err'; res.textContent = 'Password required'; return }
+  if (pw.length < 6) { res.className = 'result err'; res.textContent = 'Minimum 6 characters'; return }
+  if (pw !== conf)   { res.className = 'result err'; res.textContent = 'Passwords do not match'; return }
+  res.className = 'result info'; res.textContent = 'Resetting…'
+  try {
+    const r = await fetch(`/api/users/${_resetUserId}/reset-password`, {
+      method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ password: pw })
+    })
+    const result = await r.json()
+    if (result.ok) { closeResetModal() }
+    else { res.className = 'result err'; res.textContent = '✗ ' + (result.error || 'Reset failed') }
+  } catch(e) { res.className = 'result err'; res.textContent = '✗ ' + e.message }
+}
+
+async function toggleUserStatus(uid, currentStatus) {
+  const newStatus = currentStatus === 'active' ? 'inactive' : 'active'
+  try {
+    const r = await fetch(`/api/users/${uid}`, {
+      method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ status: newStatus })
+    })
+    const result = await r.json()
+    if (result.ok) loadUsers()
+    else alert('Failed: ' + (result.error || 'Unknown error'))
+  } catch(e) { alert('Failed: ' + e.message) }
+}
+
+async function deleteUser(uid, username) {
+  if (!confirm(`Delete user "${username}"? This cannot be undone.`)) return
+  try {
+    const r = await fetch(`/api/users/${uid}`, { method: 'DELETE' })
+    const result = await r.json()
+    if (result.ok) loadUsers()
+    else alert('Delete failed: ' + (result.error || 'Unknown error'))
+  } catch(e) { alert('Failed: ' + e.message) }
+}
+
+load()
+
+// ── Auth: current user + sign-out ─────────────────────────────────────────────
+fetch('/api/auth/current-user').then(r => r.ok ? r.json() : null).then(u => {
+  if (!u) return
+  const nameEl   = document.getElementById('nav-user-name')
+  const roleEl   = document.getElementById('nav-user-role')
+  const avatarEl = document.getElementById('nav-user-avatar')
+  if (nameEl)   nameEl.textContent   = u.username || '—'
+  if (roleEl)   roleEl.textContent   = u.role    || '—'
+  if (avatarEl) avatarEl.textContent = (u.username || '?')[0].toUpperCase()
+}).catch(() => {})
+
+function doSignOut() {
+  fetch('/api/logout', { method: 'POST' }).finally(() => { window.location.href = '/login' })
+}
 </script>
+<script src="/static/nav.js"></script>
 </body>
 </html>

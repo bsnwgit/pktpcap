@@ -1,14 +1,22 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 pktPCAP -- standalone web service
 Run: python server.py
 """
 
-import json, logging, os, sys, webbrowser, threading, time, secrets, re as _re, socket
+import json, logging, os, sys, webbrowser, threading, time, secrets, re as _re, socket, datetime
 from pathlib import Path
-from flask import Flask, request, jsonify, send_from_directory, render_template, Response
+from flask import Flask, request, jsonify, send_from_directory, render_template, Response, session, redirect
 
-from db import init_db, get_db, load_db_config, save_db_config, hash_password, Database
+from db import init_db, get_db, load_db_config, save_db_config, hash_password, check_password, Database
+
+# ── Optional SAML support ─────────────────────────────────────────────────────
+try:
+    from onelogin.saml2.auth import OneLogin_Saml2_Auth
+    from onelogin.saml2.settings import OneLogin_Saml2_Settings
+    _SAML_AVAILABLE = True
+except ImportError:
+    _SAML_AVAILABLE = False
 
 log = logging.getLogger("pktpcap.server")
 _log_handler = None  # set at startup
@@ -111,6 +119,47 @@ def load_config():
 def save_config(cfg):
     get_db().set_many_settings(cfg)
 
+# ── Session secret key ────────────────────────────────────────────────────────
+
+def _ensure_secret_key():
+    db  = get_db()
+    key = db.get_setting("flask_secret_key")
+    if not key:
+        key = secrets.token_hex(32)
+        db.set_setting("flask_secret_key", key)
+    app.secret_key = key
+
+# ── Auth middleware ───────────────────────────────────────────────────────────
+
+_AUTH_PUBLIC      = {"/login", "/api/login", "/api/logout"}
+_AUTH_PUBLIC_PFX  = ("/static/", "/api/auth/saml", "/api/feed/")
+
+@app.before_request
+def require_login():
+    path = request.path
+    if path in _AUTH_PUBLIC or any(path.startswith(p) for p in _AUTH_PUBLIC_PFX):
+        return None
+
+    cfg = load_config()
+    # Both auth methods off → open access (prevents lockout)
+    if not cfg.get("local_auth_enabled", True) and not cfg.get("okta_saml_enabled", False):
+        return None
+
+    uid = session.get("user_id")
+    if not uid:
+        if path.startswith("/api/"):
+            return jsonify({"error": "Unauthorized", "login_url": "/login"}), 401
+        return redirect("/login")
+
+    timeout = int(cfg.get("session_timeout_minutes", 480)) * 60
+    if time.time() - float(session.get("login_time", 0)) > timeout:
+        session.clear()
+        if path.startswith("/api/"):
+            return jsonify({"error": "Session expired", "login_url": "/login"}), 401
+        return redirect("/login?error=session_expired")
+
+    session["login_time"] = time.time()
+
 # -- Routes --------------------------------------------------------------------
 
 @app.route("/")
@@ -122,8 +171,198 @@ def index():
 
 @app.route("/settings")
 def settings_page():
+    if session.get("role") != "admin":
+        return redirect("/")
     cfg = load_config()
     return render_template("settings.html", app_name=cfg.get("app_name", "pktPCAP"))
+
+# -- Auth: login / logout / SAML -----------------------------------------------
+
+@app.route("/login")
+def login_page():
+    if session.get("user_id"):
+        return redirect("/")
+    cfg = load_config()
+    saml_enabled = bool(cfg.get("okta_saml_enabled") and cfg.get("okta_sso_url"))
+    error_map = {
+        "session_expired": "Your session has expired. Please sign in again.",
+        "user_not_found":  "User not found. Contact your administrator.",
+        "account_disabled":"Your account is disabled. Contact your administrator.",
+        "saml_auth_failed":"Okta authentication failed. Please try again.",
+    }
+    raw_err = request.args.get("error", "")
+    error   = error_map.get(raw_err, raw_err.replace("_", " ") if raw_err else "")
+    return render_template("login.html",
+                           app_name=cfg.get("app_name", "pktPCAP"),
+                           saml_enabled=saml_enabled,
+                           error=error)
+
+@app.route("/api/login", methods=["POST"])
+def api_login():
+    body     = request.get_json(force=True)
+    username = (body.get("username") or "").strip()
+    password = body.get("password") or ""
+    cfg = load_config()
+    if not cfg.get("local_auth_enabled", True):
+        return jsonify({"ok": False, "error": "Local authentication is disabled"}), 403
+    if not username or not password:
+        return jsonify({"ok": False, "error": "Username and password required"}), 400
+    db   = get_db()
+    user = db.get_user_by_username(username)
+    if not user or not check_password(password, user.get("password_hash", "")):
+        return jsonify({"ok": False, "error": "Invalid username or password"}), 401
+    if (user.get("status") or "active") != "active":
+        return jsonify({"ok": False, "error": "Account is disabled"}), 403
+    session.permanent = True
+    session["user_id"]    = user["id"]
+    session["username"]   = user["username"]
+    session["role"]       = user["role"]
+    session["login_time"] = time.time()
+    db.update_user(user["id"], {"last_login": datetime.datetime.utcnow().isoformat()})
+    return jsonify({"ok": True, "role": user["role"]})
+
+@app.route("/api/logout", methods=["POST", "GET"])
+def api_logout():
+    session.clear()
+    return redirect("/login")
+
+@app.route("/api/auth/current-user")
+def api_current_user():
+    if not session.get("user_id"):
+        return jsonify({"authenticated": False}), 401
+    return jsonify({
+        "authenticated": True,
+        "id":       session["user_id"],
+        "username": session.get("username"),
+        "role":     session.get("role"),
+    })
+
+# -- SAML helpers --------------------------------------------------------------
+
+def _build_saml_settings():
+    cfg  = load_config()
+    base = request.url_root.rstrip("/")
+    ssl  = bool(cfg.get("ssl_enabled"))
+    return {
+        "strict": ssl,
+        "debug":  False,
+        "sp": {
+            "entityId": cfg.get("okta_sp_entity_id") or f"{base}/api/auth/saml/metadata",
+            "assertionConsumerService": {
+                "url":     f"{base}/api/auth/saml/callback",
+                "binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST",
+            },
+            "singleLogoutService": {
+                "url":     f"{base}/api/auth/saml/slo",
+                "binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect",
+            },
+            "NameIDFormat": "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress",
+            "x509cert":  cfg.get("okta_sp_cert", ""),
+            "privateKey": cfg.get("okta_sp_key", ""),
+        },
+        "idp": {
+            "entityId": cfg.get("okta_entity_id", ""),
+            "singleSignOnService": {
+                "url":     cfg.get("okta_sso_url", ""),
+                "binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect",
+            },
+            "singleLogoutService": {
+                "url":     cfg.get("okta_sso_url", ""),
+                "binding": "urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect",
+            },
+            "x509cert": cfg.get("okta_cert", ""),
+        },
+    }
+
+def _init_saml_auth():
+    req = {
+        "https":       "on" if request.is_secure else "off",
+        "http_host":   request.host,
+        "server_port": request.environ.get("SERVER_PORT", "443" if request.is_secure else "80"),
+        "script_name": request.path,
+        "get_data":    request.args.to_dict(),
+        "post_data":   request.form.to_dict(),
+        "query_string": request.query_string.decode("utf-8"),
+    }
+    return OneLogin_Saml2_Auth(req, _build_saml_settings())
+
+@app.route("/api/auth/saml/login")
+def saml_login():
+    if not _SAML_AVAILABLE:
+        return "SAML library not installed on this server", 500
+    cfg = load_config()
+    if not cfg.get("okta_saml_enabled"):
+        return "SAML SSO is not enabled", 400
+    auth = _init_saml_auth()
+    return redirect(auth.login())
+
+@app.route("/api/auth/saml/callback", methods=["POST"])
+def saml_callback():
+    if not _SAML_AVAILABLE:
+        return "SAML library not installed", 500
+    auth = _init_saml_auth()
+    auth.process_response()
+    errors = auth.get_errors()
+    if errors:
+        log.error("SAML errors: %s — %s", errors, auth.get_last_error_reason())
+        return redirect("/login?error=saml_auth_failed")
+    if not auth.is_authenticated():
+        return redirect("/login?error=saml_auth_failed")
+    name_id    = auth.get_nameid()   # Okta sends email as NameID
+    attributes = auth.get_attributes()
+    log.warning("SAML login NameID=%s attributes=%s", name_id, attributes)
+
+    # Extract role from Okta attributes (checks common attribute names)
+    _VALID_ROLES = {"admin", "analyst", "viewer"}
+    okta_role = None
+    for attr_key in ("role", "Role", "userRole", "pktpcap_role", "appRole"):
+        val = attributes.get(attr_key)
+        if val:
+            candidate = (val[0] if isinstance(val, list) else val).lower().strip()
+            if candidate in _VALID_ROLES:
+                okta_role = candidate
+                break
+
+    db   = get_db()
+    user = db.get_user_by_email(name_id) or db.get_user_by_username(name_id)
+    if not user:
+        # Auto-provision on first SAML login — default admin since Okta access = trusted
+        role = okta_role or "admin"
+        email    = name_id if "@" in name_id else ""
+        username = email.split("@")[0] if email else name_id
+        base = username; suffix = 0
+        while db.get_user_by_username(username):
+            suffix += 1; username = f"{base}{suffix}"
+        log.info("SAML auto-provision: user=%s email=%s role=%s", username, email, role)
+        db.create_user(username=username, email=email, role=role, password_hash="")
+        user = db.get_user_by_email(name_id) or db.get_user_by_username(username)
+        if not user:
+            log.error("SAML auto-provision failed for %s", name_id)
+            return redirect("/login?error=provision_failed")
+    else:
+        # Sync role from Okta on every login if Okta sends one
+        if okta_role and user.get("role") != okta_role:
+            log.info("SAML role sync: user=%s %s -> %s", user["username"], user.get("role"), okta_role)
+            db.update_user(user["id"], {"role": okta_role})
+            user = db.get_user_by_email(name_id) or db.get_user_by_username(user["username"])
+
+    if (user.get("status") or "active") != "active":
+        return redirect("/login?error=account_disabled")
+    session.permanent = True
+    session["user_id"]    = user["id"]
+    session["username"]   = user["username"]
+    session["role"]       = user["role"]
+    session["login_time"] = time.time()
+    db.update_user(user["id"], {"last_login": datetime.datetime.utcnow().isoformat()})
+    return redirect("/")
+
+@app.route("/api/auth/saml/metadata")
+def saml_metadata():
+    if not _SAML_AVAILABLE:
+        return "SAML library not installed", 500
+    settings = OneLogin_Saml2_Settings(_build_saml_settings(), sp_validation_only=True)
+    metadata = settings.get_sp_metadata()
+    return Response(metadata, mimetype="text/xml")
 
 # -- API: settings -------------------------------------------------------------
 
@@ -131,7 +370,7 @@ def settings_page():
 def get_settings():
     cfg    = load_config()
     masked = dict(cfg)
-    BULLET = "•"
+    BULLET = "ΓÇó"
     for k in ("anthropic_key", "openai_key", "notify_email_password",
               "notify_pagerduty_integration_key", "notify_tracecat_api_token",
               "lucid_api_token"):
@@ -146,7 +385,7 @@ def post_settings():
     body = request.get_json(force=True)
     db   = get_db()
     cfg  = db.get_all_settings()
-    BULLET = "•"
+    BULLET = "ΓÇó"
 
     for field in (
         "app_name", "provider", "anthropic_model", "openai_model",
@@ -283,7 +522,7 @@ def ai_test():
     cfg      = load_config()
     body     = request.get_json(force=True)
     provider = body.get("provider", cfg.get("provider", "anthropic"))
-    BULLET   = "•"
+    BULLET   = "ΓÇó"
 
     def pick_key(field):
         v = body.get(field, "")
@@ -627,6 +866,7 @@ def open_browser(port, scheme="http"):
 
 if __name__ == "__main__":
     init_db()
+    _ensure_secret_key()
     _ensure_feed_token()
 
     # -- Attach in-app log handler -----------------------------------------------
@@ -635,7 +875,7 @@ if __name__ == "__main__":
     if not os.path.isabs(_db_path):
         _db_path = str(BASE / _db_path)
     _log_handler = SQLiteLogHandler(db_path=_db_path)
-    _log_handler.attach_to_root_logger("")  # root logger — catches Flask, werkzeug, everything
+    _log_handler.attach_to_root_logger("")  # root logger ΓÇö catches Flask, werkzeug, everything
     # ---------------------------------------------------------------------------
 
     cfg  = load_config()
