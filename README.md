@@ -32,6 +32,7 @@ pktPCAP supports two capture delivery modes: **local file upload** and **remote 
 
 The simplest path. You already have a capture file.
 
+Optional for SAML SSO:
 ```
 ┌──────────────────────────────────────────────────────────────────┐
 │  Your Machine                                                    │

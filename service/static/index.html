@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -457,14 +457,14 @@
     </div>
   </div><!-- /upload-screen -->
 
-  <!-- ═══════════════════════════════════════ LOADING SCREEN -->
+  <!-- ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ LOADING SCREEN -->
   <div id="loading-screen">
     <div class="loading-spinner"></div>
-    <div class="loading-text">Parsing captures…</div>
+    <div class="loading-text">Parsing capturesΓÇª</div>
     <div class="loading-step" id="loading-step">Reading file headers</div>
   </div>
 
-  <!-- ═══════════════════════════════════════ ANALYSIS SCREEN -->
+  <!-- ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ ANALYSIS SCREEN -->
   <div id="analysis-screen">
 
     <!-- Data panel -->
@@ -554,7 +554,7 @@
       <div class="chat-messages" id="chat-messages"></div>
       <div class="chat-input-area">
         <textarea class="chat-input" id="chat-input" rows="1"
-          placeholder="Reply to assistant, share what you found, add context…"
+          placeholder="Reply to assistant, share what you found, add contextΓÇª"
           onkeydown="onChatKey(event)"
           oninput="autoResize(this)"></textarea>
         <button class="send-btn" id="send-btn" onclick="sendMessage()" disabled>Send</button>
@@ -1138,13 +1138,13 @@ function parsePCAPNG(buffer, filename) {
     const bLen  = dv.getUint32(offset + 4, le);
     if (bLen < 12 || offset + bLen > buffer.byteLength) break;
 
-    // ── Section Header Block (0x0A0D0D0A) ──────────────────────
+    // ΓöÇΓöÇ Section Header Block (0x0A0D0D0A) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
     // Just re-read byte order; interfaces reset per section
     if (bType === 0x0a0d0d0a) {
-      // nothing extra needed — interfaces already reset if this is a second SHB
+      // nothing extra needed ΓÇö interfaces already reset if this is a second SHB
     }
 
-    // ── Interface Description Block (0x00000001) ───────────────
+    // ΓöÇΓöÇ Interface Description Block (0x00000001) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
     else if (bType === 0x00000001) {
       const linkType = dv.getUint16(offset + 8, le);
       let tsResol = 1e6; // default: microseconds (1e6 units per second)
@@ -1165,7 +1165,7 @@ function parsePCAPNG(buffer, filename) {
       ifaces.push({ linkType, tsResol });
     }
 
-    // ── Enhanced Packet Block (0x00000006) ─────────────────────
+    // ΓöÇΓöÇ Enhanced Packet Block (0x00000006) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
     else if (bType === 0x00000006 && bLen >= 28) {
       const ifaceId = dv.getUint32(offset + 8,  le);
       const tsHi    = dv.getUint32(offset + 12, le);
@@ -1183,7 +1183,7 @@ function parsePCAPNG(buffer, filename) {
       }
     }
 
-    // ── Obsolete Packet Block (0x00000002) ─────────────────────
+    // ΓöÇΓöÇ Obsolete Packet Block (0x00000002) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
     else if (bType === 0x00000002 && bLen >= 28) {
       const ifaceId = dv.getUint16(offset + 8, le);
       const tsHi    = dv.getUint32(offset + 12, le);
@@ -1201,7 +1201,7 @@ function parsePCAPNG(buffer, filename) {
       }
     }
 
-    // ── Simple Packet Block (0x00000003) ───────────────────────
+    // ΓöÇΓöÇ Simple Packet Block (0x00000003) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
     else if (bType === 0x00000003 && bLen >= 16) {
       const origLen = dv.getUint32(offset + 8, le);
       const capLen  = Math.min(origLen, bLen - 16);
@@ -1219,7 +1219,7 @@ function parsePCAPNG(buffer, filename) {
     offset += bLen;
   }
 
-  if (!packets.length) throw new Error('pcapng parsed but no packets found — file may be empty or use an unsupported block type');
+  if (!packets.length) throw new Error('pcapng parsed but no packets found ΓÇö file may be empty or use an unsupported block type');
   return packets;
 }
 
@@ -1238,7 +1238,7 @@ function analyzePackets(pkts) {
     protocols[p.protocol]=(protocols[p.protocol]||0)+1;
     totalBytes+=p.capturedLen;
 
-    // Port tracking — count both src and dst, keyed as "PROTO/port"
+    // Port tracking ΓÇö count both src and dst, keyed as "PROTO/port"
     if ((p.protocol==='TCP'||p.protocol==='UDP') && p.srcPort && p.dstPort) {
       // Only count the lower-numbered port (usually the service port) to avoid double-counting
       const svc = Math.min(p.srcPort, p.dstPort);
@@ -1252,14 +1252,14 @@ function analyzePackets(pkts) {
     if (p.srcIP && p.dstIP) {
       const normKey=[p.srcIP+(p.srcPort||''), p.dstIP+(p.dstPort||'')].sort().join('|')+'|'+p.protocol;
       const display=p.srcPort&&p.dstPort
-        ?`${p.srcIP}:${p.srcPort} ↔ ${p.dstIP}:${p.dstPort} [${p.protocol}]`
-        :`${p.srcIP} ↔ ${p.dstIP} [${p.protocol}]`;
+        ?`${p.srcIP}:${p.srcPort} Γåö ${p.dstIP}:${p.dstPort} [${p.protocol}]`
+        :`${p.srcIP} Γåö ${p.dstIP} [${p.protocol}]`;
       if (!convMap[normKey]) convMap[normKey]={display,normKey,pkts:0,bytes:0,first:p.timestamp,last:p.timestamp,srcs:new Set()};
       const c=convMap[normKey]; c.pkts++; c.bytes+=p.capturedLen; c.last=p.timestamp; c.srcs.add(p.source);
     }
 
     if (p.protocol==='TCP' && p.srcIP && p.flags) {
-      const nk=[p.srcIP+':'+(p.srcPort||'?'), p.dstIP+':'+(p.dstPort||'?')].sort().join(' ↔ ');
+      const nk=[p.srcIP+':'+(p.srcPort||'?'), p.dstIP+':'+(p.dstPort||'?')].sort().join(' Γåö ');
       if (!tcpStreams[nk]) tcpStreams[nk]={syns:0,synAcks:0,rsts:0,fins:0,zeroWin:0,retrans:0,pkts:0,bytes:0,seqs:{}};
       const s=tcpStreams[nk];
       s.pkts++; s.bytes+=p.capturedLen;
@@ -1283,7 +1283,7 @@ function analyzePackets(pkts) {
     }
 
     if (p.protocol==='UDP' && p.srcIP && p.dstIP && p.srcPort && p.dstPort) {
-      const nk=[p.srcIP+':'+p.srcPort, p.dstIP+':'+p.dstPort].sort().join(' ↔ ');
+      const nk=[p.srcIP+':'+p.srcPort, p.dstIP+':'+p.dstPort].sort().join(' Γåö ');
       if (!udpFlows[nk]) udpFlows[nk]={key:nk,pkts:0,bytes:0,largeCount:0,dirs:new Set()};
       const f=udpFlows[nk];
       f.pkts++; f.bytes+=p.capturedLen;
@@ -1322,36 +1322,36 @@ function analyzePackets(pkts) {
   const ICMP_TYPE_NAMES={3:'Unreachable',4:'Source Quench',5:'Redirect',11:'Time Exceeded',12:'Parameter Problem'};
   const DNS_RCODES=['NOERROR','FORMERR','SERVFAIL','NXDOMAIN','NOTIMP','REFUSED'];
   if (failedHS>0) anomalies.push({severity:'high',type:'Failed TCP Handshakes',
-    detail:`${failedHS} connection(s) have SYN with no SYN-ACK — possible firewall block, routing blackhole, or host unreachable`,
-    evidence:issueStreams.filter(s=>s.failedHS).slice(0,10).map(s=>`Stream: ${s.key} — SYN sent, no SYN-ACK received`)});
+    detail:`${failedHS} connection(s) have SYN with no SYN-ACK ΓÇö possible firewall block, routing blackhole, or host unreachable`,
+    evidence:issueStreams.filter(s=>s.failedHS).slice(0,10).map(s=>`Stream: ${s.key} ΓÇö SYN sent, no SYN-ACK received`)});
   if (totalRsts>10) anomalies.push({severity:'high',type:'High TCP RST Rate',
-    detail:`${totalRsts} RST packets — abrupt connection terminations across multiple streams`,
-    evidence:issueStreams.filter(s=>s.rsts>0).sort((a,b)=>b.rsts-a.rsts).slice(0,10).map(s=>`Stream: ${s.key} — ${s.rsts} RST(s)`)});
+    detail:`${totalRsts} RST packets ΓÇö abrupt connection terminations across multiple streams`,
+    evidence:issueStreams.filter(s=>s.rsts>0).sort((a,b)=>b.rsts-a.rsts).slice(0,10).map(s=>`Stream: ${s.key} ΓÇö ${s.rsts} RST(s)`)});
   else if (totalRsts>3) anomalies.push({severity:'medium',type:'TCP RSTs Detected',
-    detail:`${totalRsts} RST packets — connection refusals or mid-session terminations`,
-    evidence:issueStreams.filter(s=>s.rsts>0).sort((a,b)=>b.rsts-a.rsts).slice(0,10).map(s=>`Stream: ${s.key} — ${s.rsts} RST(s)`)});
+    detail:`${totalRsts} RST packets ΓÇö connection refusals or mid-session terminations`,
+    evidence:issueStreams.filter(s=>s.rsts>0).sort((a,b)=>b.rsts-a.rsts).slice(0,10).map(s=>`Stream: ${s.key} ΓÇö ${s.rsts} RST(s)`)});
   if (totalRetrans>20) anomalies.push({severity:'high',type:'Excessive Retransmissions',
-    detail:`${totalRetrans} retransmissions — significant packet loss on the path`,
-    evidence:issueStreams.filter(s=>s.retrans>0).sort((a,b)=>b.retrans-a.retrans).slice(0,10).map(s=>`Stream: ${s.key} — ${s.retrans} retransmission(s)`)});
+    detail:`${totalRetrans} retransmissions ΓÇö significant packet loss on the path`,
+    evidence:issueStreams.filter(s=>s.retrans>0).sort((a,b)=>b.retrans-a.retrans).slice(0,10).map(s=>`Stream: ${s.key} ΓÇö ${s.retrans} retransmission(s)`)});
   else if (totalRetrans>5) anomalies.push({severity:'medium',type:'TCP Retransmissions',
-    detail:`${totalRetrans} retransmissions — some loss present`,
-    evidence:issueStreams.filter(s=>s.retrans>0).sort((a,b)=>b.retrans-a.retrans).slice(0,10).map(s=>`Stream: ${s.key} — ${s.retrans} retransmission(s)`)});
+    detail:`${totalRetrans} retransmissions ΓÇö some loss present`,
+    evidence:issueStreams.filter(s=>s.retrans>0).sort((a,b)=>b.retrans-a.retrans).slice(0,10).map(s=>`Stream: ${s.key} ΓÇö ${s.retrans} retransmission(s)`)});
   if (totalZeroWin>5) anomalies.push({severity:'medium',type:'TCP Zero Window',
-    detail:`${totalZeroWin} zero-window ads — receiver buffer exhaustion, slow application or overloaded host`,
-    evidence:issueStreams.filter(s=>s.zeroWin>0).sort((a,b)=>b.zeroWin-a.zeroWin).slice(0,10).map(s=>`Stream: ${s.key} — ${s.zeroWin} zero-window ad(s)`)});
+    detail:`${totalZeroWin} zero-window ads ΓÇö receiver buffer exhaustion, slow application or overloaded host`,
+    evidence:issueStreams.filter(s=>s.zeroWin>0).sort((a,b)=>b.zeroWin-a.zeroWin).slice(0,10).map(s=>`Stream: ${s.key} ΓÇö ${s.zeroWin} zero-window ad(s)`)});
   if (dnsUnanswered.length>3) anomalies.push({severity:'high',type:'Unanswered DNS Queries',
-    detail:`${dnsUnanswered.length} DNS queries with no response — DNS server unreachable or dropping queries`,
+    detail:`${dnsUnanswered.length} DNS queries with no response ΓÇö DNS server unreachable or dropping queries`,
     evidence:dnsUnanswered.slice(0,10).map(d=>`Query: ${d.qname} (at ${safeIso(d.ts)})`)});
   else if (dnsUnanswered.length>0) anomalies.push({severity:'medium',type:'DNS Queries Unanswered',
     detail:`${dnsUnanswered.length} DNS queries received no response`,
     evidence:dnsUnanswered.slice(0,10).map(d=>`Query: ${d.qname} (at ${safeIso(d.ts)})`)});
   if (dnsErrors.length>0) anomalies.push({severity:'medium',type:'DNS Resolution Errors',
     detail:`${dnsErrors.length} DNS error responses (NXDOMAIN, SERVFAIL, REFUSED, etc.)`,
-    evidence:dnsErrors.slice(0,10).map(d=>`${d.qname} → ${DNS_RCODES[d.rcode]||'rcode:'+d.rcode}`)});
+    evidence:dnsErrors.slice(0,10).map(d=>`${d.qname} ΓåÆ ${DNS_RCODES[d.rcode]||'rcode:'+d.rcode}`)});
   const icmpErrs=pkts.filter(p=>p.protocol==='ICMP'&&p.icmpType!==0&&p.icmpType!==8);
   if (icmpErrs.length>0) anomalies.push({severity:'medium',type:'ICMP Error Messages',
     detail:`${icmpErrs.length} ICMP errors (Unreachable, Time Exceeded, etc.)`,
-    evidence:icmpErrs.slice(0,10).map(p=>`${p.srcIP} → ${p.dstIP}: ${ICMP_TYPE_NAMES[p.icmpType]||'type '+p.icmpType} (${safeIso(p.timestamp)})`)});
+    evidence:icmpErrs.slice(0,10).map(p=>`${p.srcIP} ΓåÆ ${p.dstIP}: ${ICMP_TYPE_NAMES[p.icmpType]||'type '+p.icmpType} (${safeIso(p.timestamp)})`)});
 
   const captures=[...new Set(pkts.map(p=>p.source))];
   const convs=Object.entries(convMap).sort((a,b)=>b[1].pkts-a[1].pkts).slice(0,60)
@@ -1409,13 +1409,13 @@ function securityScan(pkts){
       srcTargets[p.srcIP].pairs.add(p.dstIP+':'+p.dstPort);
     }
 
-    // Cleartext — count by service port (either direction)
+    // Cleartext ΓÇö count by service port (either direction)
     if (p.protocol==='TCP'){
       const svcPort=p.dstPort&&CLEARTEXT[p.dstPort]?p.dstPort:p.srcPort&&CLEARTEXT[p.srcPort]?p.srcPort:null;
       if (svcPort) {
         cleartext[svcPort]=(cleartext[svcPort]||0)+1;
         if (!cleartextIPs[svcPort]) cleartextIPs[svcPort]=new Set();
-        cleartextIPs[svcPort].add(p.srcIP+' → '+p.dstIP);
+        cleartextIPs[svcPort].add(p.srcIP+' ΓåÆ '+p.dstIP);
       }
     }
 
@@ -1429,11 +1429,11 @@ function securityScan(pkts){
 
     // Large outbound to external
     if (sPriv&&!dPriv){
-      const k=p.srcIP+'→'+p.dstIP;
+      const k=p.srcIP+'ΓåÆ'+p.dstIP;
       extTransfers[k]=(extTransfers[k]||0)+p.capturedLen;
     }
 
-    // Lateral movement: internal→internal on admin ports
+    // Lateral movement: internalΓåÆinternal on admin ports
     if (sPriv&&dPriv&&p.protocol==='TCP'&&p.dstPort&&ADMIN_PORTS.has(p.dstPort)){
       const k=p.srcIP+'|'+p.dstPort;
       if (!lateralMap[k]) lateralMap[k]={srcIP:p.srcIP,port:p.dstPort,targets:new Set()};
@@ -1456,12 +1456,12 @@ function securityScan(pkts){
     if (t.pairs.size>50&&t.ports.size>20)
       threats.push({severity:'high',category:'Reconnaissance',type:'Port Scan',
         detail:`${srcIP} hit ${t.pairs.size} unique host:port pairs across ${t.hosts.size} hosts / ${t.ports.size} ports`,
-        evidence:[`Source: ${srcIP}`,`Hosts targeted: ${[...t.hosts].slice(0,5).join(', ')}${t.hosts.size>5?' …and '+(t.hosts.size-5)+' more':''}`,
-          `Sample targets: ${[...t.pairs].slice(0,8).join(', ')}${t.pairs.size>8?' …':''}`,
-          `Distinct ports: ${[...t.ports].slice(0,10).sort((a,b)=>a-b).join(', ')}${t.ports.size>10?' …':''}`]});
+        evidence:[`Source: ${srcIP}`,`Hosts targeted: ${[...t.hosts].slice(0,5).join(', ')}${t.hosts.size>5?' ΓÇªand '+(t.hosts.size-5)+' more':''}`,
+          `Sample targets: ${[...t.pairs].slice(0,8).join(', ')}${t.pairs.size>8?' ΓÇª':''}`,
+          `Distinct ports: ${[...t.ports].slice(0,10).sort((a,b)=>a-b).join(', ')}${t.ports.size>10?' ΓÇª':''}`]});
     else if (t.pairs.size>20&&t.ports.size>10)
       threats.push({severity:'medium',category:'Reconnaissance',type:'Possible Port Scan',
-        detail:`${srcIP} hit ${t.pairs.size} unique host:port combos — possible scan`,
+        detail:`${srcIP} hit ${t.pairs.size} unique host:port combos ΓÇö possible scan`,
         evidence:[`Source: ${srcIP}`,`Sample targets: ${[...t.pairs].slice(0,8).join(', ')}`,
           `Distinct ports seen: ${[...t.ports].slice(0,10).sort((a,b)=>a-b).join(', ')}`]});
   }
@@ -1471,7 +1471,7 @@ function securityScan(pkts){
     if (count>0){
       const sev=([23,512,513,514].includes(+port))?'high':'medium';
       threats.push({severity:sev,category:'Credential Risk',type:`Cleartext ${CLEARTEXT[port]}`,
-        detail:`${count} packets on port ${port} (${CLEARTEXT[port]}) — credentials/data in plaintext`,
+        detail:`${count} packets on port ${port} (${CLEARTEXT[port]}) ΓÇö credentials/data in plaintext`,
         evidence:[`Protocol: ${CLEARTEXT[port]} (port ${port})`,`Packet count: ${count}`,
           ...[...(cleartextIPs[port]||[])].slice(0,8).map(f=>`Flow: ${f}`)]});
     }
@@ -1482,10 +1482,10 @@ function securityScan(pkts){
     if (count>15){
       const [srcIP,dstPort]=key.split('|');
       const tgts=[...(bruteTargets[key]||[])];
-      threats.push({severity:'high',category:'Brute Force',type:`Brute Force — ${PORT_NAMES[dstPort]||'port '+dstPort}`,
-        detail:`${srcIP} sent ${count} SYN packets to port ${dstPort} (${PORT_NAMES[dstPort]||''}) — credential spray or brute force`,
+      threats.push({severity:'high',category:'Brute Force',type:`Brute Force ΓÇö ${PORT_NAMES[dstPort]||'port '+dstPort}`,
+        detail:`${srcIP} sent ${count} SYN packets to port ${dstPort} (${PORT_NAMES[dstPort]||''}) ΓÇö credential spray or brute force`,
         evidence:[`Attacker: ${srcIP}`,`Target port: ${dstPort} (${PORT_NAMES[dstPort]||'unknown service'})`,
-          `SYN count: ${count}`,`Target host(s): ${tgts.slice(0,5).join(', ')}${tgts.length>5?' …and '+(tgts.length-5)+' more':''}`]});
+          `SYN count: ${count}`,`Target host(s): ${tgts.slice(0,5).join(', ')}${tgts.length>5?' ΓÇªand '+(tgts.length-5)+' more':''}`]});
     }
   }
 
@@ -1493,9 +1493,9 @@ function securityScan(pkts){
   const extSorted=Object.entries(extTransfers).sort((a,b)=>b[1]-a[1]).slice(0,5);
   for (const [flow,bytes] of extSorted){
     if (bytes>1048576){
-      const [src,dst]=flow.split('→');
+      const [src,dst]=flow.split('ΓåÆ');
       threats.push({severity:bytes>10485760?'high':'medium',category:'Data Transfer',type:'Large Outbound Transfer',
-        detail:`${flow} — ${fmtBytes(bytes)} sent to external host — possible exfiltration or bulk upload`,
+        detail:`${flow} ΓÇö ${fmtBytes(bytes)} sent to external host ΓÇö possible exfiltration or bulk upload`,
         evidence:[`Source (internal): ${src}`,`Destination (external): ${dst}`,`Volume transferred: ${fmtBytes(bytes)}`,
           `Threshold: ${bytes>10485760?'HIGH (>10 MB)':'MEDIUM (>1 MB)'}`]});
     }
@@ -1506,9 +1506,9 @@ function securityScan(pkts){
     if (s.targets.size>=3){
       const tgts=[...s.targets];
       threats.push({severity:'high',category:'Lateral Movement',type:`Admin Port Spread (${PORT_NAMES[s.port]||'port '+s.port})`,
-        detail:`${s.srcIP} connected to ${s.targets.size} internal hosts on port ${s.port} (${PORT_NAMES[s.port]||''}) — possible lateral movement`,
+        detail:`${s.srcIP} connected to ${s.targets.size} internal hosts on port ${s.port} (${PORT_NAMES[s.port]||''}) ΓÇö possible lateral movement`,
         evidence:[`Source: ${s.srcIP}`,`Admin port: ${s.port} (${PORT_NAMES[s.port]||'unknown'})`,
-          `Target hosts (${tgts.length}): ${tgts.slice(0,8).join(', ')}${tgts.length>8?' …':''}`]});
+          `Target hosts (${tgts.length}): ${tgts.slice(0,8).join(', ')}${tgts.length>8?' ΓÇª':''}`]});
     }
   }
 
@@ -1516,12 +1516,12 @@ function securityScan(pkts){
   for (const [srcIP,stats] of Object.entries(dnsPerSrc)){
     if (stats.longNames.length>2)
       threats.push({severity:'medium',category:'Covert Channel',type:'DNS Tunneling Indicator',
-        detail:`${srcIP}: ${stats.longNames.length} queries with names >50 chars — e.g. "${stats.longNames[0].slice(0,55)}…"`,
+        detail:`${srcIP}: ${stats.longNames.length} queries with names >50 chars ΓÇö e.g. "${stats.longNames[0].slice(0,55)}ΓÇª"`,
         evidence:[`Source: ${srcIP}`,`Long-name query count: ${stats.longNames.length}`,
           ...stats.longNames.slice(0,6).map(n=>`Query: ${n}`)]});
     else if (stats.count>100)
       threats.push({severity:'medium',category:'Covert Channel',type:'High DNS Query Rate',
-        detail:`${srcIP} issued ${stats.count} DNS queries — possible tunneling or misconfiguration`,
+        detail:`${srcIP} issued ${stats.count} DNS queries ΓÇö possible tunneling or misconfiguration`,
         evidence:[`Source: ${srcIP}`,`Total DNS queries: ${stats.count}`]});
   }
 
@@ -1529,7 +1529,7 @@ function securityScan(pkts){
   const suspectDNS=[...dnsServers].filter(ip=>!KNOWN_DNS.has(ip)&&!ip.endsWith('.1')&&!ip.endsWith('.2')&&!ip.endsWith('.254'));
   if (suspectDNS.length>0)
     threats.push({severity:'low',category:'DNS',type:'Non-Standard DNS Resolvers',
-      detail:`Queries sent to: ${suspectDNS.slice(0,5).join(', ')} — verify these are authorized DNS servers`,
+      detail:`Queries sent to: ${suspectDNS.slice(0,5).join(', ')} ΓÇö verify these are authorized DNS servers`,
       evidence:[`Non-standard resolvers observed:`, ...suspectDNS.slice(0,10).map(ip=>`  ${ip}`),
         `Known-good DNS servers: 8.8.8.8, 8.8.4.4, 1.1.1.1, 9.9.9.9`]});
 
@@ -1549,10 +1549,10 @@ function removeFile(n)  { uploadedFiles=uploadedFiles.filter(f=>f.name!==n); ren
 function renderFileList(){
   document.getElementById('file-list').innerHTML=uploadedFiles.map(f=>`
     <div class="file-item">
-      <span class="file-item-icon">📄</span>
+      <span class="file-item-icon">≡ƒôä</span>
       <span class="file-item-name">${esc(f.name)}</span>
       <span class="file-item-size">${fmtBytes(f.size)}</span>
-      <button class="file-remove" onclick="removeFile('${esc(f.name)}')">✕</button>
+      <button class="file-remove" onclick="removeFile('${esc(f.name)}')">Γ£ò</button>
     </div>`).join('');
   document.getElementById('analyze-btn').disabled=!uploadedFiles.length;
 }
@@ -1569,15 +1569,15 @@ async function startAnalysis(){
     const allPkts=[];
     for(let i=0;i<uploadedFiles.length;i++){
       const f=uploadedFiles[i];
-      setStep(`Parsing ${f.name} (${i+1}/${uploadedFiles.length})…`);
+      setStep(`Parsing ${f.name} (${i+1}/${uploadedFiles.length})ΓÇª`);
       const buf=await readBuf(f);
       allPkts.push(...parsePCAP(buf,f.name));
     }
-    setStep('Running analysis…'); await tick();
+    setStep('Running analysisΓÇª'); await tick();
     analysisResult=analyzePackets(allPkts);
     analysisResult.issueDescription=issue;
     analysisResult.fileNames=uploadedFiles.map(f=>f.name);
-    setStep('Rendering…'); await tick();
+    setStep('RenderingΓÇª'); await tick();
     renderUI();
     document.getElementById('loading-screen').style.display='none';
     document.getElementById('analysis-screen').style.display='flex';
@@ -1660,7 +1660,7 @@ function renderUI(){
   else if(sec.summary.medium>0) threatTabBtn.style.color='#f59e0b';
 
   document.getElementById('threats-summary').innerHTML=sec.summary.total===0
-    ?`<div class="no-anomalies"><div class="no-anomalies-icon">🛡️</div>No threat indicators detected</div>`
+    ?`<div class="no-anomalies"><div class="no-anomalies-icon">≡ƒ¢í∩╕Å</div>No threat indicators detected</div>`
     :`<div class="metric-grid">
         ${mc('Total Findings',sec.summary.total,'')}
         ${mc('HIGH',sec.summary.high,'')}
@@ -1678,7 +1678,7 @@ function renderUI(){
   // Anomalies
   const tabBtn=document.getElementById('tab-btn-anomalies');
   if(!R.anomalies.length){
-    document.getElementById('anomalies-list').innerHTML=`<div class="no-anomalies"><div class="no-anomalies-icon">✅</div>No anomalies detected</div>`;
+    document.getElementById('anomalies-list').innerHTML=`<div class="no-anomalies"><div class="no-anomalies-icon">Γ£à</div>No anomalies detected</div>`;
     tabBtn.textContent='Anomalies';
   } else {
     tabBtn.textContent=`Anomalies (${R.anomalies.length})`;
@@ -1695,13 +1695,13 @@ function renderUI(){
   }
   window._flowChatItems=R.conversations.map(c=>({type:'Flow',display:c.display,pkts:c.pkts,bytes:c.bytes,key:c.key||c.display}));
   document.getElementById('flows-tbody').innerHTML=R.conversations.map((c,ci)=>{
-    const badges=c.srcs.map(s=>{const i=caps.indexOf(s);return`<span class="src-badge" style="color:${SOURCE_COLORS[i%4]}">◆${esc(s)}</span>`;}).join('');
+    const badges=c.srcs.map(s=>{const i=caps.indexOf(s);return`<span class="src-badge" style="color:${SOURCE_COLORS[i%4]}">Γùå${esc(s)}</span>`;}).join('');
     return`<tr>
       <td>${esc(c.display)}<br>${badges}</td>
       <td>${c.pkts}</td>
       <td>${fmtBytes(c.bytes)}</td>
       <td style="display:flex;gap:4px;align-items:center">
-        <button class="stream-btn" onclick="openStream(${ci})">▶ Stream</button>
+        <button class="stream-btn" onclick="openStream(${ci})">Γû╢ Stream</button>
         <button class="chat-to-btn" style="margin-left:2px" onclick="sendFlowToAssistant(window._flowChatItems[${ci}])" title="Send to Diagnostic Assistant">\u{1F4AC}</button>
       </td>
     </tr>`;
@@ -1735,7 +1735,7 @@ function renderUI(){
           <div class="bar-track" style="margin-top:4px"><div class="bar-fill" style="width:${(s.pkts/maxTcpPkts*100).toFixed(0)}%;background:#60a5fa"></div></div>
         </div>
         <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0;margin-top:2px">
-          <button class="stream-btn" onclick="openStreamByTcpKey(window._tcpIssueKeys[${i}])">▶ Stream</button>
+          <button class="stream-btn" onclick="openStreamByTcpKey(window._tcpIssueKeys[${i}])">Γû╢ Stream</button>
           <button class="chat-to-btn" style="margin:0" onclick="sendFlowToAssistant(window._tcpIssueItems[${i}])" title="Send to Diagnostic Assistant">\u{1F4AC}</button>
         </div>
       </div>`).join('')
@@ -1773,7 +1773,7 @@ function renderUI(){
           <div class="bar-track" style="margin-top:4px"><div class="bar-fill" style="width:${(f.pkts/maxUdpPkts*100).toFixed(0)}%;background:#bc8cff"></div></div>
         </div>
         <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0;margin-top:2px">
-          <button class="stream-btn" onclick="openStreamByUdpKey(window._udpTopKeys[${i}])">▶ Stream</button>
+          <button class="stream-btn" onclick="openStreamByUdpKey(window._udpTopKeys[${i}])">Γû╢ Stream</button>
           <button class="chat-to-btn" style="margin:0" onclick="sendFlowToAssistant(window._udpTopItems[${i}])" title="Send to Diagnostic Assistant">\u{1F4AC}</button>
         </div>
       </div>`).join('')
@@ -1796,7 +1796,7 @@ function renderUI(){
           </div>
         </div>
         <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0;margin-top:2px">
-          <button class="stream-btn" onclick="openStreamByUdpKey(window._udpNotableKeys[${i}])">▶ Stream</button>
+          <button class="stream-btn" onclick="openStreamByUdpKey(window._udpNotableKeys[${i}])">Γû╢ Stream</button>
           <button class="chat-to-btn" style="margin:0" onclick="sendFlowToAssistant(window._udpNotableItems[${i}])" title="Send to Diagnostic Assistant">\u{1F4AC}</button>
         </div>
       </div>`).join('')
@@ -1828,7 +1828,7 @@ function renderCard(item, extraBadges=''){
   if(!window._cardStreamKeyMap) window._cardStreamKeyMap={};
   if(!window._cardItemMap) window._cardItemMap={};
   const rowKeys=hasEv ? ev.map(e=>{
-    const m=String(e).match(/^Stream:\s+(.+? ↔ .+?) —/);
+    const m=String(e).match(/^Stream:\s+(.+? Γåö .+?) ΓÇö/);
     return m ? m[1].trim() : null;
   }) : [];
   const anyKeys=rowKeys.some(k=>k!==null);
@@ -1842,13 +1842,13 @@ function renderCard(item, extraBadges=''){
       <button class="chat-to-btn" onclick="event.stopPropagation();sendCardToAssistant('${uid}')" title="Send to Diagnostic Assistant">\u{1F4AC}</button>
     </div>
     <div class="anomaly-detail">${esc(item.detail)}</div>
-    ${hasEv?`<div class="expand-toggle">▼ Show evidence (${ev.length} item${ev.length!==1?'s':''})</div>
+    ${hasEv?`<div class="expand-toggle">Γû╝ Show evidence (${ev.length} item${ev.length!==1?'s':''})</div>
     <div class="card-evidence" id="${uid}" data-ev-count="${ev.length}">
       ${ev.map((e,i)=>{
         const key=rowKeys[i];
         return`<div class="ev-row" style="display:flex;align-items:center;gap:6px">
           <span style="flex:1;word-break:break-all">${esc(String(e))}</span>
-          ${key?`<button onclick="event.stopPropagation();openStreamByTcpKey(window._cardStreamKeyMap['${uid}'][${i}])" title="View stream" style="flex-shrink:0;background:none;border:none;color:#58a6ff;cursor:pointer;font-size:14px;padding:0 2px;line-height:1">▶</button>`:''}
+          ${key?`<button onclick="event.stopPropagation();openStreamByTcpKey(window._cardStreamKeyMap['${uid}'][${i}])" title="View stream" style="flex-shrink:0;background:none;border:none;color:#58a6ff;cursor:pointer;font-size:14px;padding:0 2px;line-height:1">Γû╢</button>`:''}
         </div>`;
       }).join('')}
     </div>`:''}
@@ -1886,7 +1886,7 @@ function toggleEvidence(card,ev){
   if(!panel) return;
   const open=panel.classList.toggle('open');
   const cnt=parseInt(panel.dataset.evCount||panel.querySelectorAll('.ev-row').length)||0;
-  toggle.textContent=open?'▲ Hide evidence':'▼ Show evidence ('+cnt+' item'+(cnt!==1?'s':'')+')';
+  toggle.textContent=open?'Γû▓ Hide evidence':'Γû╝ Show evidence ('+cnt+' item'+(cnt!==1?'s':'')+')';
 }
 
 function switchTab(e,name){
@@ -1983,7 +1983,7 @@ Capture data: ${JSON.stringify(ctx,null,2)}
 Conversation:
 ${hist}
 
-Continue the diagnostic. Build on established facts — don't repeat what's confirmed. If the engineer provides new info (e.g. "no drops on the firewall"), factor it in and redirect. Reference capture evidence when relevant. Be explicit when speculating: "this could indicate…" or "one possibility is…". Suggest out-of-capture checks when warranted (CLI commands, logs, config areas to check). Ask one question at a time. Technical language is appropriate.`;
+Continue the diagnostic. Build on established facts ΓÇö don't repeat what's confirmed. If the engineer provides new info (e.g. "no drops on the firewall"), factor it in and redirect. Reference capture evidence when relevant. Be explicit when speculating: "this could indicateΓÇª" or "one possibility isΓÇª". Suggest out-of-capture checks when warranted (CLI commands, logs, config areas to check). Ask one question at a time. Technical language is appropriate.`;
 
   try {
     const raw=await localAsk(prompt,[JSON.stringify(ctx)]);
@@ -2009,7 +2009,7 @@ function removeTyping(){ const e=document.getElementById('typing-indicator'); if
 function onChatKey(e){ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); sendMessage(); } }
 function autoResize(el){ el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,110)+'px'; }
 
-// ── SEND ITEM TO ASSISTANT ──
+// ΓöÇΓöÇ SEND ITEM TO ASSISTANT ΓöÇΓöÇ
 function sendCardToAssistant(uid){
   const item=window._cardItemMap&&window._cardItemMap[uid];
   if(!item) return;
@@ -2043,7 +2043,7 @@ Capture overview: ${JSON.stringify({files:ctx.files,metadata:ctx.metadata,protoc
 The engineer clicked on a specific item for investigation:
 ${JSON.stringify(data,null,2)}
 
-${hist?'Prior conversation:\n'+hist+'\n\n':''}Provide a focused technical analysis of this specific item. Cover: what it indicates, likely causes, severity in context of this capture, and 1-2 concrete next steps (CLI commands, config areas, logs to check). Be precise — reference IPs, ports, counts from the data. If this item connects to something else in the capture context, call it out. Technical language appropriate. Keep it tight.`;
+${hist?'Prior conversation:\n'+hist+'\n\n':''}Provide a focused technical analysis of this specific item. Cover: what it indicates, likely causes, severity in context of this capture, and 1-2 concrete next steps (CLI commands, config areas, logs to check). Be precise ΓÇö reference IPs, ports, counts from the data. If this item connects to something else in the capture context, call it out. Technical language appropriate. Keep it tight.`;
   try {
     const raw=await localAsk(prompt,[JSON.stringify(ctx)]);
     const r=extractText(raw);
@@ -2159,7 +2159,7 @@ function renderStreamModal(title, flowPkts){
   closePacketDetail();
   const rows=shown.map((p,i)=>{
     const dir=(p.srcIP+':'+(p.srcPort||''))===sideA;
-    const dirArrow=dir?'→':'←';
+    const dirArrow=dir?'ΓåÆ':'ΓåÉ';
     const dirColor=dir?'#58a6ff':'#e3b341';
     const relT=((p.timestamp-t0)*1000).toFixed(1)+'ms';
     const flags=flagStr(p.flags)||'';
@@ -2168,14 +2168,14 @@ function renderStreamModal(title, flowPkts){
       return`<span style="font-size:9px;color:${fc};border:1px solid ${fc};border-radius:2px;padding:0 3px;margin-right:2px">${f}</span>`;
     }).join(''):'';
     const ascii=p.payload?payloadToAscii(p.payload).slice(0,80):'';
-    const payDisplay=ascii?`<span style="color:#c9d1d9;font-size:10px;margin-left:6px;word-break:break-all">${esc(ascii)}${p.payload&&p.payload.length>80?'…':''}</span>`:'';
+    const payDisplay=ascii?`<span style="color:#c9d1d9;font-size:10px;margin-left:6px;word-break:break-all">${esc(ascii)}${p.payload&&p.payload.length>80?'ΓÇª':''}</span>`:'';
     const retransBadge=(p.flags&&i>0&&shown.slice(0,i).some(pp=>pp.srcIP===p.srcIP&&pp.srcPort===p.srcPort&&pp.seqNum===p.seqNum&&p.seqNum!==undefined&&p.seqNum!==0))
       ?`<span style="font-size:9px;color:#f85149;margin-left:4px">RETR</span>`:'';
     return`<tr id="spkt_${i}" onclick="showPacketDetail(${i})" style="cursor:pointer">
       <td style="color:#e6edf3;white-space:nowrap">${relT}</td>
       <td style="color:${dirColor};font-weight:700;text-align:center">${dirArrow}</td>
       <td style="color:#e6edf3;white-space:nowrap">${esc(p.srcIP)}:${p.srcPort||'?'}</td>
-      <td style="color:#e6edf3">→</td>
+      <td style="color:#e6edf3">ΓåÆ</td>
       <td style="color:#e6edf3;white-space:nowrap">${esc(p.dstIP)}:${p.dstPort||'?'}</td>
       <td>${fs}${retransBadge}</td>
       <td style="color:#e6edf3;text-align:right">${p.capturedLen}</td>
@@ -2185,14 +2185,14 @@ function renderStreamModal(title, flowPkts){
   const truncNote=flowPkts.length>MAX?`<div style="text-align:center;padding:8px;color:#e3b341;font-size:11px">Showing first ${MAX} of ${flowPkts.length} packets</div>`:'';
   document.getElementById('stream-modal-title').textContent=title;
   document.getElementById('stream-modal-meta').innerHTML=
-    `<span>${flowPkts.length} packets</span><span style="margin:0 10px">·</span>`+
-    `<span>${fmtBytes(totalBytes)}</span><span style="margin:0 10px">·</span>`+
+    `<span>${flowPkts.length} packets</span><span style="margin:0 10px">┬╖</span>`+
+    `<span>${fmtBytes(totalBytes)}</span><span style="margin:0 10px">┬╖</span>`+
     `<span>Duration: ${((flowPkts[flowPkts.length-1].timestamp-t0)*1000).toFixed(1)}ms</span>`+
-    (detectedProto?`<span style="margin:0 10px">·</span><span style="color:#2ea043">${detectedProto}</span>`:'');
+    (detectedProto?`<span style="margin:0 10px">┬╖</span><span style="color:#2ea043">${detectedProto}</span>`:'');
   document.getElementById('stream-modal-body').innerHTML=
     `<table class="data-table" style="min-width:600px;width:100%">
       <thead><tr>
-        <th style="position:sticky;top:0;z-index:2">Δt</th>
+        <th style="position:sticky;top:0;z-index:2">╬öt</th>
         <th style="position:sticky;top:0;z-index:2">Dir</th>
         <th style="position:sticky;top:0;z-index:2">Src</th>
         <th style="position:sticky;top:0;z-index:2"></th>
@@ -2223,8 +2223,8 @@ function openStreamByTcpKey(tcpKey){ openStreamByProtoKey(tcpKey,'TCP'); }
 function openStreamByUdpKey(udpKey){ openStreamByProtoKey(udpKey,'UDP'); }
 
 function openStreamByProtoKey(key, proto){
-  // key format: "ip:port ↔ ip:port"
-  const parts=key.split(' ↔ ');
+  // key format: "ip:port Γåö ip:port"
+  const parts=key.split(' Γåö ');
   if(parts.length!==2) return;
   const parseEP=ep=>{ const ci=ep.lastIndexOf(':'); return{ip:ep.slice(0,ci),port:parseInt(ep.slice(ci+1))||0}; };
   const a=parseEP(parts[0].trim()), b=parseEP(parts[1].trim());
@@ -2324,10 +2324,10 @@ function showPacketDetail(i){
   detailTd.style.cssText='padding:0;border-top:2px solid #58a6ff;vertical-align:top;background:#0d1117';
   detailTd.innerHTML=`
     <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 14px;background:#161b22;border-bottom:1px solid #21262d;position:sticky;top:0;z-index:2">
-      <span style="font-size:11px;font-weight:700;color:#58a6ff">Packet #${i+1} — ${esc(p.srcIP||'?')}:${p.srcPort||'?'} → ${esc(p.dstIP||'?')}:${p.dstPort||'?'}</span>
+      <span style="font-size:11px;font-weight:700;color:#58a6ff">Packet #${i+1} ΓÇö ${esc(p.srcIP||'?')}:${p.srcPort||'?'} ΓåÆ ${esc(p.dstIP||'?')}:${p.dstPort||'?'}</span>
       <div style="display:flex;gap:8px;align-items:center">
         <button onclick="sendPacketToAssistant()" title="Send to Diagnostic Assistant" style="background:none;border:none;color:#e6edf3;font-size:13px;cursor:pointer;padding:0;line-height:1;transition:color 0.15s" onmouseover="this.style.color='#58a6ff'" onmouseout="this.style.color='#c9d1d9'">\u{1F4AC}</button>
-        <button onclick="closePacketDetail()" title="Close" style="background:none;border:none;color:#e6edf3;font-size:15px;cursor:pointer;padding:0;line-height:1">✕</button>
+        <button onclick="closePacketDetail()" title="Close" style="background:none;border:none;color:#e6edf3;font-size:15px;cursor:pointer;padding:0;line-height:1">Γ£ò</button>
       </div>
     </div>
     <div style="padding:10px 14px;overflow-y:auto" id="inline-detail-content">${detailContent}</div>`;
@@ -2369,7 +2369,220 @@ function sendPacketToAssistant(){
     payloadAscii:p.payload?payloadToAscii(p.payload).slice(0,200):null,
     detectedAppProtocol:detectProtocol(p.payload)||null
   };
-  sendToAssistant(`Packet #${i+1} (${p.srcIP}:${p.srcPort} → ${p.dstIP}:${p.dstPort})`, data);
+  sendToAssistant(`Packet #${i+1} (${p.srcIP}:${p.srcPort} ΓåÆ ${p.dstIP}:${p.dstPort})`, data);
+}
+
+// ================================================================
+//  LIVE FEEDS
+// ================================================================
+window._feedPollTimer = null;
+
+async function loadFeedToken() {
+  try {
+    const resp = await fetch('/api/settings');
+    const cfg  = await resp.json();
+    window._feedToken    = cfg.feed_token  || '';
+    window._serverIp     = cfg.server_ip   || window.location.hostname;
+    window._serverPort   = cfg.port        || 8765;
+    window._sslEnabled   = !!cfg.ssl_enabled;
+    window._wsEnabled    = !!cfg.wireshark_capture_enabled;
+    _updateWsToggleUI();
+    const el = document.getElementById('feed-token-display');
+    if (el) el.textContent = window._feedToken
+      ? window._feedToken.slice(0,8) + 'ΓÇª'
+      : '(none)';
+    updateFeedCommand();
+  } catch(e) { /* ignore */ }
+}
+
+async function loadFeeds() {
+  try {
+    const resp  = await fetch('/api/feeds');
+    const feeds = await resp.json();
+    renderFeeds(feeds);
+  } catch(e) {
+    const list = document.getElementById('feeds-list');
+    if (list) list.innerHTML = '<div style="text-align:center;padding:24px;color:#ef4444;font-size:12px">Could not reach server</div>';
+  }
+}
+
+function _esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function _fmtBytes(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+  return (b/1048576).toFixed(1) + ' MB';
+}
+
+function _fmtDur(s) {
+  s = Math.floor(s);
+  if (s < 60) return s + 's';
+  if (s < 3600) return Math.floor(s/60) + 'm ' + (s%60) + 's';
+  return Math.floor(s/3600) + 'h ' + Math.floor((s%3600)/60) + 'm';
+}
+
+function renderFeeds(feeds) {
+  const list = document.getElementById('feeds-list');
+  if (!list) return;
+  if (!feeds.length) {
+    list.innerHTML = '<div style="text-align:center;padding:32px;color:#4b5563;font-size:12px">No active or recent feeds ΓÇö run the command below on a remote host to start streaming.</div>';
+    return;
+  }
+  list.innerHTML = feeds.map(f => {
+    const hasData = f.bytes_buffered > 0;
+    const statusColor = f.connected ? '#22c55e' : '#374151';
+    const statusGlow  = f.connected ? 'box-shadow:0 0 6px #22c55e55;' : '';
+    const borderClass = f.connected ? 'connected' : '';
+    const statusText  = f.connected
+      ? '<span style="color:#4ade80">live</span>'
+      : 'disconnected ' + _fmtDur(Date.now()/1000 - f.last_seen) + ' ago';
+    const truncWarning = f.truncated
+      ? ' ┬╖ <span style="color:#f59e0b" title="Buffer full ΓÇö oldest data was dropped">ΓÜá buffer full</span>' : '';
+    return `
+    <div class="feed-card ${borderClass}">
+      <div class="feed-dot ${f.connected?'live':''}" style="background:${statusColor};${statusGlow}"></div>
+      <div class="feed-info">
+        <div class="feed-name">${_esc(f.name)}</div>
+        <div class="feed-meta">
+          ${_esc(f.remote_addr)} ┬╖ ${_fmtBytes(f.bytes_buffered)} buffered
+          (${_fmtBytes(f.bytes_received)} received) ┬╖ ${_fmtDur(f.duration)}
+          ┬╖ ${statusText}${truncWarning}
+        </div>
+      </div>
+      <div class="feed-actions">
+        ${hasData ? `<button onclick="analyzeFeed('${_esc(f.name)}')" class="feed-btn">Γû╢ Analyze</button>` : ''}
+        ${hasData ? `<a href="/api/feeds/${encodeURIComponent(f.name)}/download" download="${_esc(f.name)}.pcapng" class="feed-btn secondary">Γåô Save</a>` : ''}
+        <button onclick="deleteFeed('${_esc(f.name)}')" class="feed-btn danger" title="Remove session">Γ£ò</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function analyzeFeed(name) {
+  try {
+    const resp = await fetch('/api/feeds/' + encodeURIComponent(name) + '/download');
+    if (!resp.ok) throw new Error('Download failed');
+    const blob = await resp.blob();
+    const file = new File([blob], name + '.pcapng', {type: 'application/octet-stream'});
+    _stopFeedPoll();
+    // Reset analyzer and load file
+    uploadedFiles = [];
+    addFiles([file]);
+    showAnalyzer();
+    // Brief delay so the UI updates, then auto-analyze
+    setTimeout(() => startAnalysis(), 100);
+  } catch(e) {
+    alert('Could not load capture: ' + e.message);
+  }
+}
+
+async function deleteFeed(name) {
+  await fetch('/api/feeds/' + encodeURIComponent(name), {method: 'DELETE'});
+  loadFeeds();
+}
+
+let _feedTab = 'tshark';
+
+function switchFeedTab(tab) {
+  _feedTab = tab;
+  document.getElementById('feed-tab-tshark').style.display    = tab === 'tshark'    ? '' : 'none';
+  document.getElementById('feed-tab-wireshark').style.display = tab === 'wireshark' ? '' : 'none';
+  const btnTs = document.getElementById('tab-btn-tshark');
+  const btnWs = document.getElementById('tab-btn-wireshark');
+  if (btnTs) btnTs.classList.toggle('lf-tab-active', tab === 'tshark');
+  if (btnWs) btnWs.classList.toggle('lf-tab-active', tab === 'wireshark');
+}
+
+function updateWsConfig() {
+  const box = document.getElementById('ws-config-box');
+  if (!box) return;
+  const iface  = document.getElementById('feed-iface-inp')?.value || 'eth0';
+  const filter = (document.getElementById('feed-filter-inp')?.value || '').trim();
+  const ip     = window._serverIp || '(server-ip)';
+  box.textContent = [
+    `SSH Host:   ${ip}`,
+    `SSH Port:   22`,
+    `SSH User:   <your-ssh-user>`,
+    `Auth:       SSH Key file (<your-key.pem>)`,
+    `Command:    <path-to-capture-script>`,
+    `Interface:  ${iface}`,
+    `Filter:     ${filter || '(none)'}`,
+  ].join('\n');
+}
+
+function _updateWsToggleUI() {
+  const enabled = !!window._wsEnabled;
+  const dot   = document.getElementById('ws-status-dot');
+  const label = document.getElementById('ws-status-label');
+  const btn   = document.getElementById('ws-toggle-btn');
+  const box   = document.getElementById('ws-config-box');
+  if (dot)   { dot.style.background = enabled ? '#22c55e' : '#4b5563'; dot.style.boxShadow = enabled ? '0 0 6px #22c55e55' : 'none'; }
+  if (label) label.textContent = enabled ? 'Active ΓÇö Wireshark remote capture is enabled' : 'Disabled ΓÇö enable to allow Wireshark to connect';
+  if (btn)   { btn.textContent = enabled ? 'Disable' : 'Enable'; btn.style.background = enabled ? 'rgba(239,68,68,.15)' : ''; btn.style.color = enabled ? '#f87171' : ''; btn.style.borderColor = enabled ? 'rgba(239,68,68,.3)' : ''; }
+  if (box)   { box.style.opacity = '1'; box.style.color = enabled ? '#6ee7b7' : '#6b7280'; }
+}
+
+async function toggleWsCapture() {
+  const btn = document.getElementById('ws-toggle-btn');
+  if (btn) btn.disabled = true;
+  try {
+    const resp = await fetch('/api/settings', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({wireshark_capture_enabled: !window._wsEnabled})
+    });
+    if (resp.ok) {
+      window._wsEnabled = !window._wsEnabled;
+      _updateWsToggleUI();
+    }
+  } catch(e) { /* ignore */ }
+  if (btn) btn.disabled = false;
+}
+
+function copyWsConfig() {
+  const box = document.getElementById('ws-config-box');
+  if (!box) return;
+  navigator.clipboard.writeText(box.textContent).then(() => {
+    const ok = document.getElementById('ws-copy-ok');
+    if (!ok) return;
+    ok.style.display = 'inline';
+    setTimeout(() => { ok.style.display = 'none'; }, 2000);
+  });
+}
+
+function updateFeedCommand() {
+  const box = document.getElementById('feed-cmd-box');
+  if (!box) return;
+  const name   = (document.getElementById('feed-name-inp')?.value   || 'my-capture').trim() || 'my-capture';
+  const iface  = (document.getElementById('feed-iface-inp')?.value  || 'eth0');
+  const filter = (document.getElementById('feed-filter-inp')?.value || '').trim();
+  const token  = window._feedToken  || 'YOUR_TOKEN_HERE';
+  const scheme = window._sslEnabled ? 'https' : 'http';
+  const ip     = window._serverIp   || window.location.hostname;
+  const port   = window._serverPort || 8765;
+  const defaultPort = scheme === 'https' ? 443 : 80;
+  const host   = port === defaultPort ? ip : `${ip}:${port}`;
+  const fArg   = filter ? ` -f "${filter}"` : '';
+  box.textContent =
+    `tshark -i ${iface}${fArg} -w - | curl -X POST \\\n` +
+    `  -H "Authorization: Bearer ${token}" \\\n` +
+    `  -H "Content-Type: application/octet-stream" \\\n` +
+    `  --data-binary @- \\\n` +
+    `  "${scheme}://${host}/api/feed/${name}"`;
+  updateWsConfig();
+}
+
+function copyFeedCmd() {
+  const box = document.getElementById('feed-cmd-box');
+  if (!box) return;
+  navigator.clipboard.writeText(box.textContent).then(() => {
+    const ok = document.getElementById('feed-copy-ok');
+    if (!ok) return;
+    ok.style.display = 'inline';
+    setTimeout(() => { ok.style.display = 'none'; }, 2000);
+  });
 }
 
 // ================================================================
@@ -2607,7 +2820,7 @@ async function localAsk(prompt, dataArr){
     <!-- locked title bar -->
     <div style="background:#0d1117;border-bottom:1px solid #30363d;padding:12px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0">
       <span style="font-size:13px;font-weight:700;color:#58a6ff;flex:1;word-break:break-all" id="stream-modal-title"></span>
-      <button onclick="closeStream()" style="background:none;border:1px solid #30363d;color:#e6edf3;border-radius:6px;padding:3px 10px;cursor:pointer;font-family:inherit;font-size:12px">✕ Close</button>
+      <button onclick="closeStream()" style="background:none;border:1px solid #30363d;color:#e6edf3;border-radius:6px;padding:3px 10px;cursor:pointer;font-family:inherit;font-size:12px">Γ£ò Close</button>
     </div>
     <!-- locked meta bar -->
     <div style="padding:8px 16px;background:#0d1117;border-bottom:1px solid #21262d;font-size:11px;color:#e6edf3;display:flex;flex-wrap:wrap;gap:4px;flex-shrink:0" id="stream-modal-meta"></div>
