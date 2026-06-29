@@ -10,6 +10,11 @@ git-setup-and-push.bat
 # Runtime output
 screenshots/
 
+# Database (contains user accounts)
+*.db
+*.db-shm
+*.db-wal
+
 # Large test files
 *.pcapng
 *.pcap
