@@ -7,6 +7,10 @@ o2-fix-and-deploy.py
 o2-diagnose.py
 git-setup-and-push.bat
 
+# SSL certs and keys
+service/ssl/
+service/certs/
+
 # Runtime output
 screenshots/
 
