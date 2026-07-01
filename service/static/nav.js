@@ -57,10 +57,6 @@
       return '<a id="nav-' + id + '" href="' + href + '" style="' + style + '" ' + hover + ' ' + onclick + '>'
            + ICONS[id] + '<span>' + label + '</span></a>';
     }).join('\n');
-
-    // Show Clear Logs button only for admins
-    var clearBtn = document.getElementById('logs-clear-btn');
-    if (clearBtn) clearBtn.style.display = isAdmin ? '' : 'none';
   }
 
   // Fetch current user then build nav (hides Settings for non-admins)
