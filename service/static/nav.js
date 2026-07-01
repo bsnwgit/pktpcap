@@ -37,11 +37,15 @@
     ['settings',  '/settings', 'Settings',   null],
   ];
 
-  function buildNav(el) {
+  function buildNav(el, role) {
     var active = el.dataset ? el.dataset.active : (el.getAttribute('data-active') || 'dashboard');
     var isSpa  = typeof window.showDashboard === 'function';
+    var isAdmin = role === 'admin';
 
-    el.innerHTML = ITEMS.map(function (item) {
+    el.innerHTML = ITEMS.filter(function(item) {
+      // Hide Settings from non-admins
+      return item[0] !== 'settings' || isAdmin;
+    }).map(function (item) {
       var id = item[0], href = item[1], label = item[2], spaFn = item[3];
       var isActive = id === active;
       var style    = isActive ? STYLE_ACTIVE : STYLE_INACTIVE;
@@ -53,9 +57,21 @@
       return '<a id="nav-' + id + '" href="' + href + '" style="' + style + '" ' + hover + ' ' + onclick + '>'
            + ICONS[id] + '<span>' + label + '</span></a>';
     }).join('\n');
+
+    // Show Clear Logs button only for admins
+    var clearBtn = document.getElementById('logs-clear-btn');
+    if (clearBtn) clearBtn.style.display = isAdmin ? '' : 'none';
   }
 
-  // Run immediately — this script is loaded at bottom of <body> so DOM is ready
+  // Fetch current user then build nav (hides Settings for non-admins)
   var el = document.getElementById('sidebar-nav');
-  if (el) buildNav(el);
+  if (el) {
+    fetch('/api/auth/current-user').then(function(r) {
+      return r.ok ? r.json() : null;
+    }).then(function(u) {
+      buildNav(el, u ? u.role : null);
+    }).catch(function() {
+      buildNav(el, null);
+    });
+  }
 })();
