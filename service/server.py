@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 pktPCAP -- standalone web service
 Run: python server.py
@@ -85,6 +85,22 @@ def _get_or_create_feed(name, remote_addr):
             _feed_sessions[name] = FeedSession(name, remote_addr)
         return _feed_sessions[name]
 
+
+def _ensure_suite_token():
+    """Generate a suite token if one is not already set."""
+    import sqlite3 as _sq_st, secrets as _sec_st
+    _db_path = load_db_config().get("db_path", "pktpcap.db")
+    if not os.path.isabs(_db_path):
+        _db_path = str(BASE / _db_path)
+    _conn = _sq_st.connect(_db_path)
+    _row = _conn.execute("SELECT value FROM settings WHERE key='suite_token'").fetchone()
+    if not _row or not (_row[0] or "").strip():
+        _new = _sec_st.token_urlsafe(32)
+        _conn.execute("INSERT OR REPLACE INTO settings (key,value) VALUES ('suite_token',?)", (_new,))
+        _conn.commit()
+        log.info("Generated suite_token for pktHub integration")
+    _conn.close()
+
 def _ensure_feed_token():
     db  = get_db()
     cfg = db.get_all_settings()
@@ -131,8 +147,14 @@ def _ensure_secret_key():
 
 # ── Auth middleware ───────────────────────────────────────────────────────────
 
-_AUTH_PUBLIC      = {"/login", "/api/login", "/api/logout"}
+_AUTH_PUBLIC      = {"/login", "/api/login", "/api/logout", "/api/health"}
 _AUTH_PUBLIC_PFX  = ("/static/", "/api/auth/saml", "/api/feed/")
+
+@app.route("/api/health")
+def api_health():
+    """Public health endpoint — no auth required. Called by pktHub to check status."""
+    return jsonify({"status": "ok", "app": "pktpcap", "version": "0.1.0"}), 200
+
 
 @app.before_request
 def require_login():
@@ -144,6 +166,21 @@ def require_login():
     # Both auth methods off → open access (prevents lockout)
     if not cfg.get("local_auth_enabled", True) and not cfg.get("okta_saml_enabled", False):
         return None
+
+    # ── pktHub suite-token auth ─────────────────────────────────────────
+    # X-Suite-Token is sent by pktHub proxy on every proxied request.
+    # Validate it and establish a Flask session so normal auth checks pass.
+    _suite_tk = request.headers.get("X-Suite-Token", "")
+    if _suite_tk:
+        _st_cfg = load_config()
+        _expected = _st_cfg.get("suite_token", "")
+        if _expected and _suite_tk == _expected:
+            _hub_user = request.headers.get("X-Suite-User", "hub_user")
+            _hub_role = request.headers.get("X-Suite-Role", "viewer")
+            session["user_id"] = _hub_user
+            session["role"] = "admin" if _hub_role == "admin" else "viewer"
+            session["login_time"] = time.time()
+            return None
 
     uid = session.get("user_id")
     if not uid:
@@ -717,6 +754,8 @@ def api_get_log_stats():
 
 @app.route("/api/logs", methods=["DELETE"])
 def api_clear_logs():
+    if session.get("role") != "admin":
+        return jsonify({"error": "Admin role required"}), 403
     db = get_db()
     with db._write_lock:
         db._conn().execute("DELETE FROM app_logs")
@@ -858,6 +897,59 @@ def delete_feed(name):
         _feed_sessions.pop(name, None)
     return jsonify({"ok": True})
 
+
+# ── Suite token registration (called by pktHub after registration) ─────────────
+@app.route("/api/suite/register", methods=["POST"])
+def suite_register():
+    """
+    pktHub pushes the new suite token here on every registration/rotation.
+    Writes directly to SQLite (the authoritative store for load_config()).
+    """
+    data = request.get_json(silent=True) or {}
+    new_token = (data.get("suite_token") or "").strip()
+    if not new_token:
+        return jsonify({"error": "suite_token required"}), 400
+    try:
+        # Write directly to SQLite — bypasses any caching in load_config()
+        import sqlite3 as _sq
+        _db_path = str(load_db_config().get("db_path", "pktpcap.db"))
+        if not os.path.isabs(_db_path):
+            _db_path = str(BASE / _db_path)
+        _conn = _sq.connect(_db_path)
+        _conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES ('suite_token', ?)", (new_token,))
+        _conn.commit()
+        _conn.close()
+        return jsonify({"status": "ok"}), 200
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+# ── End suite token registration ───────────────────────────────────────────────
+
+
+@app.route("/api/suite/regenerate", methods=["POST"])
+def regenerate_suite_token():
+    """Generate a new suite token, revoking the old one."""
+    import sqlite3 as _sq, secrets as _sec
+    try:
+        _db_path = load_db_config().get("db_path", "pktpcap.db")
+        if not os.path.isabs(_db_path):
+            _db_path = str(BASE / _db_path)
+        _new = _sec.token_urlsafe(32)
+        _conn = _sq.connect(_db_path)
+        _conn.execute("INSERT OR REPLACE INTO settings (key,value) VALUES ('suite_token',?)", (_new,))
+        _conn.commit()
+        _conn.close()
+        return jsonify({"suite_token": _new, "status": "regenerated"}), 200
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+
+# ── Suite token (pktHub integration) ─────────────────────────────────────────
+@app.route("/api/suite/token", methods=["GET"])
+def get_suite_token():
+    """Return the current suite token for display in Settings UI."""
+    cfg = load_config()
+    token = (cfg.get("suite_token") or "").strip()
+    return jsonify({"suite_token": token, "has_token": bool(token)})
+
 # -- Entry point ---------------------------------------------------------------
 
 def open_browser(port, scheme="http"):
@@ -898,6 +990,15 @@ if __name__ == "__main__":
             ssl_context = (ssl_cert, ssl_key_)
             scheme = "https"
 
+    # Auto-detect SSL from ssl/ subdirectory (original behaviour — db ssl_enabled flag not required)
+    if ssl_context is None:
+        _auto_crt = BASE / "ssl" / "server.crt"
+        _auto_key = BASE / "ssl" / "server.key"
+        if _auto_crt.is_file() and _auto_key.is_file():
+            ssl_context = (str(_auto_crt), str(_auto_key))
+            scheme = "https"
+            log.info("SSL auto-detected from ssl/ directory")
+
     log.info("pktPCAP starting on %s://0.0.0.0:%s", scheme, port)
     print("\n  pktPCAP")
     print("  " + "-" * 37)
@@ -908,3 +1009,4 @@ if __name__ == "__main__":
 
     threading.Thread(target=open_browser, args=(port, scheme), daemon=True).start()
     app.run(host="0.0.0.0", port=port, ssl_context=ssl_context, threaded=True)
+
