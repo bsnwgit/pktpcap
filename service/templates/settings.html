@@ -496,6 +496,7 @@
             <div><p class="field-label">Enable SAML SSO</p></div>
             <div class="field-input">
               <button type="button" class="toggle" id="toggle-okta_saml_enabled" onclick="toggleBool('okta_saml_enabled');updateSamlVisibility()"><span class="toggle-knob"></span></button>
+    loadSuiteToken()
               <input type="hidden" id="okta_saml_enabled" value="false">
             </div>
           </div>
@@ -819,7 +820,40 @@
           <span id="save-integrations-result"></span>
         </div>
       </div>
-    </div>
+    
+
+      <!-- pktHub Integration -->
+      <div class="section-card">
+        <div class="section-header"><h2>pktHub Integration</h2></div>
+        <div class="section-body">
+          <div class="field-row">
+            <div>
+              <p class="field-label">Suite Token</p>
+              <p class="field-hint">Copy this token and paste it into pktHub &rarr; Settings &rarr; App Registration when registering this app.</p>
+            </div>
+            <div class="field-input">
+              <div class="field-input-row">
+                <input type="password" id="suite-token-display" value="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" readonly style="flex:1;font-family:'SF Mono','Fira Code',monospace;font-size:12px;background:#0d1117;cursor:default;letter-spacing:2px">
+                <button class="btn" id="suite-reveal-btn" onclick="suiteReveal()">Reveal</button>
+                <button class="btn" id="suite-copy-btn" onclick="suiteCopy()">Copy</button>
+                <button class="btn btn-danger" id="suite-regen-btn" onclick="suiteRegen()" title="Generate a new token — you must re-register in pktHub after" style="font-size:11px;padding:7px 10px">Regen</button>
+              </div>
+              <p class="field-hint" id="suite-token-hint" style="margin-top:6px"></p>
+            </div>
+          </div>
+          <div class="field-row" style="border-bottom:none">
+            <div><p class="field-label">Instructions</p></div>
+            <div class="field-input">
+              <ol style="font-size:12px;color:#9ca3af;padding-left:18px;margin:0;line-height:2">
+                <li>Click <strong style="color:#f9fafb">Reveal</strong> then <strong style="color:#f9fafb">Copy</strong> to get the token</li>
+                <li>In pktHub &rarr; <strong style="color:#f9fafb">Settings &rarr; App Registration</strong>, register this app and paste the token</li>
+                <li>The token is permanent &mdash; click <strong style="color:#f87171">Regen</strong> only to revoke access (re-register in pktHub after)</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      </div>
+</div>
 
     <!-- ══ DATABASE ══ -->
     <div id="tab-database" class="hidden">
@@ -955,7 +989,7 @@ function switchTab(id) {
   document.querySelectorAll('.tab-btn').forEach((btn, i) => {
     btn.classList.toggle('active', TABS[i] === id)
   })
-  if (id === 'integrations') loadSslStatus()
+  if (id === 'integrations') { loadSslStatus(); loadSuiteToken(); }
   if (id === 'users') loadUsers()
 }
 
@@ -1583,5 +1617,65 @@ function doSignOut() {
 }
 </script>
 <script src="/static/nav.js"></script>
+
+<script>
+// ── pktHub Suite Token ────────────────────────────────────────────────────────
+let suiteTokenVal = '';
+let suiteRevealed = false;
+
+async function loadSuiteToken() {
+  try {
+    const r = await fetch('/api/suite/token');
+    if (!r.ok) return;
+    const d = await r.json();
+    suiteTokenVal = d.suite_token || '';
+    const el = document.getElementById('suite-token-display');
+    if (el && !suiteRevealed) el.value = '•'.repeat(32);
+  } catch(e) { console.warn('suite token load failed', e); }
+}
+
+function suiteReveal() {
+  suiteRevealed = !suiteRevealed;
+  const el  = document.getElementById('suite-token-display');
+  const btn = document.getElementById('suite-reveal-btn');
+  if (!el || !btn) return;
+  el.type  = suiteRevealed ? 'text' : 'password';
+  el.value = suiteRevealed ? suiteTokenVal : '•'.repeat(32);
+  btn.textContent = suiteRevealed ? 'Hide' : 'Reveal';
+}
+
+function suiteCopy() {
+  if (!suiteTokenVal) { loadSuiteToken(); return; }
+  navigator.clipboard.writeText(suiteTokenVal).then(() => {
+    const btn = document.getElementById('suite-copy-btn');
+    if (btn) { btn.textContent = '✓ Copied'; setTimeout(() => btn.textContent = 'Copy', 2000); }
+  });
+}
+
+async function suiteRegen() {
+  if (!confirm('Generate a new token? You must re-register this app in pktHub after.')) return;
+  const btn  = document.getElementById('suite-regen-btn');
+  const hint = document.getElementById('suite-token-hint');
+  if (btn) btn.disabled = true;
+  try {
+    const r = await fetch('/api/suite/regenerate', {method:'POST'});
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    suiteTokenVal = d.suite_token || '';
+    suiteRevealed = true;
+    const el = document.getElementById('suite-token-display');
+    const revBtn = document.getElementById('suite-reveal-btn');
+    if (el)     el.value = suiteTokenVal;
+    if (revBtn) revBtn.textContent = 'Hide';
+    if (hint) { hint.textContent = '✓ New token generated — copy it and re-register in pktHub'; hint.style.color = '#4ade80'; }
+  } catch(e) {
+    alert('Regenerate failed: ' + e.message);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+</script>
+
 </body>
 </html>
