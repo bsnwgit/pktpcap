@@ -38,11 +38,11 @@
   ];
 
   function buildNav(el, role) {
-    var active  = el.dataset ? el.dataset.active : (el.getAttribute('data-active') || 'dashboard');
-    var isSpa   = typeof window.showDashboard === 'function';
+    var active = el.dataset ? el.dataset.active : (el.getAttribute('data-active') || 'dashboard');
+    var isSpa  = typeof window.showDashboard === 'function';
     var isAdmin = role === 'admin';
 
-    el.innerHTML = ITEMS.filter(function (item) {
+    el.innerHTML = ITEMS.filter(function(item) {
       // Hide Settings from non-admins
       return item[0] !== 'settings' || isAdmin;
     }).map(function (item) {
@@ -61,32 +61,16 @@
     // Show Clear Logs button only for admins
     var clearBtn = document.getElementById('logs-clear-btn');
     if (clearBtn) clearBtn.style.display = isAdmin ? '' : 'none';
-
-    // Populate user footer if elements exist
-    var nameEl   = document.getElementById('nav-user-name');
-    var roleEl   = document.getElementById('nav-user-role');
-    var avatarEl = document.getElementById('nav-user-avatar');
-    if (nameEl && window._navUser)   nameEl.textContent   = window._navUser.username || '—';
-    if (roleEl && window._navUser)   roleEl.textContent   = window._navUser.role     || '—';
-    if (avatarEl && window._navUser) avatarEl.textContent = (window._navUser.username || '?')[0].toUpperCase();
   }
 
-  function doSignOut() {
-    fetch('/api/logout', { method: 'POST' }).finally(function () {
-      window.location.href = '/login';
-    });
-  }
-  window.doSignOut = doSignOut;
-
-  // Fetch current user then build nav
+  // Fetch current user then build nav (hides Settings for non-admins)
   var el = document.getElementById('sidebar-nav');
   if (el) {
-    fetch('/api/auth/current-user').then(function (r) {
+    fetch('/api/auth/current-user').then(function(r) {
       return r.ok ? r.json() : null;
-    }).then(function (u) {
-      window._navUser = u;
+    }).then(function(u) {
       buildNav(el, u ? u.role : null);
-    }).catch(function () {
+    }).catch(function() {
       buildNav(el, null);
     });
   }
