@@ -237,6 +237,20 @@ Full article content is in previous conversation context. Needs Atlassian connec
 
 ---
 
+## Local Backup
+
+A local backup script rotates two backup copies of the project source.
+
+**Script:** `C:\Users\user\My Drive\Documents\Claude\Projects\Packet Analyzer\backup.py`
+**Backup location:** `C:\Users\user\My Drive\Documents\Claude\Projects\pktpcap_backups\` (backup_1 = most recent, backup_2 = previous)
+
+Run via Desktop Commander:
+```
+C:\Users\user\AppData\Local\Programs\Python\Python313\python.exe "C:\Users\user\My Drive\Documents\Claude\Projects\Packet Analyzer\backup.py"
+```
+
+---
+
 ## Tech Stack
 
 - Python 3, Flask ≥ 3.0
