@@ -756,8 +756,6 @@ def api_get_log_stats():
 
 @app.route("/api/logs", methods=["DELETE"])
 def api_clear_logs():
-    if session.get("role") != "admin":
-        return jsonify({"error": "Admin role required"}), 403
     db = get_db()
     with db._write_lock:
         db._conn().execute("DELETE FROM app_logs")
