@@ -81,9 +81,10 @@
         </svg>
         Sign in with Okta
       </a>
-      <div class="divider"><span>or</span></div>
+      {% if local_auth_enabled %}<div class="divider"><span>or</span></div>{% endif %}
       {% endif %}
 
+      {% if local_auth_enabled %}
       <form id="login-form" onsubmit="submitLogin(event)">
         <div style="margin-bottom:14px">
           <label class="field-label" for="username">Username</label>
@@ -97,6 +98,7 @@
         </div>
         <button type="submit" class="btn-login" id="login-btn">Sign In</button>
       </form>
+      {% endif %}
 
     </div>
   </div>

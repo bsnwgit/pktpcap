@@ -220,7 +220,8 @@ def login_page():
     if session.get("user_id"):
         return redirect("/")
     cfg = load_config()
-    saml_enabled = bool(cfg.get("okta_saml_enabled") and cfg.get("okta_sso_url"))
+    saml_enabled       = bool(cfg.get("okta_saml_enabled") and cfg.get("okta_sso_url"))
+    local_auth_enabled = bool(cfg.get("local_auth_enabled", True))
     error_map = {
         "session_expired": "Your session has expired. Please sign in again.",
         "user_not_found":  "User not found. Contact your administrator.",
@@ -232,6 +233,7 @@ def login_page():
     return render_template("login.html",
                            app_name=cfg.get("app_name", "pktPCAP"),
                            saml_enabled=saml_enabled,
+                           local_auth_enabled=local_auth_enabled,
                            error=error)
 
 @app.route("/api/login", methods=["POST"])
