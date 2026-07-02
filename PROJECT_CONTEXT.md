@@ -3,7 +3,7 @@
 ## Overview
 Standalone Python Flask web service that parses `.pcap`/`.pcapng` files in the browser, analyzes them with AI (Anthropic or OpenAI), and runs locally as a persistent app — same pattern as Maverik and other apps in `C:\apps`.
 
-**Current status (as of 2026-06-23):** App is DEPLOYED and running at http://localhost:8765. Git repos are live on GitHub and GitLab. API key needs to be added at /settings for AI analysis to work.
+**Current status (as of 2026-07-01):** App is DEPLOYED and running at https://localhost:8765 (SSL enabled). Git repos are live on GitHub (`bsnwgit/pktpcap`) and GitLab (`user/pktanalyzer`). Active branch: `feature/ssl-cert-settings`.
 
 ---
 
@@ -16,18 +16,21 @@ C:\Users\user\My Drive\Documents\Claude\Projects\Packet Analyzer\
 │   ├── requirements.txt            ← flask, anthropic, openai
 │   ├── config.json                 ← Runtime config (API keys, port) — GITIGNORED
 │   ├── static/
-│   │   └── index.html              ← Full SPA (~1969 lines)
+│   │   ├── index.html              ← Full SPA
+│   │   ├── nav.js                  ← Shared sidebar nav component
+│   │   └── logo.png                ← App logo (static asset)
 │   └── templates/
-│       └── settings.html           ← Settings UI
-├── deploy-to-apps.bat              ← Copies service/ → C:\apps\packet-analyzer\
-├── git-setup-and-push.bat          ← Full git init + push to GitHub + GitLab
-├── .gitignore                      ← Excludes config.json, screenshots/, *.pcapng
+│       ├── login.html              ← Login page (local auth + Okta SSO)
+│       └── settings.html           ← Settings UI (admin only)
+├── ssl/                            ← SSL certs — GITIGNORED
+│   ├── server.crt                  ← TLS certificate (auto-detected at startup)
+│   └── server.key                  ← TLS private key
+├── deploy-to-apps.bat              ← Copies service/ → C:\apps\pktpcap\
+├── .gitignore                      ← Excludes config.json, screenshots/, *.pcapng, ssl/
 ├── PROJECT_CONTEXT.md              ← This file
-├── packet-analyzer.html            ← Original standalone artifact (pre-Flask)
 ├── screenshots/                    ← Tab screenshots (GITIGNORED)
 │   └── capture.png                 ← Last captured screenshot
 └── test-cap.pcapng                 ← Test capture file (1.6 MB) — GITIGNORED
-                                       (also at C:\Users\user\Downloads\test-cap.pcapng)
 ```
 
 ### Deployment target (same pattern as Maverik)
@@ -198,11 +201,11 @@ To capture all 7 tabs as named PNGs:
 
 | Remote | URL |
 |--------|-----|
-| github | git@github.com:bsnwgit/pktanalyzer.git |
+| github | git@github.com:bsnwgit/pktpcap.git |
 | gitlab | git@gitlab.com:example/pktanalyzer.git |
 
 **PR links (template):**
-- GitHub: `https://github.com/bsnwgit/pktanalyzer/compare/<branch>`
+- GitHub: `https://github.com/bsnwgit/pktpcap/compare/<branch>`
 - GitLab: `https://gitlab.com/example/pktanalyzer/-/merge_requests/new?merge_request[source_branch]=<branch>`
 
 **Git push notes:**
