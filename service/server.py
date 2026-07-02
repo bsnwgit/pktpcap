@@ -971,7 +971,7 @@ if __name__ == "__main__":
     # ---------------------------------------------------------------------------
 
     cfg  = load_config()
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else cfg.get("port", 8765)
+    port = int(sys.argv[1]) if len(sys.argv) > 1 else cfg.get("port", 80)
 
     ssl_enabled = cfg.get("ssl_enabled", False)
     ssl_cert    = cfg.get("ssl_cert", "")
@@ -1007,6 +1007,7 @@ if __name__ == "__main__":
     print("  DB       ->  {}".format(load_db_config().get("db_path", "pktpcap.db")))
     print()
 
-    threading.Thread(target=open_browser, args=(port, scheme), daemon=True).start()
+    if not os.environ.get("PKTPCAP_NO_BROWSER"):
+        threading.Thread(target=open_browser, args=(port, scheme), daemon=True).start()
     app.run(host="0.0.0.0", port=port, ssl_context=ssl_context, threaded=True)
 
