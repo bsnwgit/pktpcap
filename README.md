@@ -348,8 +348,8 @@ Settings managed via the UI (`/settings`):
 | `anthropic_model` | `claude-opus-4-8` | Model string |
 | `openai_key` | — | OpenAI API key |
 | `openai_model` | `gpt-4o` | Model string |
-| `ssl_enabled` | `false` | Enable HTTPS |
-| `ssl_cert` / `ssl_key` | — | Paths to cert/key files |
+| `ssl_enabled` | `false` | Enable HTTPS (DB flag; **file presence is authoritative — see SSL below**) |
+| `ssl_cert` / `ssl_key` | — | Cert/key paths (overridden by `ssl/server.crt` + `ssl/server.key` if present) |
 | `storage_path` | — | Where uploaded captures are saved |
 | `max_upload_mb` | `500` | Upload size limit |
 | `storage_quota_gb` | `50` | Total storage cap |
@@ -475,15 +475,40 @@ pktpcap/
 │   ├── requirements.txt
 │   ├── config.json             ← Runtime config — GITIGNORED
 │   ├── static/
-│   │   └── index.html          ← Full single-page app
+│   │   ├── index.html          ← Full single-page app
+│   │   ├── nav.js              ← Shared sidebar nav component
+│   │   └── logo.png            ← App logo (served as static asset)
 │   └── templates/
-│       └── settings.html       ← Settings UI
+│       ├── login.html          ← Login page (local auth + SSO)
+│       └── settings.html       ← Settings UI (admin only)
+├── ssl/                        ← SSL certs — GITIGNORED
+│   ├── server.crt              ← TLS certificate
+│   └── server.key              ← TLS private key
 ├── deploy-to-apps.bat          ← Sync service/ → C:\apps\pktpcap\
 ├── favicon.ico / icon-*.png    ← App icons
 ├── lockup-*.png / lockup.svg   ← Logo assets
-├── pktpcap.html                ← Original standalone artifact (pre-Flask)
 └── PROJECT_CONTEXT.md          ← Extended developer notes
 ```
+
+---
+
+## SSL / TLS
+
+pktPCAP auto-detects SSL at startup by checking for `ssl/server.crt` and `ssl/server.key` relative to `server.py`. **File presence is authoritative** — the `ssl_enabled` database flag is not used. Place your cert and key in the `ssl/` directory and restart; pktPCAP will serve HTTPS automatically.
+
+For PFX/PKCS#12 cert conversion:
+```bash
+openssl pkcs12 -in cert.pfx -clcerts -nokeys -out ssl/server.crt
+openssl pkcs12 -in cert.pfx -nocerts -nodes  -out ssl/server.key
+```
+
+The `ssl/` directory is gitignored — never commit certificate material.
+
+---
+
+## Sidebar / Navigation
+
+`service/static/nav.js` is a shared component used by both `index.html` and `settings.html`. It renders the sidebar navigation and handles role-based visibility (Settings link hidden for non-admin roles). Both pages fetch `/api/auth/current-user` to populate the user/logout footer.
 
 ---
 
