@@ -15,7 +15,7 @@ CONFIG_FILE = BASE / "config.json"
 # ── Default settings (used as fallback if key not in DB) ─────────────────────
 
 DEFAULT_SETTINGS = {
-    "port": 8765,
+    "port": 80,
     "app_name": "pktPCAP",
     "provider": "anthropic",
     "anthropic_key": "",
