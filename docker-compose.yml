@@ -1,0 +1,41 @@
+# ── pktPCAP — Docker Compose ──────────────────────────────────────────────────
+# Quick start:
+#   cp .env.example .env
+#   # Edit .env — set APP_ADMIN_PASSWORD at minimum
+#   docker compose up -d
+#
+# To use a pre-built image from GHCR (no local build needed):
+#   docker compose pull && docker compose up -d
+
+services:
+  pktpcap:
+    image: ghcr.io/bsnwgit/pktpcap:latest
+    # Uncomment the line below to build locally instead of pulling from GHCR:
+    # build: .
+    container_name: pktpcap
+    restart: unless-stopped
+
+    ports:
+      # External HTTP port  →  internal app port
+      - "${APP_HTTP_PORT:-80}:${APP_PORT:-80}"
+      # External HTTPS port →  internal app port (enable SSL in Settings first)
+      - "${APP_HTTPS_PORT:-443}:${APP_PORT:-80}"
+
+    env_file:
+      - .env
+
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PKTPCAP_NO_BROWSER=1
+
+    volumes:
+      # Database + app config (persists across container updates)
+      - pktpcap_data:/data
+      # PCAP uploads and screenshots (separate volume — survives image rebuilds)
+      - pktpcap_storage:/storage
+      # SSL certs — place server.crt + server.key here, then enable SSL in Settings
+      - ./ssl:/app/ssl:ro
+
+volumes:
+  pktpcap_data:
+  pktpcap_storage:
