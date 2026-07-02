@@ -10,6 +10,13 @@ git-setup-and-push.bat
 # SSL certs and keys
 service/ssl/
 service/certs/
+ssl/*.crt
+ssl/*.key
+ssl/*.pem
+ssl/*.pfx
+
+# Docker secrets
+.env
 
 # Runtime output
 screenshots/

@@ -15,10 +15,130 @@
 pktPCAP is a locally-hosted packet capture analyzer. Drop a `.pcap` or `.pcapng` file onto the UI and get instant, rule-based analysis of TCP health, DNS, threats, and traffic flows — no cloud upload required. Optional AI analysis (Anthropic or OpenAI) layers natural-language findings on top of the parsed data.
 
 **Key traits:**
-- Runs entirely on localhost — captures never leave your machine
+- Runs entirely on your infrastructure — captures never leave your environment
 - Works without an API key (rule-based analysis only)
 - Three analysis modes: Specific Issue, Auto-Triage, Security Review
 - In-app log viewer, user management, SSL support, and a live pcapng feed endpoint
+- Docker-native — pull and run in minutes, data persists across updates
+
+---
+
+## Quick Start — Docker
+
+```bash
+# 1. Clone the repo
+git clone https://github.com/bsnwgit/pktpcap.git
+cd pktpcap
+
+# 2. Configure
+cp .env.example .env
+# Edit .env — set APP_ADMIN_PASSWORD at minimum
+
+# 3. (Optional) Add SSL certs
+# Place server.crt + server.key in the ssl/ directory, then enable SSL in Settings
+
+# 4. Start
+docker compose up -d
+
+# 5. Open
+# http://your-host   (or https://your-host if SSL is configured)
+```
+
+The first start seeds the admin user from `.env` and persists all data to named Docker volumes.
+
+---
+
+## Docker — Volumes
+
+| Volume | Mount | Purpose |
+|---|---|---|
+| `pktpcap_data` | `/data` | SQLite database, app config, users, settings |
+| `pktpcap_storage` | `/storage` | PCAP uploads, screenshots |
+| `./ssl` | `/app/ssl` | TLS certificate and key (bind mount) |
+
+Volumes survive `docker compose pull && docker compose up -d` upgrades — your data is never overwritten by an image update.
+
+---
+
+## Docker — Environment Variables
+
+Copy `.env.example` to `.env` and configure before first run.
+
+| Variable | Default | Description |
+|---|---|---|
+| `APP_ADMIN_PASSWORD` | *(required)* | Admin password — startup fails if blank |
+| `APP_ADMIN_USER` | `admin` | Admin username (first-run only) |
+| `APP_ADMIN_EMAIL` | — | Admin email (optional) |
+| `APP_PORT` | `80` | Port the app listens on inside the container |
+| `APP_HTTP_PORT` | `80` | External HTTP port on the host |
+| `APP_HTTPS_PORT` | `443` | External HTTPS port on the host |
+| `APP_STORAGE_PATH` | `/storage` | Container path for PCAP storage |
+
+---
+
+## Docker — SSL / TLS
+
+1. Place `server.crt` and `server.key` in the `ssl/` directory next to `docker-compose.yml`.
+2. Restart the container: `docker compose restart`
+3. Open Settings → enable SSL.
+4. Access via `https://your-host`.
+
+For PFX/PKCS#12 conversion:
+```bash
+openssl pkcs12 -in cert.pfx -clcerts -nokeys -out ssl/server.crt
+openssl pkcs12 -in cert.pfx -nocerts -nodes  -out ssl/server.key
+```
+
+The `ssl/` directory is gitignored — never commit certificate material.
+
+---
+
+## Docker — Image
+
+Pre-built images are published to GitHub Container Registry on every push to `main` and `feature/docker`:
+
+```bash
+docker pull ghcr.io/bsnwgit/pktpcap:latest
+```
+
+Images are tagged `:latest` and `:<git-sha>` for pinning.
+
+To build locally:
+```bash
+docker build -t pktpcap .
+```
+
+Then in `docker-compose.yml`, replace `image: ghcr.io/bsnwgit/pktpcap:latest` with `build: .`.
+
+---
+
+## Manual Setup (without Docker)
+
+### 1. Clone
+
+```bash
+git clone https://github.com/bsnwgit/pktpcap.git
+cd pktpcap
+```
+
+### 2. Install dependencies
+
+```bash
+pip install -r service/requirements.txt
+```
+
+### 3. Run
+
+```bash
+cd service
+python server.py
+```
+
+The app opens at **http://localhost** by default (port 80). To use a different port, change the `port` setting in the app's Settings page or set it in the database.
+
+### 4. Add an API key (optional)
+
+Go to **Settings** and enter your Anthropic or OpenAI API key. Without a key the rule-based parser still works — only the AI assistant panel requires one.
 
 ---
 
@@ -32,7 +152,6 @@ pktPCAP supports two capture delivery modes: **local file upload** and **remote 
 
 The simplest path. You already have a capture file.
 
-Optional for SAML SSO:
 ```
 ┌──────────────────────────────────────────────────────────────────┐
 │  Your Machine                                                    │
@@ -144,7 +263,6 @@ tshark is the command-line interface to Wireshark. It handles raw packet capture
 | `-w -` | Write pcapng output to stdout instead of a file |
 | `-f "<filter>"` | BPF capture filter — limits what gets captured |
 | `-s <bytes>` | Snap length — truncates packets to N bytes (reduce bandwidth) |
-| `-b filesize:<MB>` | *(optional)* rotate buffer when used standalone |
 
 **Listing available interfaces:**
 ```bash
@@ -162,41 +280,40 @@ tshark -i <interface> -w - | curl -s \
   -H "Authorization: Bearer <feed-token>" \
   -H "Content-Type: application/octet-stream" \
   --data-binary @- \
-  "http://<pktpcap-host>:<port>/api/feed/<session-name>"
+  "http://<pktpcap-host>/api/feed/<session-name>"
 ```
 
 Replace:
 - `<interface>` — capture interface name (see `tshark -D`)
 - `<feed-token>` — token from pktPCAP Settings page
 - `<pktpcap-host>` — hostname or IP of the machine running pktPCAP
-- `<port>` — pktPCAP port (default `8765`)
-- `<session-name>` — alphanumeric label for this capture session (e.g., `edge-fw-20260628`)
+- `<session-name>` — alphanumeric label for this capture session
 
 **With a BPF filter (capture only HTTP and DNS):**
 ```bash
-tshark -i eth0 -f "port 80 or port 443 or port 53" -w - | curl -s \
+tshark -i <interface> -f "port 80 or port 443 or port 53" -w - | curl -s \
   -H "Authorization: Bearer <feed-token>" \
   -H "Content-Type: application/octet-stream" \
   --data-binary @- \
-  "http://<pktpcap-host>:8765/api/feed/my-session"
+  "http://<pktpcap-host>/api/feed/<session-name>"
 ```
 
 **With snap length (first 256 bytes of each packet — reduces bandwidth):**
 ```bash
-tshark -i eth0 -s 256 -w - | curl -s \
+tshark -i <interface> -s 256 -w - | curl -s \
   -H "Authorization: Bearer <feed-token>" \
   -H "Content-Type: application/octet-stream" \
   --data-binary @- \
-  "http://<pktpcap-host>:8765/api/feed/my-session"
+  "http://<pktpcap-host>/api/feed/<session-name>"
 ```
 
 **HTTPS (if pktPCAP has SSL enabled):**
 ```bash
-tshark -i eth0 -w - | curl -s -k \
+tshark -i <interface> -w - | curl -s -k \
   -H "Authorization: Bearer <feed-token>" \
   -H "Content-Type: application/octet-stream" \
   --data-binary @- \
-  "https://<pktpcap-host>:8765/api/feed/my-session"
+  "https://<pktpcap-host>/api/feed/<session-name>"
 ```
 
 (`-k` skips cert verification for self-signed certs; use `--cacert <cert.pem>` for proper validation.)
@@ -217,7 +334,7 @@ ExecStart=/bin/bash -c 'tshark -i <interface> -w - | curl -s \
   -H "Authorization: Bearer <feed-token>" \
   -H "Content-Type: application/octet-stream" \
   --data-binary @- \
-  "http://<pktpcap-host>:<port>/api/feed/<session-name>"'
+  "http://<pktpcap-host>/api/feed/<session-name>"'
 Restart=on-failure
 RestartSec=5s
 User=<capture-user>
@@ -268,60 +385,20 @@ Buffer limit is **200 MB per named session**. If the stream exceeds this, the se
 | Live feed | Remote `tshark`/Wireshark hosts can stream pcapng directly to the server |
 | In-app log viewer | SQLite ring-buffer of app logs, queryable from the Logs page |
 | User management | Create/edit/delete local users with password reset |
-| SSL/HTTPS | Optional self-signed or custom cert via Settings |
+| Role-based access | `admin`, `analyst`, `viewer` — Settings and log clear require admin |
+| SAML SSO | Okta integration via `python3-saml` |
+| SSL/HTTPS | Auto-detected from `ssl/` directory; custom cert path configurable in Settings |
 | Settings UI | Web UI at `/settings` — no config file editing needed |
-| Portable | All paths resolve relative to `server.py`; works from any directory |
+| Docker | Single-container deployment; data persists in named volumes |
+| pktHub integration | Suite-token header auth for embedding in the pktHub dashboard suite |
 
 ---
 
 ## Requirements
 
 - Python 3.10+
-- pip packages: `flask>=3.0`, `anthropic>=0.40`, `openai>=1.50`
-- Windows 10/11 (PowerShell screenshot helper) — core analysis works on any OS
-
----
-
-## Setup
-
-### 1. Clone
-
-```bash
-git clone <your-repo-url>
-cd pktpcap
-```
-
-### 2. Install dependencies
-
-```bash
-pip install -r service/requirements.txt
-```
-
-### 3. Run
-
-```bash
-cd service
-python server.py
-```
-
-The app opens at **http://localhost:8765** by default.
-
-### 4. Add an API key (optional)
-
-Go to **http://localhost:8765/settings** and enter your Anthropic or OpenAI API key. Without a key the rule-based parser still works — only the AI assistant panel requires one.
-
----
-
-## Deployment (Windows — persistent service)
-
-A `deploy-to-apps.bat` script copies the `service/` directory to `C:\apps\pktpcap\` and a `start.bat` is placed there for easy launching.
-
-```
-deploy-to-apps.bat          ← run after any code change to sync service/ → C:\apps\pktpcap\
-C:\apps\pktpcap\start.bat   ← launch the server (pip install + python server.py)
-```
-
-To start automatically on login, enable the **"Start on login"** toggle in Settings. This writes a `pktpcap.bat` shortcut to `%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\` using `pythonw` (no console window).
+- pip packages: see `service/requirements.txt`
+- System packages (for SAML): `libxml2-dev`, `libxmlsec1-dev` (installed automatically in Docker)
 
 ---
 
@@ -342,13 +419,13 @@ Settings managed via the UI (`/settings`):
 
 | Key | Default | Description |
 |---|---|---|
-| `port` | `8765` | Listening port |
+| `port` | `80` | Listening port |
 | `provider` | `anthropic` | AI provider (`anthropic` or `openai`) |
 | `anthropic_key` | — | Anthropic API key |
 | `anthropic_model` | `claude-opus-4-8` | Model string |
 | `openai_key` | — | OpenAI API key |
 | `openai_model` | `gpt-4o` | Model string |
-| `ssl_enabled` | `false` | Enable HTTPS (DB flag; **file presence is authoritative — see SSL below**) |
+| `ssl_enabled` | `false` | Enable HTTPS (**file presence in `ssl/` is authoritative**) |
 | `ssl_cert` / `ssl_key` | — | Cert/key paths (overridden by `ssl/server.crt` + `ssl/server.key` if present) |
 | `storage_path` | — | Where uploaded captures are saved |
 | `max_upload_mb` | `500` | Upload size limit |
@@ -362,7 +439,7 @@ Settings managed via the UI (`/settings`):
 
 ### Analyzing a capture file
 
-1. Open **http://localhost:8765**
+1. Open the app in your browser
 2. Drag-and-drop a `.pcap` or `.pcapng` file onto the upload zone, or click to browse
 3. Choose an analysis mode:
    - **Specific Issue** — describe a known problem; AI focuses on it
@@ -390,11 +467,11 @@ pktPCAP can receive a live pcapng stream from a remote host running `tshark` or 
 **On the remote host:**
 
 ```bash
-tshark -i eth0 -w - | curl -s \
+tshark -i <interface> -w - | curl -s \
   -H "Authorization: Bearer <feed-token>" \
   -H "Content-Type: application/octet-stream" \
   --data-binary @- \
-  "http://<pktpcap-host>:8765/api/feed/<session-name>"
+  "http://<pktpcap-host>/api/feed/<session-name>"
 ```
 
 Retrieve the feed token from the Settings page, then load the buffered capture from the UI.
@@ -403,7 +480,7 @@ Retrieve the feed token from the Settings page, then load the buffered capture f
 
 ## API Reference
 
-All endpoints are served from `http://localhost:8765`.
+All endpoints are served from the app root (default `http://your-host`).
 
 ### Settings
 
@@ -428,13 +505,15 @@ All endpoints are served from `http://localhost:8765`.
 }
 ```
 
-### Database config
+### Auth
 
 | Method | Path | Description |
 |---|---|---|
-| `GET` | `/api/db-config` | Return current DB config |
-| `POST` | `/api/db-config/test` | Test a proposed DB connection |
-| `POST` | `/api/db-config` | Save DB config |
+| `POST` | `/api/login` | Local username/password login |
+| `POST` | `/api/logout` | End session |
+| `GET` | `/api/auth/current-user` | Return current user info and role |
+| `GET` | `/api/auth/saml/login` | Redirect to SAML IdP (if configured) |
+| `POST` | `/api/auth/saml/acs` | SAML Assertion Consumer Service callback |
 
 ### Users
 
@@ -452,23 +531,32 @@ All endpoints are served from `http://localhost:8765`.
 |---|---|---|
 | `GET` | `/api/logs` | Query app logs (supports `?level=`, `?logger=`, `?limit=`, `?offset=`) |
 | `GET` | `/api/logs/stats` | Log count by level and logger |
-| `DELETE` | `/api/logs` | Clear all logs |
-| `POST` | `/api/logs/level?level=DEBUG` | Change the live capture log level |
+| `DELETE` | `/api/logs` | Clear all logs **(admin only)** |
+| `POST` | `/api/logs/level?level=DEBUG` | Change the live log level |
+
+### Live Feed
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/api/feed/<name>` | Stream pcapng data into a named session |
+| `GET` | `/api/feeds` | List active feed sessions |
+| `GET` | `/api/feeds/<name>/download` | Download buffered pcapng as a file |
+| `DELETE` | `/api/feeds/<name>` | Clear and remove a session |
 
 ### Server
 
 | Method | Path | Description |
 |---|---|---|
-| `POST` | `/api/restart` | Graceful server restart (spawns new process, exits after 0.8 s) |
-| `POST` | `/api/save-image` | Save a base64 PNG data-URL to `screenshots/` |
+| `POST` | `/api/restart` | Graceful server restart |
+| `GET` | `/api/health` | Public health check (used by pktHub) |
 
 ---
 
-## Project structure
+## Project Structure
 
 ```
 pktpcap/
-├── service/                    ← Canonical source (what gets deployed)
+├── service/                    ← Application source
 │   ├── server.py               ← Flask entry point
 │   ├── db.py                   ← SQLite database layer
 │   ├── logging_handler.py      ← SQLite async log ring-buffer
@@ -477,24 +565,33 @@ pktpcap/
 │   ├── static/
 │   │   ├── index.html          ← Full single-page app
 │   │   ├── nav.js              ← Shared sidebar nav component
-│   │   └── logo.png            ← App logo (served as static asset)
+│   │   └── logo.png
 │   └── templates/
 │       ├── login.html          ← Login page (local auth + SSO)
 │       └── settings.html       ← Settings UI (admin only)
-├── ssl/                        ← SSL certs — GITIGNORED
-│   ├── server.crt              ← TLS certificate
-│   └── server.key              ← TLS private key
-├── deploy-to-apps.bat          ← Sync service/ → C:\apps\pktpcap\
+│
+├── Dockerfile                  ← Container build
+├── docker-compose.yml          ← Compose stack (recommended)
+├── docker_init.py              ← Container first-run bootstrap
+├── entrypoint.sh               ← Container entrypoint
+├── .env.example                ← Environment variable template
+│
+├── ssl/                        ← SSL certs — GITIGNORED (place certs here)
+│   └── .gitkeep
+│
+├── .github/
+│   └── workflows/
+│       └── docker.yml          ← CI: build + push to GHCR on push to main/feature/docker
+│
 ├── favicon.ico / icon-*.png    ← App icons
-├── lockup-*.png / lockup.svg   ← Logo assets
-└── PROJECT_CONTEXT.md          ← Extended developer notes
+└── lockup-*.png / lockup.svg   ← Logo assets
 ```
 
 ---
 
 ## SSL / TLS
 
-pktPCAP auto-detects SSL at startup by checking for `ssl/server.crt` and `ssl/server.key` relative to `server.py`. **File presence is authoritative** — the `ssl_enabled` database flag is not used. Place your cert and key in the `ssl/` directory and restart; pktPCAP will serve HTTPS automatically.
+pktPCAP auto-detects SSL at startup by checking for `ssl/server.crt` and `ssl/server.key` relative to `server.py`. **File presence is authoritative** — the `ssl_enabled` database flag is not used for auto-detection. Place your cert and key in the `ssl/` directory and restart; pktPCAP will serve HTTPS automatically.
 
 For PFX/PKCS#12 cert conversion:
 ```bash
@@ -508,13 +605,17 @@ The `ssl/` directory is gitignored — never commit certificate material.
 
 ## Sidebar / Navigation
 
-`service/static/nav.js` is a shared component used by both `index.html` and `settings.html`. It renders the sidebar navigation and handles role-based visibility (Settings link hidden for non-admin roles). Both pages fetch `/api/auth/current-user` to populate the user/logout footer.
+`service/static/nav.js` is a shared component used by both `index.html` and `settings.html`. It renders the sidebar navigation and handles role-based visibility:
+- Settings link is hidden for non-admin roles
+- Clear Logs button is hidden for non-admin roles
+
+Both pages fetch `/api/auth/current-user` to populate the user/logout footer.
 
 ---
 
-## Architecture notes
+## Architecture Notes
 
-**Path resolution:** `BASE = Path(__file__).parent` throughout — the server resolves all paths relative to `server.py`, so it works identically from `service/` and `C:\apps\pktpcap\`.
+**Path resolution:** `BASE = Path(__file__).parent` throughout — the server resolves all paths relative to `server.py`, so it works identically whether run directly or inside a container.
 
 **AI proxy:** The frontend calls `localAsk(prompt, dataArray)` which POSTs to `/api/ai`. The server forwards the request to Anthropic or OpenAI and streams the response back. API keys never leave the host.
 
@@ -524,23 +625,16 @@ The `ssl/` directory is gitignored — never commit certificate material.
 
 **API key masking:** `GET /api/settings` returns keys as `sk-ant-api0•••...`. `POST /api/settings` skips overwriting a field if the submitted value contains a `•` character, preventing accidental key erasure.
 
+**pktHub integration:** The app accepts an `X-Suite-Token` header on every request. A matching token establishes a Flask session as the forwarded user/role, enabling pktHub to proxy requests without a separate login flow.
+
 ---
 
-## Supported AI models
+## Supported AI Models
 
 | Provider | Models |
 |---|---|
 | Anthropic | `claude-opus-4-8`, `claude-sonnet-4-6`, `claude-haiku-4-5-20251001` |
-| OpenAI | `gpt-4o`, `gpt-4o-mini`, and any model name you enter manually |
-
----
-
-## Known issues
-
-| Issue | Notes |
-|---|---|
-| `/api/save-image` path | In some deployments saves to `C:\apps\screenshots\` instead of `C:\apps\pktpcap\screenshots\` — `BASE.parent` path resolution bug |
-| PowerShell screenshot | `PrintWindow`-based capture is unreliable on multi-monitor setups; use `html2canvas` on `.main` instead |
+| OpenAI | `gpt-4o`, `gpt-4o-mini`, and any model name entered manually |
 
 ---
 
