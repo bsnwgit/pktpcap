@@ -442,7 +442,7 @@ def post_settings():
 
     cfg["app_name"] = cfg.get("app_name") or "pktPCAP"
 
-    for field, default in (("port", 8765), ("max_upload_mb", 500),
+    for field, default in (("port", 80), ("max_upload_mb", 500),
                            ("storage_quota_gb", 50), ("retention_days", 90),
                            ("backup_interval_hours", 24), ("backup_rotation", 7),
                            ("session_timeout_minutes", 480),
@@ -471,7 +471,7 @@ def post_settings():
             cfg[k] = v
 
     db.set_many_settings(cfg)
-    return jsonify({"ok": True, "port": cfg.get("port", 8765)})
+    return jsonify({"ok": True, "port": cfg.get("port", 80)})
 
 # -- API: database config ------------------------------------------------------
 

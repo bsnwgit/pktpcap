@@ -278,7 +278,7 @@
           </div>
           <div class="field-row">
             <div><p class="field-label">Port</p><p class="field-hint">Restart required after changing</p></div>
-            <div class="field-input"><input type="number" id="port" min="1024" max="65535" value="8765"></div>
+            <div class="field-input"><input type="number" id="port" min="1" max="65535" value="80"></div>
           </div>
           <div class="field-row">
             <div><p class="field-label">Timezone</p><p class="field-hint">Affects display of timestamps</p></div>
@@ -1002,7 +1002,7 @@ async function load() {
 
     setVal('app_name', cfg.app_name || 'pktPCAP')
     document.title = cfg.app_name || 'pktPCAP'
-    setVal('port', cfg.port || 8765)
+    setVal('port', cfg.port || 80)
     setVal('timezone', cfg.timezone || 'UTC')
     setProvider(cfg.provider || 'anthropic')
     setVal('anthropic_key', cfg.anthropic_key || '')
@@ -1069,7 +1069,7 @@ function updateWsToggleUI() {
 
   const ip = cfg.server_ip || location.hostname
   const proto = cfg.ssl_enabled ? 'https' : 'http'
-  const port = cfg.port || 8765
+  const port = cfg.port || 80
   const token = cfg.feed_token || '(save settings to generate token)'
 
   document.getElementById('ws-endpoint').textContent = `${proto}://${ip}:${port}/api/feed/<session-name>`
@@ -1141,7 +1141,7 @@ function buildBody(section) {
     'notify_pagerduty_integration_key','notify_tracecat_api_token','lucid_api_token']
   const bodies = {
     general: {
-      app_name: getVal('app_name'), port: parseInt(getVal('port'))||8765, timezone: getVal('timezone'),
+      app_name: getVal('app_name'), port: parseInt(getVal('port'))||80, timezone: getVal('timezone'),
       provider: getVal('provider'),
       anthropic_model: getVal('anthropic_model'), openai_model: getVal('openai_model'),
     },
