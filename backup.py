@@ -1,7 +1,12 @@
 """
 Project backup script — 2-rotation local backup.
 
-Usage: python backup.py
+Usage:
+  python backup.py [project_dir]
+or:
+  PKTPCAP_PROJECT_DIR=<path> python backup.py
+
+Defaults to the directory this script lives in if neither is given.
 
 Keeps two snapshots alongside the project folder:
   ../pktpcap_backups/backup_1/  ← most recent
@@ -13,16 +18,21 @@ On each run:
   3. Copy current project → backup_1
 
 To restore: copy files from backup_1/ back into the project folder,
-then redeploy to pkt server if applicable.
+then redeploy if applicable.
 """
 
-import shutil, sys
+import os, shutil, sys
 sys.stdout.reconfigure(encoding='utf-8')
 from pathlib import Path
 from datetime import datetime, timezone
 
 # ── Project path ──────────────────────────────────────────────────────────────
-PROJECT_DIR = Path(r"C:\Users\robert.barnett\My Drive\Documents\Claude\Projects\Packet Analyzer")
+if len(sys.argv) > 1:
+    PROJECT_DIR = Path(sys.argv[1])
+elif os.environ.get("PKTPCAP_PROJECT_DIR"):
+    PROJECT_DIR = Path(os.environ["PKTPCAP_PROJECT_DIR"])
+else:
+    PROJECT_DIR = Path(__file__).resolve().parent
 # ─────────────────────────────────────────────────────────────────────────────
 
 BACKUP_BASE = PROJECT_DIR.parent / "pktpcap_backups"

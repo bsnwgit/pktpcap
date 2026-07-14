@@ -1,0 +1,35 @@
+# Template — install.sh substitutes __INSTALL_DIR__ / __LOG_DIR__ /
+# __SERVICE_USER__ / __SERVICE_GROUP__ before installing to systemd.
+# For a manual install, replace these placeholders yourself.
+[Unit]
+Description=pktPCAP Packet Capture Analyzer
+Documentation=https://github.com/bsnwgit/pktpcap
+After=network.target
+
+[Service]
+Type=simple
+User=__SERVICE_USER__
+Group=__SERVICE_GROUP__
+WorkingDirectory=__INSTALL_DIR__
+
+Environment=PKTPCAP_NO_BROWSER=1
+
+ExecStart=__INSTALL_DIR__/venv/bin/python3 __INSTALL_DIR__/server.py
+
+# Allows binding to port 80 without running the whole process as root.
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+
+Restart=on-failure
+RestartSec=5
+StartLimitInterval=60
+StartLimitBurst=5
+
+StandardOutput=append:__LOG_DIR__/pktpcap.log
+StandardError=append:__LOG_DIR__/pktpcap.log
+
+NoNewPrivileges=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

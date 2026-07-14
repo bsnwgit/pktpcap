@@ -19,126 +19,133 @@ pktPCAP is a locally-hosted packet capture analyzer. Drop a `.pcap` or `.pcapng`
 - Works without an API key (rule-based analysis only)
 - Three analysis modes: Specific Issue, Auto-Triage, Security Review
 - In-app log viewer, user management, SSL support, and a live pcapng feed endpoint
-- Docker-native — pull and run in minutes, data persists across updates
+- Deploys as a systemd service on Ubuntu Server bare metal — no container runtime required
 
 ---
 
-## Quick Start — Docker
+## Quick Start
 
 ```bash
-# 1. Clone the repo
+# 1. Clone the repository
 git clone https://github.com/bsnwgit/pktpcap.git
 cd pktpcap
 
-# 2. Configure
-cp .env.example .env
-# Edit .env — set APP_ADMIN_PASSWORD at minimum
+# 2. Run the installer — system packages, Python venv + deps, database init,
+#    systemd service (installed + started)
+bash install.sh
 
-# 3. (Optional) Add SSL certs
-# Place server.crt + server.key in the ssl/ directory, then enable SSL in Settings
+# 3. Open the firewall for the app port (adjust if PKTPCAP_INSTALL_DIR/port differ)
+sudo ufw allow 80/tcp
 
-# 4. Start
-docker compose up -d
-
-# 5. Open
-# http://your-host   (or https://your-host if SSL is configured)
+# 4. Open http://<server-ip> and log in with admin / admin — change the
+#    password immediately, it is not rotated on subsequent installs
 ```
 
-The first start seeds the admin user from `.env` and persists all data to named Docker volumes.
+### Environment variables
 
----
-
-## Docker — Volumes
-
-| Volume | Mount | Purpose |
-|---|---|---|
-| `pktpcap_data` | `/data` | SQLite database, app config, users, settings |
-| `pktpcap_storage` | `/storage` | PCAP uploads, screenshots |
-| `./ssl` | `/app/ssl` | TLS certificate and key (bind mount) |
-
-Volumes survive `docker compose pull && docker compose up -d` upgrades — your data is never overwritten by an image update.
-
----
-
-## Docker — Environment Variables
-
-Copy `.env.example` to `.env` and configure before first run.
+`install.sh` reads these to customize the install location and service identity:
 
 | Variable | Default | Description |
 |---|---|---|
-| `APP_ADMIN_PASSWORD` | *(required)* | Admin password — startup fails if blank |
-| `APP_ADMIN_USER` | `admin` | Admin username (first-run only) |
-| `APP_ADMIN_EMAIL` | — | Admin email (optional) |
-| `APP_PORT` | `80` | Port the app listens on inside the container |
-| `APP_HTTP_PORT` | `80` | External HTTP port on the host |
-| `APP_HTTPS_PORT` | `443` | External HTTPS port on the host |
-| `APP_STORAGE_PATH` | `/storage` | Container path for PCAP storage |
+| `PKTPCAP_INSTALL_DIR` | `/opt/pktpcap` | Where the app is installed |
+| `PKTPCAP_LOG_DIR` | `$PKTPCAP_INSTALL_DIR/logs` | systemd journal file location |
+| `PKTPCAP_SERVICE_USER` | current user | User the systemd service runs as |
+| `PKTPCAP_SERVICE_GROUP` | same as service user | Group the systemd service runs as |
 
 ---
 
-## Docker — SSL / TLS
+## Installation
 
-1. Place `server.crt` and `server.key` in the `ssl/` directory next to `docker-compose.yml`.
-2. Restart the container: `docker compose restart`
-3. Open Settings → enable SSL.
-4. Access via `https://your-host`.
+`install.sh` (see [Quick Start](#quick-start)) automates everything below except **opening the firewall**, which is always manual. This section is the full manual walkthrough — useful to customize the install, run steps individually, or understand what the script does.
 
-For PFX/PKCS#12 conversion:
-```bash
-openssl pkcs12 -in cert.pfx -clcerts -nokeys -out ssl/server.crt
-openssl pkcs12 -in cert.pfx -nocerts -nodes  -out ssl/server.key
-```
-
-The `ssl/` directory is gitignored — never commit certificate material.
-
----
-
-## Docker — Image
-
-Pre-built images are published to GitHub Container Registry on every push to `main` and `feature/docker`:
-
-```bash
-docker pull ghcr.io/bsnwgit/pktpcap:latest
-```
-
-Images are tagged `:latest` and `:<git-sha>` for pinning.
-
-To build locally:
-```bash
-docker build -t pktpcap .
-```
-
-Then in `docker-compose.yml`, replace `image: ghcr.io/bsnwgit/pktpcap:latest` with `build: .`.
-
----
-
-## Manual Setup (without Docker)
-
-### 1. Clone
+### 1. Clone the repository
 
 ```bash
 git clone https://github.com/bsnwgit/pktpcap.git
 cd pktpcap
 ```
 
-### 2. Install dependencies
+All commands below assume you're in the repo root unless otherwise noted.
+
+### 2. Create the install directory
 
 ```bash
-pip install -r service/requirements.txt
+INSTALL_DIR=/opt/pktpcap
+sudo mkdir -p "$INSTALL_DIR" "$INSTALL_DIR/logs"
+sudo chown "$(whoami):$(whoami)" "$INSTALL_DIR" "$INSTALL_DIR/logs"
 ```
 
-### 3. Run
+`/opt` is root-owned by default, so this needs `sudo`. Steps 3–5 below run as your regular user against this now-owned directory; step 6 re-owns everything to whichever user/group the systemd service runs as.
+
+### 3. System packages
 
 ```bash
-cd service
-python server.py
+sudo apt-get update
+sudo apt-get install -y --no-install-recommends \
+    python3 python3-venv python3-pip \
+    libxml2-dev libxmlsec1-dev libxmlsec1-openssl pkg-config gcc
 ```
 
-The app opens at **http://localhost** by default (port 80). To use a different port, change the `port` setting in the app's Settings page or set it in the database.
+`libxml2-dev`, `libxmlsec1-dev`, `libxmlsec1-openssl`, `pkg-config`, and `gcc` are required to build `python3-saml`'s xmlsec native bindings (used for Okta SAML SSO).
 
-### 4. Add an API key (optional)
+### 4. Install Python dependencies
 
-Go to **Settings** and enter your Anthropic or OpenAI API key. Without a key the rule-based parser still works — only the AI assistant panel requires one.
+```bash
+python3 -m venv /opt/pktpcap/venv
+/opt/pktpcap/venv/bin/pip install -r service/requirements.txt
+```
+
+### 5. Copy application files
+
+```bash
+cp -r service/* /opt/pktpcap/
+mkdir -p /opt/pktpcap/ssl
+```
+
+The `ssl/` directory is where you place `server.crt` + `server.key` if you want HTTPS (see [SSL / TLS](#ssl--tls) below) — pktPCAP auto-detects them at startup.
+
+### 6. Configure
+
+Nothing is required — settings live in a SQLite database (`pktpcap.db`) that's created automatically on first start, seeded with sensible defaults and a default `admin`/`admin` account. To pre-initialize it (so you can confirm it worked before starting the service):
+
+```bash
+cd /opt/pktpcap
+/opt/pktpcap/venv/bin/python3 -c "from db import init_db; init_db()"
+```
+
+All configuration afterward (API keys, port, storage, SSL, SSO, etc.) is done through the **Settings** UI once you've logged in — see [Application Settings](#configuration).
+
+### 7. Install the systemd service
+
+`pktpcap.service` is a template — substitute the placeholders before installing it, or just run `install.sh` which does this for you:
+
+```bash
+sed \
+    -e "s#__INSTALL_DIR__#/opt/pktpcap#g" \
+    -e "s#__LOG_DIR__#/opt/pktpcap/logs#g" \
+    -e "s#__SERVICE_USER__#$(whoami)#g" \
+    -e "s#__SERVICE_GROUP__#$(whoami)#g" \
+    pktpcap.service | sudo tee /etc/systemd/system/pktpcap.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now pktpcap
+sudo systemctl status pktpcap
+```
+
+The unit grants `CAP_NET_BIND_SERVICE` so the service can bind port 80 without running as root.
+
+### 8. Open the firewall
+
+```bash
+sudo ufw allow 80/tcp
+```
+
+### 9. Verify
+
+```bash
+curl -s http://localhost/api/health
+```
+
+Log in at `http://<server-ip>` with `admin` / `admin`, then change the password immediately in **Settings → Users**.
 
 ---
 
@@ -389,7 +396,7 @@ Buffer limit is **200 MB per named session**. If the stream exceeds this, the se
 | SAML SSO | Okta integration via `python3-saml` |
 | SSL/HTTPS | Auto-detected from `ssl/` directory; custom cert path configurable in Settings |
 | Settings UI | Web UI at `/settings` — no config file editing needed |
-| Docker | Single-container deployment; data persists in named volumes |
+| Deployment | systemd service on Ubuntu Server 22.04/24.04 LTS (bare metal); no container runtime required |
 | pktHub integration | Suite-token header auth for embedding in the pktHub dashboard suite |
 
 ---
@@ -398,7 +405,7 @@ Buffer limit is **200 MB per named session**. If the stream exceeds this, the se
 
 - Python 3.10+
 - pip packages: see `service/requirements.txt`
-- System packages (for SAML): `libxml2-dev`, `libxmlsec1-dev` (installed automatically in Docker)
+- System packages (for SAML): `libxml2-dev`, `libxmlsec1-dev`, `libxmlsec1-openssl`, `pkg-config`, `gcc` (installed by `install.sh`)
 
 ---
 
@@ -566,22 +573,20 @@ pktpcap/
 │   │   ├── index.html          ← Full single-page app
 │   │   ├── nav.js              ← Shared sidebar nav component
 │   │   └── logo.png
+│   ├── pkt-capture              ← Wireshark SSH remote-capture wrapper (dumpcap + feed upload)
 │   └── templates/
 │       ├── login.html          ← Login page (local auth + SSO)
 │       └── settings.html       ← Settings UI (admin only)
 │
-├── Dockerfile                  ← Container build
-├── docker-compose.yml          ← Compose stack (recommended)
-├── docker_init.py              ← Container first-run bootstrap
-├── entrypoint.sh               ← Container entrypoint
-├── .env.example                ← Environment variable template
+├── install.sh                   ← Ubuntu Server install script (see Installation)
+├── pktpcap.service              ← systemd unit template (placeholders substituted by install.sh)
+├── backup.py                    ← Local 2-rotation backup script
+│
+├── scripts/
+│   └── verify_deploy.py         ← SSH into a deployed host and check service/port/health
 │
 ├── ssl/                        ← SSL certs — GITIGNORED (place certs here)
 │   └── .gitkeep
-│
-├── .github/
-│   └── workflows/
-│       └── docker.yml          ← CI: build + push to GHCR on push to main/feature/docker
 │
 ├── favicon.ico / icon-*.png    ← App icons
 └── lockup-*.png / lockup.svg   ← Logo assets
