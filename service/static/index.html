@@ -2383,7 +2383,7 @@ async function loadFeedToken() {
     const cfg  = await resp.json();
     window._feedToken    = cfg.feed_token  || '';
     window._serverIp     = cfg.server_ip   || window.location.hostname;
-    window._serverPort   = cfg.port        || 8765;
+    window._serverPort   = cfg.port        || 80;
     window._sslEnabled   = !!cfg.ssl_enabled;
     window._wsEnabled    = !!cfg.wireshark_capture_enabled;
     _updateWsToggleUI();
@@ -2561,7 +2561,7 @@ function updateFeedCommand() {
   const token  = window._feedToken  || 'YOUR_TOKEN_HERE';
   const scheme = window._sslEnabled ? 'https' : 'http';
   const ip     = window._serverIp   || window.location.hostname;
-  const port   = window._serverPort || 8765;
+  const port   = window._serverPort || 80;
   const defaultPort = scheme === 'https' ? 443 : 80;
   const host   = port === defaultPort ? ip : `${ip}:${port}`;
   const fArg   = filter ? ` -f "${filter}"` : '';
