@@ -89,12 +89,12 @@
         <div style="margin-bottom:14px">
           <label class="field-label" for="username">Username</label>
           <input type="text" id="username" name="username" placeholder="username"
-                 autocomplete="username" autofocus>
+                 autocomplete="username" autofocus onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('login-form').requestSubmit()}">
         </div>
         <div style="margin-bottom:20px">
           <label class="field-label" for="password">Password</label>
           <input type="password" id="password" name="password" placeholder="••••••••"
-                 autocomplete="current-password">
+                 autocomplete="current-password" onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('login-form').requestSubmit()}">
         </div>
         <button type="submit" class="btn-login" id="login-btn">Sign In</button>
       </form>
