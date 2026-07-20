@@ -9,6 +9,7 @@ from pathlib import Path
 from flask import Flask, request, jsonify, send_from_directory, render_template, Response, session, redirect
 
 from db import init_db, get_db, load_db_config, save_db_config, hash_password, check_password, Database
+import backup_job
 
 # ── Optional SAML support ─────────────────────────────────────────────────────
 try:
@@ -147,7 +148,7 @@ def _ensure_secret_key():
 
 # ── Auth middleware ───────────────────────────────────────────────────────────
 
-_AUTH_PUBLIC      = {"/login", "/api/login", "/api/logout", "/api/health"}
+_AUTH_PUBLIC      = {"/login", "/api/login", "/api/logout", "/api/health", "/favicon.ico", "/favicon.svg"}
 _AUTH_PUBLIC_PFX  = ("/static/", "/api/auth/saml", "/api/feed/")
 
 @app.route("/api/health")
@@ -163,8 +164,22 @@ def require_login():
         return None
 
     cfg = load_config()
-    # Both auth methods off → open access (prevents lockout)
+    # Both auth methods off → auto-login as the default admin account
     if not cfg.get("local_auth_enabled", True) and not cfg.get("okta_saml_enabled", False):
+        if not session.get("user_id"):
+            admin = get_db()._conn().execute(
+                "SELECT id, role FROM users WHERE is_default_admin = 1 AND status = 'active' LIMIT 1"
+            ).fetchone()
+            if not admin:
+                # No user explicitly flagged (or the flagged account was deactivated/deleted) —
+                # fall back to the first active admin so this never dead-ends into a lockout.
+                admin = get_db()._conn().execute(
+                    "SELECT id, role FROM users WHERE role = 'admin' AND status = 'active' ORDER BY id ASC LIMIT 1"
+                ).fetchone()
+            if admin:
+                session["user_id"]    = admin["id"]
+                session["role"]       = admin["role"]
+                session["login_time"] = time.time()
         return None
 
     # ── pktHub suite-token auth ─────────────────────────────────────────
@@ -206,6 +221,14 @@ def index():
     resp.headers["Pragma"] = "no-cache"
     return resp
 
+@app.route("/favicon.ico")
+def favicon_ico():
+    return send_from_directory(BASE / "static", "favicon.ico", mimetype="image/vnd.microsoft.icon")
+
+@app.route("/favicon.svg")
+def favicon_svg():
+    return send_from_directory(BASE / "static", "favicon.svg", mimetype="image/svg+xml")
+
 @app.route("/settings")
 def settings_page():
     if session.get("role") != "admin":
@@ -222,6 +245,10 @@ def login_page():
     cfg = load_config()
     saml_enabled       = bool(cfg.get("okta_saml_enabled") and cfg.get("okta_sso_url"))
     local_auth_enabled = bool(cfg.get("local_auth_enabled", True))
+    if not local_auth_enabled and not saml_enabled:
+        # Every auth method is off — before_request will auto-login the next
+        # request, so send the browser straight to the app instead of a dead-end form.
+        return redirect("/")
     error_map = {
         "session_expired": "Your session has expired. Please sign in again.",
         "user_not_found":  "User not found. Contact your administrator.",
@@ -442,7 +469,7 @@ def post_settings():
 
     cfg["app_name"] = cfg.get("app_name") or "pktPCAP"
 
-    for field, default in (("port", 80), ("max_upload_mb", 500),
+    for field, default in (("port", 8765), ("max_upload_mb", 500),
                            ("storage_quota_gb", 50), ("retention_days", 90),
                            ("backup_interval_hours", 24), ("backup_rotation", 7),
                            ("session_timeout_minutes", 480),
@@ -471,7 +498,140 @@ def post_settings():
             cfg[k] = v
 
     db.set_many_settings(cfg)
-    return jsonify({"ok": True, "port": cfg.get("port", 80)})
+    return jsonify({"ok": True, "port": cfg.get("port", 8765)})
+
+# -- API: notification test -----------------------------------------------------
+
+_TEST_SUBJECT = "pktPCAP Test"
+_TEST_MESSAGE = "pktPCAP test notification — your configuration is working correctly."
+
+@app.route("/api/notifications/test", methods=["POST"])
+def test_notification():
+    """Send a test notification on the specified channel using saved settings."""
+    import urllib.request, urllib.error
+
+    body    = request.get_json(force=True)
+    channel = body.get("channel", "")
+    valid   = {"slack", "email", "pagerduty", "webhook", "tracecat"}
+    if channel not in valid:
+        return jsonify({"status": "failed", "detail": f"Unknown channel: {channel}"}), 400
+
+    cfg = load_config()
+
+    def _post_json(url, payload, headers=None, timeout=10):
+        data = json.dumps(payload).encode()
+        req = urllib.request.Request(url, data=data, method="POST",
+                                      headers={"Content-Type": "application/json", **(headers or {})})
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return resp.status, resp.read().decode(errors="replace")
+
+    try:
+        if channel == "slack":
+            if not cfg.get("notify_slack_enabled"):
+                return jsonify({"status": "skipped", "detail": "Slack is not enabled"})
+            url = cfg.get("notify_slack_webhook_url") or ""
+            if not url:
+                return jsonify({"status": "skipped", "detail": "No webhook URL configured"})
+            status, text = _post_json(url, {"text": f":white_circle: *{_TEST_SUBJECT}*\n{_TEST_MESSAGE}"})
+            if status == 200:
+                return jsonify({"status": "sent", "detail": "Slack message delivered"})
+            return jsonify({"status": "failed", "detail": f"Slack returned HTTP {status}: {text[:200]}"})
+
+        elif channel == "email":
+            if not cfg.get("notify_email_enabled"):
+                return jsonify({"status": "skipped", "detail": "Email is not enabled"})
+            host      = cfg.get("notify_email_smtp_host") or ""
+            port      = int(cfg.get("notify_email_smtp_port") or 587)
+            use_tls   = cfg.get("notify_smtp_tls")
+            use_tls   = True if use_tls is None else bool(use_tls)
+            username  = cfg.get("notify_email_username") or ""
+            password  = cfg.get("notify_email_password") or ""
+            from_addr = cfg.get("notify_email_from") or "pktpcap@localhost"
+            to_addr   = cfg.get("notify_email_default_to") or ""
+            to_addrs  = [a.strip() for a in to_addr.split(",") if a.strip()]
+            if not host or not to_addrs:
+                return jsonify({"status": "skipped", "detail": "SMTP host or recipient not configured"})
+            import smtplib
+            from email.mime.text import MIMEText
+            msg = MIMEText(f"pktPCAP Test Notification\n\n{_TEST_MESSAGE}", "plain")
+            msg["Subject"] = f"[{_TEST_SUBJECT}]"
+            msg["From"]    = from_addr
+            msg["To"]      = ", ".join(to_addrs)
+            with smtplib.SMTP(host, port, timeout=10) as smtp:
+                if use_tls:
+                    smtp.starttls()
+                if username:
+                    smtp.login(username, password)
+                smtp.sendmail(from_addr, to_addrs, msg.as_string())
+            return jsonify({"status": "sent", "detail": f"Email sent to {', '.join(to_addrs)}"})
+
+        elif channel == "pagerduty":
+            if not cfg.get("notify_pagerduty_enabled"):
+                return jsonify({"status": "skipped", "detail": "PagerDuty is not enabled"})
+            key = cfg.get("notify_pagerduty_integration_key") or ""
+            if not key:
+                return jsonify({"status": "skipped", "detail": "No integration key configured"})
+            payload = {
+                "routing_key": key, "event_action": "trigger",
+                "payload": {"summary": f"[{_TEST_SUBJECT}] {_TEST_MESSAGE}", "severity": "info", "source": "pktpcap"},
+            }
+            status, text = _post_json("https://events.pagerduty.com/v2/enqueue", payload)
+            if status in (200, 202):
+                return jsonify({"status": "sent", "detail": "PagerDuty event triggered"})
+            return jsonify({"status": "failed", "detail": f"PagerDuty returned HTTP {status}: {text[:200]}"})
+
+        elif channel == "webhook":
+            if not cfg.get("notify_webhook_enabled"):
+                return jsonify({"status": "skipped", "detail": "Webhook is not enabled"})
+            url      = cfg.get("notify_webhook_url") or ""
+            method   = (cfg.get("notify_webhook_method") or "POST").upper()
+            template = cfg.get("notify_webhook_payload_template") or '{"text":"{{message}}"}'
+            if not url:
+                return jsonify({"status": "skipped", "detail": "No webhook URL configured"})
+            rendered = (template
+                        .replace("{{message}}", _TEST_MESSAGE)
+                        .replace("{{alert_name}}", _TEST_SUBJECT)
+                        .replace("{{severity}}", "info")
+                        .replace("{{fired_at}}", datetime.datetime.now(datetime.timezone.utc).isoformat()))
+            try:
+                payload = json.loads(rendered)
+            except Exception as e:
+                return jsonify({"status": "failed", "detail": f"Template render error: {e}"})
+            data = json.dumps(payload).encode()
+            req = urllib.request.Request(url, data=data, method=method,
+                                          headers={"Content-Type": "application/json"})
+            try:
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    return jsonify({"status": "sent", "detail": f"Webhook returned HTTP {resp.status}"})
+            except urllib.error.HTTPError as e:
+                return jsonify({"status": "failed", "detail": f"Webhook returned HTTP {e.code}: {e.read()[:200].decode(errors='replace')}"})
+
+        elif channel == "tracecat":
+            if not cfg.get("notify_tracecat_enabled"):
+                return jsonify({"status": "skipped", "detail": "Tracecat is not enabled"})
+            url   = cfg.get("notify_tracecat_webhook_url") or ""
+            token = cfg.get("notify_tracecat_api_token") or ""
+            if not url:
+                return jsonify({"status": "skipped", "detail": "No webhook URL configured"})
+            payload = {
+                "source": "pktpcap", "event_id": 0, "alert_name": _TEST_SUBJECT,
+                "severity": "info", "message": _TEST_MESSAGE,
+                "fired_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                "details": {"test": True},
+            }
+            headers = {"Authorization": f"Bearer {token}"} if token else {}
+            status, text = _post_json(url, payload, headers=headers)
+            if status < 300:
+                return jsonify({"status": "sent", "detail": f"Tracecat returned HTTP {status}"})
+            return jsonify({"status": "failed", "detail": f"Tracecat returned HTTP {status}: {text[:200]}"})
+
+    except urllib.error.HTTPError as e:
+        return jsonify({"status": "failed", "detail": f"HTTP {e.code}: {e.read()[:200].decode(errors='replace')}"})
+    except urllib.error.URLError as e:
+        return jsonify({"status": "failed", "detail": f"Connection error: {e.reason}"})
+    except Exception as e:
+        log.exception("Test notification failed")
+        return jsonify({"status": "failed", "detail": str(e)[:300]})
 
 # -- API: database config ------------------------------------------------------
 
@@ -516,6 +676,21 @@ def post_db_config():
     import db as _db_module
     _db_module._db = new_db
     return jsonify({"ok": True})
+
+# -- API: backup ----------------------------------------------------------------
+
+@app.route("/api/backup/run", methods=["POST"])
+def api_run_backup():
+    try:
+        result = backup_job.run_backup(load_config(), load_db_config().get("db_path", "pktpcap.db"))
+        return jsonify({"ok": True, **result})
+    except Exception as e:
+        log.exception("Backup run failed")
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+@app.route("/api/backup/list", methods=["GET"])
+def api_list_backups():
+    return jsonify(backup_job.list_backups(load_config()))
 
 # -- API: AI proxy -------------------------------------------------------------
 
@@ -654,6 +829,22 @@ def api_delete_user(uid):
     if user["role"] == "admin" and db.count_active_admins() <= 1:
         return jsonify({"ok": False, "error": "Cannot delete the last admin"}), 400
     db.delete_user(uid)
+    return jsonify({"ok": True})
+
+@app.route("/api/users/<int:uid>/set-default-admin", methods=["PATCH"])
+def api_set_default_admin(uid):
+    """Mark this user as the account auto-logged-in when every auth method is disabled.
+
+    Exactly one user can hold the flag at a time — setting it here clears it from
+    every other user in the same transaction (radio-button semantics, not a toggle).
+    """
+    db   = get_db()
+    user = db.get_user(uid)
+    if not user:
+        return jsonify({"ok": False, "error": "User not found"}), 404
+    if user["role"] != "admin" or user["status"] != "active":
+        return jsonify({"ok": False, "error": "Default admin must be an active admin account"}), 400
+    db.set_default_admin(uid)
     return jsonify({"ok": True})
 
 @app.route("/api/users/<int:uid>/reset-password", methods=["POST"])
@@ -950,6 +1141,115 @@ def get_suite_token():
     token = (cfg.get("suite_token") or "").strip()
     return jsonify({"suite_token": token, "has_token": bool(token)})
 
+
+@app.route("/api/suite/whoami", methods=["GET"])
+def suite_whoami():
+    """
+    Authenticated identity check — NOT in _AUTH_PUBLIC, so require_login above
+    already gated this on a valid session or X-Suite-Token before we get here.
+    A sibling pkt* app's "Test Connection" button calls this (not the public
+    /api/health) so a wrong/revoked token fails the test instead of silently
+    reporting a healthy connection.
+    """
+    return jsonify({
+        "authenticated": True,
+        "app": "pktpcap",
+        "role": session.get("role"),
+    }), 200
+
+# -- API: integrations (outbound — pktpcap as a suite-token CLIENT) ------------
+# Named connections to sibling pkt* apps pktpcap could pull data from. No
+# consumer feature reads from this table yet — it exists so a connection can
+# be configured ahead of any future integration being wired up, same pattern
+# pktIPAM/pktflow/pktWiFi use for their own sibling connections.
+
+_INTEGRATION_APPS = ("pktipam", "pktflow", "pktsnmp", "pktlog", "pktwifi", "pkthub")
+
+
+def _integration_out(r):
+    return {
+        "id": r["id"], "name": r["name"], "app_name": r["app_name"], "base_url": r["base_url"],
+        "has_token": bool(r["suite_token"]), "enabled": bool(r["enabled"]),
+        "health_status": r["health_status"], "last_health_check": r["last_health_check"],
+    }
+
+
+@app.route("/api/integrations", methods=["GET"])
+def api_get_integrations():
+    return jsonify([_integration_out(r) for r in get_db().get_integrations()])
+
+
+@app.route("/api/integrations", methods=["POST"])
+def api_create_integration():
+    if session.get("role") != "admin":
+        return jsonify({"ok": False, "error": "Admin access required"}), 403
+    body        = request.get_json(force=True)
+    name        = (body.get("name") or "").strip()
+    app_name    = body.get("app_name") or ""
+    base_url    = (body.get("base_url") or "").strip().rstrip("/")
+    suite_token = body.get("suite_token") or ""
+    enabled     = bool(body.get("enabled", True))
+    if not name:
+        return jsonify({"ok": False, "error": "Name required"}), 400
+    if app_name not in _INTEGRATION_APPS:
+        return jsonify({"ok": False, "error": f"app_name must be one of {_INTEGRATION_APPS}"}), 400
+    if not base_url or not suite_token:
+        return jsonify({"ok": False, "error": "base_url and suite_token required"}), 400
+    import sqlite3 as _sq_int
+    try:
+        iid = get_db().create_integration(name, app_name, base_url, suite_token, enabled)
+    except _sq_int.IntegrityError:
+        return jsonify({"ok": False, "error": f"An integration named '{name}' already exists"}), 409
+    return jsonify(_integration_out(get_db().get_integration(iid))), 201
+
+
+@app.route("/api/integrations/<int:iid>", methods=["PUT"])
+def api_update_integration(iid):
+    if session.get("role") != "admin":
+        return jsonify({"ok": False, "error": "Admin access required"}), 403
+    db = get_db()
+    if not db.get_integration(iid):
+        return jsonify({"ok": False, "error": "Integration not found"}), 404
+    body   = request.get_json(force=True)
+    fields = {}
+    if body.get("name") is not None:
+        fields["name"] = body["name"].strip()
+    if body.get("base_url") is not None:
+        fields["base_url"] = body["base_url"].strip().rstrip("/")
+    if body.get("suite_token"):
+        fields["suite_token"] = body["suite_token"]
+    if body.get("enabled") is not None:
+        fields["enabled"] = int(bool(body["enabled"]))
+    import sqlite3 as _sq_int
+    try:
+        db.update_integration(iid, fields)
+    except _sq_int.IntegrityError:
+        return jsonify({"ok": False, "error": f"An integration named '{fields.get('name')}' already exists"}), 409
+    return jsonify(_integration_out(db.get_integration(iid)))
+
+
+@app.route("/api/integrations/<int:iid>", methods=["DELETE"])
+def api_delete_integration(iid):
+    if session.get("role") != "admin":
+        return jsonify({"ok": False, "error": "Admin access required"}), 403
+    get_db().delete_integration(iid)
+    return "", 204
+
+
+@app.route("/api/integrations/<int:iid>/test", methods=["POST"])
+def api_test_integration(iid):
+    if session.get("role") != "admin":
+        return jsonify({"ok": False, "error": "Admin access required"}), 403
+    db  = get_db()
+    row = db.get_integration(iid)
+    if not row or not row["base_url"]:
+        return jsonify({"ok": False, "error": "Integration is not configured yet"}), 400
+    from suite_client import SuiteClient
+    client = SuiteClient(row["base_url"], row["suite_token"], suite_user="pktpcap", suite_role="admin")
+    healthy, detail = client.health_check()
+    db.update_integration(iid, {"health_status": "ok" if healthy else "error", "last_health_check": datetime.datetime.utcnow().isoformat()})
+    return jsonify({"healthy": healthy, "detail": detail})
+
 # -- Entry point ---------------------------------------------------------------
 
 def open_browser(port, scheme="http"):
@@ -971,7 +1271,7 @@ if __name__ == "__main__":
     # ---------------------------------------------------------------------------
 
     cfg  = load_config()
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else cfg.get("port", 80)
+    port = int(sys.argv[1]) if len(sys.argv) > 1 else cfg.get("port", 8765)
 
     ssl_enabled = cfg.get("ssl_enabled", False)
     ssl_cert    = cfg.get("ssl_cert", "")
@@ -1009,5 +1309,6 @@ if __name__ == "__main__":
 
     if not os.environ.get("PKTPCAP_NO_BROWSER"):
         threading.Thread(target=open_browser, args=(port, scheme), daemon=True).start()
+    backup_job.start_scheduler(load_config, _db_path)
     app.run(host="0.0.0.0", port=port, ssl_context=ssl_context, threaded=True)
 
