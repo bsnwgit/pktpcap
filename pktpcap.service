@@ -16,7 +16,8 @@ Environment=PKTPCAP_NO_BROWSER=1
 
 ExecStart=__INSTALL_DIR__/venv/bin/python3 __INSTALL_DIR__/server.py
 
-# Allows binding to port 80 without running the whole process as root.
+# Default port is 8765 (unprivileged) — these capabilities are only needed
+# if the admin sets Port to something below 1024 in Settings.
 AmbientCapabilities=CAP_NET_BIND_SERVICE
 CapabilityBoundingSet=CAP_NET_BIND_SERVICE
 

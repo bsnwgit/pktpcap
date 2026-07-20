@@ -1,5 +1,5 @@
 #!/bin/bash
-# /opt/pktpcap/pkt-capture
+# /opt/pktpcap/pktpcap
 # Wireshark SSH Remote Capture wrapper for pktPCAP.
 # Must be enabled in pktPCAP Live Feeds > Wireshark tab before use.
 #
@@ -7,7 +7,7 @@
 #   SSH Host:    <pktpcap-server-ip>
 #   SSH User:    <ssh-user>
 #   Auth:        Key file (<your-ssh-key.pem>)
-#   Command:     /opt/pktpcap/pkt-capture
+#   Command:     /opt/pktpcap/pktpcap
 #   Interface:   eth0
 
 set -uo pipefail
@@ -15,7 +15,7 @@ set -uo pipefail
 DUMPCAP=/usr/bin/dumpcap
 
 # Gate: check if Wireshark remote capture is enabled in pktPCAP
-ENABLED=$(curl -sf http://localhost:80/api/settings \
+ENABLED=$(curl -sf http://localhost:__PORT__/api/settings \
     | python3 -c "import sys,json; print('1' if json.load(sys.stdin).get('wireshark_capture_enabled') else '0')" 2>/dev/null || echo "0")
 
 if [ "$ENABLED" != "1" ]; then
@@ -30,7 +30,7 @@ TS=$(date +%H%M%S)
 FEED_NAME="ws-${CLIENT_IP:-unknown}-${TS}"
 
 # Get feed token
-TOKEN=$(curl -sf http://localhost:80/api/settings \
+TOKEN=$(curl -sf http://localhost:__PORT__/api/settings \
     | python3 -c "import sys,json; print(json.load(sys.stdin).get('feed_token',''))" 2>/dev/null || true)
 
 if [ -z "$TOKEN" ]; then
@@ -43,6 +43,6 @@ fi
         -H "Authorization: Bearer ${TOKEN}" \
         -H "Content-Type: application/octet-stream" \
         --data-binary @- \
-        "http://localhost:80/api/feed/${FEED_NAME}" \
+        "http://localhost:__PORT__/api/feed/${FEED_NAME}" \
         >/dev/null 2>&1
 )

@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>pktPCAP</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
 <style>
   :root { color-scheme: dark; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -39,17 +41,30 @@
 
   /* ── Tab bar ── */
   .tab-bar {
-    display: flex; gap: 2px; background: #111827; border: 1px solid #1f2937;
+    display: flex; gap: 4px; background: #111827; border: 1px solid #1f2937;
     border-radius: 12px; padding: 4px; width: fit-content; margin-bottom: 20px;
     overflow-x: auto;
   }
   .tab-btn {
-    font-size: 13px; padding: 6px 16px; border-radius: 8px; border: none;
+    font-size: 14px; padding: 6px 16px; border-radius: 8px; border: none;
     cursor: pointer; white-space: nowrap; transition: all 0.15s; font-family: inherit;
-    background: none; color: #9ca3af;
+    background: none; color: #fff;
   }
-  .tab-btn:hover { color: #f9fafb; }
-  .tab-btn.active { background: #374151; color: #f9fafb; }
+  .tab-btn:hover { color: #fff; }
+  .tab-btn.active { background: #374151; color: #fff; }
+  .tab-divider { width: 1px; align-self: stretch; background: #374151; margin: 0 8px; }
+
+  /* ── Sub-tab bar (Security / Data — bordered vertical strip) ── */
+  .subtab-layout { display: flex; align-items: flex-start; gap: 16px; }
+  .subtab-nav { display: flex; flex-direction: column; gap: 6px; width: 192px; flex-shrink: 0; }
+  .subtab-btn {
+    text-align: left; font-size: 14px; padding: 8px 16px; border-radius: 8px;
+    border: 1px solid #1f2937; cursor: pointer; font-family: inherit;
+    background: #111827; color: #fff; transition: all 0.15s;
+  }
+  .subtab-btn:hover { border-color: #4b5563; }
+  .subtab-btn.active { border-color: #3b82f6; background: #1f2937; color: #fff; }
+  .subtab-content { flex: 1; min-width: 0; }
 
   /* ── Section card ── */
   .section-card {
@@ -57,12 +72,12 @@
     overflow: hidden; margin-bottom: 16px;
   }
   .section-header {
-    padding: 14px 24px; border-bottom: 1px solid #1f2937;
+    padding: 16px 24px; border-bottom: 1px solid #1f2937;
   }
-  .section-header h2 { font-size: 13px; font-weight: 600; color: #f9fafb; }
+  .section-header h2 { font-size: 14px; font-weight: 600; color: #fff; }
   .section-body { padding: 0 24px; }
   .section-footer {
-    padding: 14px 24px; border-top: 1px solid #1f2937;
+    padding: 16px 24px; border-top: 1px solid #1f2937;
     display: flex; align-items: center; gap: 12px;
   }
 
@@ -72,8 +87,8 @@
     align-items: start; padding: 16px 0; border-bottom: 1px solid #1f2937;
   }
   .field-row:last-child { border-bottom: none; }
-  .field-label { font-size: 13px; font-weight: 500; color: #f9fafb; }
-  .field-hint { font-size: 11px; color: #6b7280; margin-top: 2px; line-height: 1.4; }
+  .field-label { font-size: 14px; font-weight: 500; color: #fff; }
+  .field-hint { font-size: 12px; color: #fff; margin-top: 2px; line-height: 1rem; }
   .field-input { display: flex; flex-direction: column; gap: 6px; }
   .field-input-row { display: flex; gap: 8px; align-items: flex-start; }
   .field-input-row input { flex: 1; }
@@ -82,7 +97,7 @@
   input[type="text"], input[type="number"], input[type="password"],
   input[type="email"], select, textarea {
     width: 100%; background: #1f2937; border: 1px solid #374151; border-radius: 8px;
-    padding: 8px 12px; color: #f9fafb; font-family: inherit; font-size: 13px;
+    padding: 8px 12px; color: #f9fafb; font-family: inherit; font-size: 14px;
     transition: border-color 0.15s, box-shadow 0.15s;
   }
   input:focus, select:focus, textarea:focus {
@@ -100,10 +115,10 @@
   }
   .toggle.on { background: #2563eb; }
   .toggle-knob {
-    display: inline-block; height: 18px; width: 18px; border-radius: 50%;
-    background: #fff; transition: transform 0.2s; transform: translateX(3px);
+    display: inline-block; height: 16px; width: 16px; border-radius: 50%;
+    background: #fff; transition: transform 0.2s; transform: translateX(4px);
   }
-  .toggle.on .toggle-knob { transform: translateX(23px); }
+  .toggle.on .toggle-knob { transform: translateX(24px); }
 
   /* ── Buttons ── */
   .btn {
@@ -115,7 +130,7 @@
   .btn:disabled { opacity: 0.4; cursor: not-allowed; }
   .btn-primary {
     background: #2563eb; border-color: #2563eb; color: #fff;
-    padding: 8px 20px; font-size: 13px; font-weight: 500;
+    padding: 8px 20px; font-size: 14px; font-weight: 500;
   }
   .btn-primary:hover:not(:disabled) { background: #3b82f6; border-color: #3b82f6; color: #fff; }
   .btn-danger { border-color: #7f1d1d; color: #fca5a5; }
@@ -179,17 +194,20 @@
   }
   .mode-btn.active { background: #2563eb; color: #fff; }
 
-  /* ── Notification subsection ── */
-  .notif-block {
-    border: 1px solid #1f2937; border-radius: 8px; overflow: hidden; margin-bottom: 10px;
+  /* ── Notification group label ── */
+  .notif-group-label { font-size: 12px; font-weight: 600; color: #fff; text-transform: uppercase; letter-spacing: 0.05em; }
+  .send-test-row { display: flex; align-items: center; gap: 12px; margin: 8px 0 4px; }
+  .btn-test {
+    background: #1f2937; border: 1px solid #4b5563; color: #d1d5db;
+    border-radius: 8px; padding: 6px 12px; cursor: pointer; font-family: inherit;
+    font-size: 12px; transition: all 0.15s;
   }
-  .notif-header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 12px 16px; background: #1a2234; cursor: pointer;
-  }
-  .notif-title { font-size: 13px; font-weight: 500; color: #f9fafb; }
-  .notif-body  { padding: 0 16px; }
-  .notif-body .field-row { grid-template-columns: 160px 1fr; }
+  .btn-test:hover:not(:disabled) { background: #374151; }
+  .btn-test:disabled { opacity: 0.5; cursor: not-allowed; }
+  .test-result-text { font-size: 12px; }
+  .test-result-text.sent    { color: #4ade80; }
+  .test-result-text.skipped { color: #facc15; }
+  .test-result-text.failed  { color: #f87171; }
 
   /* ── Cert textarea with status ── */
   .cert-saved {
@@ -201,18 +219,18 @@
   .hidden { display: none !important; }
 
   /* ── Users table ── */
-  .users-table { width: 100%; border-collapse: collapse; }
-  .users-table th { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: #6b7280; padding: 10px 16px; text-align: left; border-bottom: 1px solid #1f2937; }
-  .users-table td { padding: 12px 16px; border-bottom: 1px solid #1f2937; font-size: 13px; vertical-align: middle; }
+  .users-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .users-table th { font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.6px; color: #fff; padding: 12px 20px; text-align: left; border-bottom: 1px solid #1f2937; }
+  .users-table td { padding: 14px 20px; border-bottom: 1px solid rgba(31,41,55,.6); vertical-align: middle; }
   .users-table tr:last-child td { border-bottom: none; }
-  .user-avatar { width: 32px; height: 32px; border-radius: 50%; background: #1d4ed8; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #fff; flex-shrink: 0; }
+  .user-avatar { width: 28px; height: 28px; border-radius: 50%; background: rgba(29,78,216,.5); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #93c5fd; flex-shrink: 0; }
   .user-cell { display: flex; align-items: center; gap: 10px; }
-  .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 500; }
-  .badge-admin   { background: rgba(37,99,235,.15);  color: #60a5fa; border: 1px solid rgba(37,99,235,.3); }
-  .badge-analyst { background: rgba(124,58,237,.15); color: #a78bfa; border: 1px solid rgba(124,58,237,.3); }
-  .badge-viewer  { background: #1f2937; color: #9ca3af; border: 1px solid #374151; }
-  .badge-active  { background: rgba(22,163,74,.15);  color: #4ade80; border: 1px solid rgba(22,163,74,.3); }
-  .badge-inactive{ background: #1f2937; color: #9ca3af; border: 1px solid #374151; }
+  .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; }
+  .badge-admin   { background: rgba(30,58,138,.4);  color: #93c5fd; border: 1px solid rgba(29,78,216,.4); }
+  .badge-analyst { background: rgba(88,28,135,.4);  color: #d8b4fe; border: 1px solid rgba(107,33,168,.4); }
+  .badge-viewer  { background: #1f2937; color: #fff; border: 1px solid #374151; }
+  .badge-active  { background: rgba(20,83,45,.4);   color: #4ade80; border: 1px solid rgba(21,128,61,.4); }
+  .badge-inactive{ background: #1f2937; color: #fff; border: 1px solid #374151; }
 
   /* ── Modal ── */
   .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.7); display: flex; align-items: center; justify-content: center; z-index: 100; }
@@ -257,13 +275,13 @@
   <div class="content">
     <div class="tab-bar" id="tab-bar">
       <button class="tab-btn active" onclick="switchTab('general')">General</button>
-      <button class="tab-btn" onclick="switchTab('storage')">Storage</button>
-      <button class="tab-btn" onclick="switchTab('backup')">Backup</button>
-      <button class="tab-btn" onclick="switchTab('auth')">Auth</button>
+      <button class="tab-btn" onclick="switchTab('security')">Security</button>
+      <button class="tab-btn" onclick="switchTab('data')">Data</button>
       <button class="tab-btn" onclick="switchTab('notifications')">Notifications</button>
-      <button class="tab-btn" onclick="switchTab('integrations')">Integrations</button>
-      <button class="tab-btn" onclick="switchTab('database')">Database</button>
-      <button class="tab-btn" onclick="switchTab('users')">Users</button>
+      <button class="tab-btn" onclick="switchTab('userkeys')">User Keys</button>
+      <div class="tab-divider"></div>
+      <button class="tab-btn" onclick="switchTab('storage')">Captures</button>
+      <button class="tab-btn" onclick="switchTab('ingest')">Capture Ingest</button>
     </div>
 
     <!-- ══ GENERAL ══ -->
@@ -311,76 +329,12 @@
         </div>
       </div>
 
-      <div class="section-card">
-        <div class="section-header"><h2>AI Provider</h2></div>
-        <div class="section-body">
-          <div class="field-row">
-            <div><p class="field-label">Provider</p></div>
-            <div class="field-input">
-              <div class="prov-bar">
-                <button class="prov-btn active" id="btn-anthropic" onclick="setProvider('anthropic')">Anthropic (Claude)</button>
-                <button class="prov-btn" id="btn-openai" onclick="setProvider('openai')">OpenAI</button>
-              </div>
-              <input type="hidden" id="provider" value="anthropic">
-            </div>
-          </div>
-          <div id="section-anthropic">
-            <div class="field-row">
-              <div><p class="field-label">Anthropic API Key</p><p class="field-hint">console.anthropic.com → API Keys</p></div>
-              <div class="field-input">
-                <div class="field-input-row">
-                  <input type="password" id="anthropic_key" placeholder="sk-ant-…" autocomplete="off">
-                  <button class="btn" onclick="testKey('anthropic')">Test</button>
-                </div>
-                <div class="result" id="test-ant-result"></div>
-              </div>
-            </div>
-            <div class="field-row">
-              <div><p class="field-label">Model</p></div>
-              <div class="field-input">
-                <select id="anthropic_model">
-                  <option value="claude-opus-4-8">claude-opus-4-8 (most capable)</option>
-                  <option value="claude-sonnet-4-6">claude-sonnet-4-6 (balanced)</option>
-                  <option value="claude-haiku-4-5-20251001">claude-haiku-4-5 (fastest)</option>
-                </select>
-              </div>
-            </div>
-          </div>
-          <div id="section-openai" class="hidden">
-            <div class="field-row">
-              <div><p class="field-label">OpenAI API Key</p><p class="field-hint">platform.openai.com → API Keys</p></div>
-              <div class="field-input">
-                <div class="field-input-row">
-                  <input type="password" id="openai_key" placeholder="sk-…" autocomplete="off">
-                  <button class="btn" onclick="testKey('openai')">Test</button>
-                </div>
-                <div class="result" id="test-oai-result"></div>
-              </div>
-            </div>
-            <div class="field-row">
-              <div><p class="field-label">Model</p></div>
-              <div class="field-input">
-                <select id="openai_model">
-                  <option value="gpt-4o">gpt-4o</option>
-                  <option value="gpt-4o-mini">gpt-4o-mini</option>
-                  <option value="o1">o1</option>
-                </select>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="section-footer">
-          <button class="btn btn-primary" onclick="saveSection('ai')">Save</button>
-          <span id="save-ai-result"></span>
-        </div>
-      </div>
-
     </div><!-- /tab-general -->
 
     <!-- ══ STORAGE ══ -->
     <div id="tab-storage" class="hidden">
       <div class="section-card">
-        <div class="section-header"><h2>Storage</h2></div>
+        <div class="section-header"><h2>Captures</h2></div>
         <div class="section-body">
           <div class="field-row">
             <div><p class="field-label">Storage path</p><p class="field-hint">Directory where capture files are stored</p></div>
@@ -422,259 +376,154 @@
       </div>
     </div>
 
-    <!-- ══ BACKUP ══ -->
-    <div id="tab-backup" class="hidden">
-      <div class="section-card">
-        <div class="section-header"><h2>Backup</h2></div>
-        <div class="section-body">
-          <div class="field-row">
-            <div><p class="field-label">Auto backup</p><p class="field-hint">Enable scheduled automatic backups</p></div>
-            <div class="field-input">
-              <button type="button" class="toggle" id="toggle-auto_backup" onclick="toggleBool('auto_backup')"><span class="toggle-knob"></span></button>
-              <input type="hidden" id="auto_backup" value="false">
-            </div>
-          </div>
-          <div class="field-row">
-            <div><p class="field-label">Backup path</p><p class="field-hint">Directory to write backup archives</p></div>
-            <div class="field-input"><input type="text" id="backup_path" placeholder="/mnt/backups"></div>
-          </div>
-          <div class="field-row">
-            <div><p class="field-label">Backup interval</p><p class="field-hint">How often to run a backup</p></div>
-            <div class="field-input" style="flex-direction:row;align-items:center;gap:8px">
-              <input type="number" id="backup_interval_hours" min="1" style="max-width:120px">
-              <span style="font-size:12px;color:#6b7280">hours</span>
-            </div>
-          </div>
-          <div class="field-row">
-            <div><p class="field-label">Keep backups</p><p class="field-hint">Number of backups to retain before rotating</p></div>
-            <div class="field-input" style="flex-direction:row;align-items:center;gap:8px">
-              <input type="number" id="backup_rotation" min="1" style="max-width:120px">
-              <span style="font-size:12px;color:#6b7280">copies</span>
-            </div>
-          </div>
-          <div class="field-row">
-            <div><p class="field-label">Include captures</p><p class="field-hint">Include capture files in backup (large)</p></div>
-            <div class="field-input">
-              <button type="button" class="toggle" id="toggle-backup_include_captures" onclick="toggleBool('backup_include_captures')"><span class="toggle-knob"></span></button>
-              <input type="hidden" id="backup_include_captures" value="false">
-            </div>
-          </div>
-        </div>
-        <div class="section-footer">
-          <button class="btn btn-primary" onclick="saveSection('backup')">Save</button>
-          <span id="save-backup-result"></span>
-        </div>
-      </div>
-    </div>
-
-    <!-- ══ AUTH ══ -->
-    <div id="tab-auth" class="hidden">
-      <div class="section-card">
-        <div class="section-header"><h2>Authentication</h2></div>
-        <div class="section-body">
-
-          <div class="field-row">
-            <div><p class="field-label">Local auth</p><p class="field-hint">Username/password login using local accounts</p></div>
-            <div class="field-input">
-              <button type="button" class="toggle" id="toggle-local_auth_enabled" onclick="toggleBool('local_auth_enabled')"><span class="toggle-knob"></span></button>
-              <input type="hidden" id="local_auth_enabled" value="true">
-            </div>
-          </div>
-          <div class="field-row">
-            <div><p class="field-label">Session timeout</p></div>
-            <div class="field-input" style="flex-direction:row;align-items:center;gap:8px">
-              <input type="number" id="session_timeout_minutes" min="5" max="10080" style="max-width:120px">
-              <span style="font-size:12px;color:#6b7280">minutes</span>
-            </div>
-          </div>
-
-          <div style="padding:16px 0 4px">
-            <p style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#4b5563">Okta SAML 2.0 SSO</p>
-          </div>
-
-          <div class="field-row">
-            <div><p class="field-label">Enable SAML SSO</p></div>
-            <div class="field-input">
-              <button type="button" class="toggle" id="toggle-okta_saml_enabled" onclick="toggleBool('okta_saml_enabled');updateSamlVisibility()"><span class="toggle-knob"></span></button>
-    loadSuiteToken()
-              <input type="hidden" id="okta_saml_enabled" value="false">
-            </div>
-          </div>
-
-          <div id="saml-fields" class="hidden">
-            <div class="field-row">
-              <div><p class="field-label">Paste IdP Metadata XML</p><p class="field-hint">Paste the full XML from Okta → Sign On → Identity Provider metadata. Fields below will auto-fill.</p></div>
-              <div class="field-input">
-                <textarea id="okta_metadata_xml" rows="5" placeholder='&lt;md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" …&gt;' oninput="parseMetadata(this.value)"></textarea>
-                <div class="result" id="metadata-parse-result"></div>
-              </div>
-            </div>
-            <div class="field-row">
-              <div><p class="field-label">IdP Entity ID</p><p class="field-hint">From Okta metadata: Identity Provider Issuer</p></div>
-              <div class="field-input"><input type="text" id="okta_entity_id" placeholder="http://www.okta.com/..." style="font-family:'SF Mono','Fira Code',monospace;font-size:12px"></div>
-            </div>
-            <div class="field-row">
-              <div><p class="field-label">IdP SSO URL</p><p class="field-hint">From Okta metadata: Identity Provider Single Sign-On URL</p></div>
-              <div class="field-input"><input type="text" id="okta_sso_url" placeholder="https://yourorg.okta.com/app/…/sso/saml" style="font-family:'SF Mono','Fira Code',monospace;font-size:12px"></div>
-            </div>
-            <div class="field-row">
-              <div><p class="field-label">IdP X.509 Certificate</p><p class="field-hint">PEM headers are stripped automatically</p></div>
-              <div class="field-input" id="cert-wrap-okta_cert"></div>
-            </div>
-            <div class="field-row">
-              <div><p class="field-label">SP Entity ID</p><p class="field-hint">Leave blank to use the auto-generated metadata URL</p></div>
-              <div class="field-input"><input type="text" id="okta_sp_entity_id" placeholder="" style="font-family:'SF Mono','Fira Code',monospace;font-size:12px"></div>
-            </div>
-            <div class="field-row">
-              <div><p class="field-label">ACS URL (read-only)</p><p class="field-hint">Register this URL as the Single Sign-On URL in your Okta app</p></div>
-              <div class="field-input">
-                <div style="display:flex;align-items:center;gap:8px">
-                  <input type="text" id="acs_url_display" readonly style="flex:1;background:#0d1117;border:1px solid #374151;border-radius:8px;padding:8px 12px;color:#6b7280;font-family:'SF Mono','Fira Code',monospace;font-size:12px;cursor:default">
-                  <a id="sp-metadata-link" href="#" style="font-size:11px;color:#60a5fa;white-space:nowrap;text-decoration:none">View SP metadata ↗</a>
-                </div>
-              </div>
-            </div>
-            <div class="field-row">
-              <div><p class="field-label">SP Certificate</p><p class="field-hint">Optional: for signed authentication requests</p></div>
-              <div class="field-input" id="cert-wrap-okta_sp_cert"></div>
-            </div>
-            <div class="field-row" style="border-bottom:none">
-              <div><p class="field-label">SP Private Key</p><p class="field-hint">Optional: private key for signing requests (kept secret)</p></div>
-              <div class="field-input" id="cert-wrap-okta_sp_key"></div>
-            </div>
-          </div>
-
-        </div>
-        <div class="section-footer">
-          <button class="btn btn-primary" onclick="saveSection('auth')">Save</button>
-          <span id="save-auth-result"></span>
-        </div>
-      </div>
-    </div>
 
     <!-- ══ NOTIFICATIONS ══ -->
     <div id="tab-notifications" class="hidden">
       <div class="section-card">
         <div class="section-header"><h2>Notifications</h2></div>
-        <div class="section-body" style="padding-top:8px;padding-bottom:8px">
+        <div class="section-body">
 
           <!-- Slack -->
-          <div class="notif-block">
-            <div class="notif-header" onclick="toggleNotif('slack')">
-              <span class="notif-title">Slack</span>
-              <button type="button" class="toggle" id="toggle-notify_slack_enabled" onclick="event.stopPropagation();toggleBool('notify_slack_enabled')"><span class="toggle-knob"></span></button>
+          <div style="padding:8px 0 4px"><p class="notif-group-label">Slack</p></div>
+          <div class="field-row">
+            <div><p class="field-label">Enable Slack</p></div>
+            <div class="field-input">
+              <button type="button" class="toggle" id="toggle-notify_slack_enabled" onclick="toggleBool('notify_slack_enabled');updateNotifVisibility('slack')"><span class="toggle-knob"></span></button>
               <input type="hidden" id="notify_slack_enabled" value="false">
             </div>
-            <div id="notif-slack" class="notif-body hidden">
-              <div class="field-row">
-                <div><p class="field-label">Webhook URL</p></div>
-                <div class="field-input"><input type="text" id="notify_slack_webhook_url" placeholder="https://hooks.slack.com/services/…"></div>
-              </div>
-              <div class="field-row">
-                <div><p class="field-label">Channel</p></div>
-                <div class="field-input"><input type="text" id="notify_slack_channel" placeholder="#alerts"></div>
-              </div>
+          </div>
+          <div id="notif-slack-fields" class="hidden">
+            <div class="field-row">
+              <div><p class="field-label">Webhook URL</p></div>
+              <div class="field-input"><input type="text" id="notify_slack_webhook_url" placeholder="https://hooks.slack.com/services/…"></div>
+            </div>
+            <div class="field-row" style="border-bottom:none">
+              <div><p class="field-label">Channel</p><p class="field-hint">Override channel (optional)</p></div>
+              <div class="field-input"><input type="text" id="notify_slack_channel" placeholder="#alerts"></div>
+            </div>
+            <div class="send-test-row">
+              <button class="btn-test" onclick="sendTestNotification('slack','test-slack-result')">Send Test</button>
+              <span class="test-result-text" id="test-slack-result"></span>
             </div>
           </div>
 
           <!-- Email -->
-          <div class="notif-block">
-            <div class="notif-header" onclick="toggleNotif('email')">
-              <span class="notif-title">Email (SMTP)</span>
-              <button type="button" class="toggle" id="toggle-notify_email_enabled" onclick="event.stopPropagation();toggleBool('notify_email_enabled')"><span class="toggle-knob"></span></button>
+          <div style="padding:16px 0 4px"><p class="notif-group-label">Email (SMTP)</p></div>
+          <div class="field-row">
+            <div><p class="field-label">Enable email</p></div>
+            <div class="field-input">
+              <button type="button" class="toggle" id="toggle-notify_email_enabled" onclick="toggleBool('notify_email_enabled');updateNotifVisibility('email')"><span class="toggle-knob"></span></button>
               <input type="hidden" id="notify_email_enabled" value="false">
             </div>
-            <div id="notif-email" class="notif-body hidden">
-              <div class="field-row">
-                <div><p class="field-label">SMTP Host</p></div>
-                <div class="field-input field-input-row" style="flex-direction:row">
-                  <input type="text" id="notify_email_smtp_host" placeholder="smtp.example.com">
-                  <input type="number" id="notify_email_smtp_port" style="max-width:90px" placeholder="587">
-                </div>
+          </div>
+          <div id="notif-email-fields" class="hidden">
+            <div class="field-row">
+              <div><p class="field-label">SMTP host</p></div>
+              <div class="field-input"><input type="text" id="notify_email_smtp_host" placeholder="smtp.yourorg.com"></div>
+            </div>
+            <div class="field-row">
+              <div><p class="field-label">SMTP port</p></div>
+              <div class="field-input"><input type="number" id="notify_email_smtp_port" placeholder="587"></div>
+            </div>
+            <div class="field-row">
+              <div><p class="field-label">Use TLS</p></div>
+              <div class="field-input">
+                <button type="button" class="toggle" id="toggle-notify_smtp_tls" onclick="toggleBool('notify_smtp_tls')"><span class="toggle-knob"></span></button>
+                <input type="hidden" id="notify_smtp_tls" value="true">
               </div>
-              <div class="field-row">
-                <div><p class="field-label">Use TLS</p></div>
-                <div class="field-input">
-                  <button type="button" class="toggle" id="toggle-notify_smtp_tls" onclick="toggleBool('notify_smtp_tls')"><span class="toggle-knob"></span></button>
-                  <input type="hidden" id="notify_smtp_tls" value="true">
-                </div>
-              </div>
-              <div class="field-row">
-                <div><p class="field-label">Credentials</p></div>
-                <div class="field-input">
-                  <div class="field-input-row">
-                    <input type="text" id="notify_email_username" placeholder="username">
-                    <input type="password" id="notify_email_password" placeholder="password" autocomplete="off">
-                  </div>
-                </div>
-              </div>
-              <div class="field-row">
-                <div><p class="field-label">From / Default To</p></div>
-                <div class="field-input">
-                  <div class="field-input-row">
-                    <input type="email" id="notify_email_from" placeholder="from@example.com">
-                    <input type="email" id="notify_email_default_to" placeholder="to@example.com">
-                  </div>
-                </div>
-              </div>
+            </div>
+            <div class="field-row">
+              <div><p class="field-label">Username</p></div>
+              <div class="field-input"><input type="text" id="notify_email_username" placeholder="username"></div>
+            </div>
+            <div class="field-row">
+              <div><p class="field-label">Password</p></div>
+              <div class="field-input"><input type="password" id="notify_email_password" placeholder="password" autocomplete="off"></div>
+            </div>
+            <div class="field-row">
+              <div><p class="field-label">From address</p></div>
+              <div class="field-input"><input type="email" id="notify_email_from" placeholder="pktpcap@yourorg.com"></div>
+            </div>
+            <div class="field-row" style="border-bottom:none">
+              <div><p class="field-label">Default to</p><p class="field-hint">Comma-separated email addresses</p></div>
+              <div class="field-input"><input type="email" id="notify_email_default_to" placeholder="noc@yourorg.com, security@yourorg.com"></div>
+            </div>
+            <div class="send-test-row">
+              <button class="btn-test" onclick="sendTestNotification('email','test-email-result')">Send Test</button>
+              <span class="test-result-text" id="test-email-result"></span>
             </div>
           </div>
 
           <!-- PagerDuty -->
-          <div class="notif-block">
-            <div class="notif-header" onclick="toggleNotif('pd')">
-              <span class="notif-title">PagerDuty</span>
-              <button type="button" class="toggle" id="toggle-notify_pagerduty_enabled" onclick="event.stopPropagation();toggleBool('notify_pagerduty_enabled')"><span class="toggle-knob"></span></button>
+          <div style="padding:16px 0 4px"><p class="notif-group-label">PagerDuty</p></div>
+          <div class="field-row">
+            <div><p class="field-label">Enable PagerDuty</p></div>
+            <div class="field-input">
+              <button type="button" class="toggle" id="toggle-notify_pagerduty_enabled" onclick="toggleBool('notify_pagerduty_enabled');updateNotifVisibility('pagerduty')"><span class="toggle-knob"></span></button>
               <input type="hidden" id="notify_pagerduty_enabled" value="false">
             </div>
-            <div id="notif-pd" class="notif-body hidden">
-              <div class="field-row">
-                <div><p class="field-label">Integration Key</p></div>
-                <div class="field-input"><input type="password" id="notify_pagerduty_integration_key" placeholder="••••••••" autocomplete="off"></div>
-              </div>
+          </div>
+          <div id="notif-pagerduty-fields" class="hidden">
+            <div class="field-row" style="border-bottom:none">
+              <div><p class="field-label">Integration key</p><p class="field-hint">Events API v2 integration key</p></div>
+              <div class="field-input"><input type="password" id="notify_pagerduty_integration_key" placeholder="••••••••" autocomplete="off"></div>
+            </div>
+            <div class="send-test-row">
+              <button class="btn-test" onclick="sendTestNotification('pagerduty','test-pd-result')">Send Test</button>
+              <span class="test-result-text" id="test-pd-result"></span>
             </div>
           </div>
 
           <!-- Webhook -->
-          <div class="notif-block">
-            <div class="notif-header" onclick="toggleNotif('webhook')">
-              <span class="notif-title">Generic Webhook</span>
-              <button type="button" class="toggle" id="toggle-notify_webhook_enabled" onclick="event.stopPropagation();toggleBool('notify_webhook_enabled')"><span class="toggle-knob"></span></button>
+          <div style="padding:16px 0 4px"><p class="notif-group-label">Webhook</p></div>
+          <div class="field-row">
+            <div><p class="field-label">Enable webhook</p></div>
+            <div class="field-input">
+              <button type="button" class="toggle" id="toggle-notify_webhook_enabled" onclick="toggleBool('notify_webhook_enabled');updateNotifVisibility('webhook')"><span class="toggle-knob"></span></button>
               <input type="hidden" id="notify_webhook_enabled" value="false">
             </div>
-            <div id="notif-webhook" class="notif-body hidden">
-              <div class="field-row">
-                <div><p class="field-label">URL</p></div>
-                <div class="field-input field-input-row" style="flex-direction:row">
-                  <input type="text" id="notify_webhook_url" placeholder="https://…">
-                  <select id="notify_webhook_method" style="max-width:90px">
-                    <option value="POST">POST</option><option value="PUT">PUT</option><option value="GET">GET</option>
-                  </select>
-                </div>
+          </div>
+          <div id="notif-webhook-fields" class="hidden">
+            <div class="field-row">
+              <div><p class="field-label">URL</p></div>
+              <div class="field-input field-input-row" style="flex-direction:row">
+                <input type="text" id="notify_webhook_url" placeholder="https://…">
+                <select id="notify_webhook_method" style="max-width:90px">
+                  <option value="POST">POST</option><option value="PUT">PUT</option><option value="GET">GET</option>
+                </select>
               </div>
-              <div class="field-row">
-                <div><p class="field-label">Payload template</p><p class="field-hint">JSON with {{message}} placeholder</p></div>
-                <div class="field-input"><textarea id="notify_webhook_payload_template" placeholder='{"text":"{{message}}"}'></textarea></div>
-              </div>
+            </div>
+            <div class="field-row" style="border-bottom:none">
+              <div><p class="field-label">Payload template</p><p class="field-hint">JSON with {{message}} placeholder</p></div>
+              <div class="field-input"><textarea id="notify_webhook_payload_template" placeholder='{"text":"{{message}}"}'></textarea></div>
+            </div>
+            <div class="send-test-row">
+              <button class="btn-test" onclick="sendTestNotification('webhook','test-webhook-result')">Send Test</button>
+              <span class="test-result-text" id="test-webhook-result"></span>
             </div>
           </div>
 
           <!-- Tracecat -->
-          <div class="notif-block">
-            <div class="notif-header" onclick="toggleNotif('tracecat')">
-              <span class="notif-title">Tracecat</span>
-              <button type="button" class="toggle" id="toggle-notify_tracecat_enabled" onclick="event.stopPropagation();toggleBool('notify_tracecat_enabled')"><span class="toggle-knob"></span></button>
+          <div style="padding:16px 0 4px"><p class="notif-group-label">Tracecat</p></div>
+          <div class="field-row">
+            <div><p class="field-label">Enable Tracecat</p></div>
+            <div class="field-input">
+              <button type="button" class="toggle" id="toggle-notify_tracecat_enabled" onclick="toggleBool('notify_tracecat_enabled');updateNotifVisibility('tracecat')"><span class="toggle-knob"></span></button>
               <input type="hidden" id="notify_tracecat_enabled" value="false">
             </div>
-            <div id="notif-tracecat" class="notif-body hidden">
-              <div class="field-row">
-                <div><p class="field-label">Webhook URL</p></div>
-                <div class="field-input"><input type="text" id="notify_tracecat_webhook_url" placeholder="https://…"></div>
-              </div>
-              <div class="field-row">
-                <div><p class="field-label">API Token</p></div>
-                <div class="field-input"><input type="password" id="notify_tracecat_api_token" placeholder="••••••••" autocomplete="off"></div>
-              </div>
+          </div>
+          <div id="notif-tracecat-fields" class="hidden">
+            <div class="field-row">
+              <div><p class="field-label">Webhook URL</p></div>
+              <div class="field-input"><input type="text" id="notify_tracecat_webhook_url" placeholder="https://…"></div>
+            </div>
+            <div class="field-row" style="border-bottom:none">
+              <div><p class="field-label">API Token</p></div>
+              <div class="field-input"><input type="password" id="notify_tracecat_api_token" placeholder="••••••••" autocomplete="off"></div>
+            </div>
+            <div class="send-test-row">
+              <button class="btn-test" onclick="sendTestNotification('tracecat','test-tracecat-result')">Send Test</button>
+              <span class="test-result-text" id="test-tracecat-result"></span>
             </div>
           </div>
 
@@ -687,98 +536,347 @@
     </div>
 
     <!-- ══ INTEGRATIONS ══ -->
-    <div id="tab-integrations" class="hidden">
+    <div id="tab-security" class="hidden">
+      <div class="subtab-layout">
+        <nav class="subtab-nav" id="security-subtab-nav">
+          <button class="subtab-btn active" onclick="switchSecuritySubtab('users')">Users</button>
+          <button class="subtab-btn" onclick="switchSecuritySubtab('auth')">Auth</button>
+          <button class="subtab-btn" onclick="switchSecuritySubtab('suite')">Suite Integration</button>
+          <button class="subtab-btn" onclick="switchSecuritySubtab('ai')">AI Assistant</button>
+          <button class="subtab-btn" onclick="switchSecuritySubtab('ssl')">SSL/TLS</button>
+        </nav>
+        <div class="subtab-content">
 
-      <!-- SSL panel -->
-      <div class="section-card">
-        <div class="section-header"><h2>SSL / TLS</h2></div>
-        <div class="section-body">
-          <div class="field-row">
-            <div><p class="field-label">Enable HTTPS</p><p class="field-hint">Restart service after installing certificate</p></div>
-            <div class="field-input">
-              <button type="button" class="toggle" id="toggle-ssl_enabled" onclick="toggleBool('ssl_enabled')"><span class="toggle-knob"></span></button>
-              <input type="hidden" id="ssl_enabled" value="false">
+          <!-- ══ USERS (moved from top-level tab) ══ -->
+          <div id="tab-users">
+            <div class="section-card">
+              <div class="section-header" style="display:flex;align-items:center;justify-content:space-between">
+                <h2>Users</h2>
+                <button class="btn btn-primary" style="font-size:12px;padding:6px 14px" onclick="openUserModal(null)">+ Add User</button>
+              </div>
+              <div class="section-body" style="padding:0">
+                <div id="users-loading" style="padding:24px;text-align:center;font-size:13px;color:#6b7280">Loading…</div>
+                <table class="users-table" id="users-table" style="display:none">
+                  <thead>
+                    <tr>
+                      <th>User</th>
+                      <th>Email</th>
+                      <th>Role</th>
+                      <th>Status</th>
+                      <th>Last Login</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody id="users-tbody"></tbody>
+                </table>
+                <div id="users-empty" style="display:none;padding:40px;text-align:center;font-size:13px;color:#6b7280">No users found. Add one to get started.</div>
+              </div>
             </div>
-          </div>
+            <p style="font-size:11px;color:#6b7280;margin-top:10px">
+              Roles: <strong style="color:#f9fafb">admin</strong> — full access &nbsp;·&nbsp;
+              <strong style="color:#f9fafb">analyst</strong> — read + export &nbsp;·&nbsp;
+              <strong style="color:#f9fafb">viewer</strong> — read-only
+            </p>
+            <p style="font-size:11px;color:#6b7280;margin-top:4px">
+              The <span style="color:#facc15">★</span> marks the default admin — when every auth method in the Auth tab is disabled, the app skips the login page entirely and signs everyone in as this account. Click the star on any active admin to reassign it.
+            </p>
+          </div><!-- /tab-users -->
 
-          <!-- SSL status -->
-          <div class="field-row" style="border-bottom:none;padding-bottom:0">
-            <div><p class="field-label">Certificate</p><p class="field-hint">Upload a certificate to enable HTTPS</p></div>
-            <div class="field-input">
+          <!-- ══ AUTH (moved from top-level tab) ══ -->
+          <div id="tab-auth" class="hidden">
+            <div class="section-card">
+              <div class="section-header"><h2>Authentication</h2></div>
+              <div class="section-body">
 
-              <div class="ssl-status" id="ssl-status-bar">
-                <div class="ssl-dot gray" id="ssl-dot"></div>
-                <span id="ssl-status-text" style="font-size:12px;color:#9ca3af">No certificate installed · running HTTP</span>
-                <button class="btn btn-danger" id="ssl-remove-btn" onclick="removeSsl()" style="display:none;margin-left:auto;padding:4px 10px;font-size:11px">× Remove</button>
-              </div>
-
-              <!-- Mode selector -->
-              <div class="mode-bar">
-                <button class="mode-btn active" id="mode-pfx" onclick="setSslMode('pfx')">PFX / P12</button>
-                <button class="mode-btn" id="mode-pem" onclick="setSslMode('pem')">PEM (cert + key)</button>
-              </div>
-
-              <!-- PFX upload -->
-              <div id="ssl-pfx">
-                <div class="drop-zone" id="dz-pfx" ondragover="dzDragOver(event,'pfx')" ondragleave="dzDragLeave('pfx')" ondrop="dzDrop(event,'pfx')">
-                  <input type="file" accept=".pfx,.p12" onchange="dzPick(event,'pfx')">
-                  <div class="drop-zone-icon">📄</div>
-                  <div class="drop-zone-label" id="dz-pfx-label">Drop .pfx / .p12 here or click to browse</div>
-                </div>
-                <div style="margin-top:10px">
-                  <input type="password" id="pfx_passphrase" placeholder="PFX passphrase (required)">
-                </div>
-                <div style="margin-top:8px;display:flex;align-items:center;gap:10px">
-                  <button class="btn btn-primary" id="pfx-upload-btn" onclick="uploadPfx()" disabled>Upload &amp; Install</button>
-                  <span id="pfx-upload-result"></span>
-                </div>
-              </div>
-
-              <!-- PEM upload -->
-              <div id="ssl-pem" class="hidden">
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-                  <div>
-                    <p style="font-size:11px;color:#6b7280;margin-bottom:6px">Certificate (.pem / .crt)</p>
-                    <div class="drop-zone" id="dz-cert" ondragover="dzDragOver(event,'cert')" ondragleave="dzDragLeave('cert')" ondrop="dzDrop(event,'cert')">
-                      <input type="file" accept=".pem,.crt,.cer" onchange="dzPick(event,'cert')">
-                      <div class="drop-zone-icon">📜</div>
-                      <div class="drop-zone-label" id="dz-cert-label">Drop cert or click</div>
-                    </div>
-                  </div>
-                  <div>
-                    <p style="font-size:11px;color:#6b7280;margin-bottom:6px">Private Key (.pem / .key)</p>
-                    <div class="drop-zone" id="dz-key" ondragover="dzDragOver(event,'key')" ondragleave="dzDragLeave('key')" ondrop="dzDrop(event,'key')">
-                      <input type="file" accept=".pem,.key" onchange="dzPick(event,'key')">
-                      <div class="drop-zone-icon">🔑</div>
-                      <div class="drop-zone-label" id="dz-key-label">Drop key or click</div>
-                    </div>
+                <div class="field-row">
+                  <div><p class="field-label">Local auth</p><p class="field-hint">Username/password login using local accounts</p></div>
+                  <div class="field-input">
+                    <button type="button" class="toggle" id="toggle-local_auth_enabled" onclick="toggleBool('local_auth_enabled')"><span class="toggle-knob"></span></button>
+                    <input type="hidden" id="local_auth_enabled" value="true">
                   </div>
                 </div>
-                <div style="margin-top:8px;display:flex;align-items:center;gap:10px">
-                  <button class="btn btn-primary" id="pem-upload-btn" onclick="uploadPem()" disabled>Upload &amp; Install</button>
-                  <span id="pem-upload-result"></span>
+                <div class="field-row">
+                  <div><p class="field-label">Session timeout</p></div>
+                  <div class="field-input" style="flex-direction:row;align-items:center;gap:8px">
+                    <input type="number" id="session_timeout_minutes" min="5" max="10080" style="max-width:120px">
+                    <span style="font-size:12px;color:#6b7280">minutes</span>
+                  </div>
+                </div>
+
+                <div style="padding:16px 0 4px">
+                  <p style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#4b5563">Okta SAML 2.0 SSO</p>
+                </div>
+
+                <div class="field-row">
+                  <div><p class="field-label">Enable SAML SSO</p></div>
+                  <div class="field-input">
+                    <button type="button" class="toggle" id="toggle-okta_saml_enabled" onclick="toggleBool('okta_saml_enabled');updateSamlVisibility()"><span class="toggle-knob"></span></button>
+                    <input type="hidden" id="okta_saml_enabled" value="false">
+                  </div>
+                </div>
+
+                <div id="saml-fields" class="hidden">
+                  <div class="field-row">
+                    <div><p class="field-label">Paste IdP Metadata XML</p><p class="field-hint">Paste the full XML from Okta → Sign On → Identity Provider metadata. Fields below will auto-fill.</p></div>
+                    <div class="field-input">
+                      <textarea id="okta_metadata_xml" rows="5" placeholder='&lt;md:EntityDescriptor xmlns:md="urn:oasis:names:tc:SAML:2.0:metadata" …&gt;' oninput="parseMetadata(this.value)"></textarea>
+                      <div class="result" id="metadata-parse-result"></div>
+                    </div>
+                  </div>
+                  <div class="field-row">
+                    <div><p class="field-label">IdP Entity ID</p><p class="field-hint">From Okta metadata: Identity Provider Issuer</p></div>
+                    <div class="field-input"><input type="text" id="okta_entity_id" placeholder="http://www.okta.com/..." style="font-family:'SF Mono','Fira Code',monospace;font-size:12px"></div>
+                  </div>
+                  <div class="field-row">
+                    <div><p class="field-label">IdP SSO URL</p><p class="field-hint">From Okta metadata: Identity Provider Single Sign-On URL</p></div>
+                    <div class="field-input"><input type="text" id="okta_sso_url" placeholder="https://yourorg.okta.com/app/…/sso/saml" style="font-family:'SF Mono','Fira Code',monospace;font-size:12px"></div>
+                  </div>
+                  <div class="field-row">
+                    <div><p class="field-label">IdP X.509 Certificate</p><p class="field-hint">PEM headers are stripped automatically</p></div>
+                    <div class="field-input" id="cert-wrap-okta_cert"></div>
+                  </div>
+                  <div class="field-row">
+                    <div><p class="field-label">SP Entity ID</p><p class="field-hint">Leave blank to use the auto-generated metadata URL</p></div>
+                    <div class="field-input"><input type="text" id="okta_sp_entity_id" placeholder="" style="font-family:'SF Mono','Fira Code',monospace;font-size:12px"></div>
+                  </div>
+                  <div class="field-row">
+                    <div><p class="field-label">ACS URL (read-only)</p><p class="field-hint">Register this URL as the Single Sign-On URL in your Okta app</p></div>
+                    <div class="field-input">
+                      <div style="display:flex;align-items:center;gap:8px">
+                        <input type="text" id="acs_url_display" readonly style="flex:1;background:#0d1117;border:1px solid #374151;border-radius:8px;padding:8px 12px;color:#6b7280;font-family:'SF Mono','Fira Code',monospace;font-size:12px;cursor:default">
+                        <a id="sp-metadata-link" href="#" style="font-size:11px;color:#60a5fa;white-space:nowrap;text-decoration:none">View SP metadata ↗</a>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="field-row">
+                    <div><p class="field-label">SP Certificate</p><p class="field-hint">Optional: for signed authentication requests</p></div>
+                    <div class="field-input" id="cert-wrap-okta_sp_cert"></div>
+                  </div>
+                  <div class="field-row" style="border-bottom:none">
+                    <div><p class="field-label">SP Private Key</p><p class="field-hint">Optional: private key for signing requests (kept secret)</p></div>
+                    <div class="field-input" id="cert-wrap-okta_sp_key"></div>
+                  </div>
+                </div>
+
+              </div>
+              <div class="section-footer">
+                <button class="btn btn-primary" onclick="saveSection('auth')">Save</button>
+                <span id="save-auth-result"></span>
+              </div>
+            </div>
+          </div><!-- /tab-auth -->
+
+          <!-- ══ SUITE INTEGRATION (renamed from "pktHub Integration") ══ -->
+          <div id="tab-suite" class="hidden">
+            <div class="section-card">
+              <div class="section-header"><h2>Suite Integration</h2></div>
+              <div class="section-body">
+                <div class="field-row">
+                  <div>
+                    <p class="field-label">Suite Token</p>
+                    <p class="field-hint">Copy this token and paste it into pktHub &rarr; Settings &rarr; App Registration when registering this app.</p>
+                  </div>
+                  <div class="field-input">
+                    <div class="field-input-row">
+                      <input type="password" id="suite-token-display" value="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" readonly style="flex:1;font-family:'SF Mono','Fira Code',monospace;font-size:12px;background:#0d1117;cursor:default;letter-spacing:2px">
+                      <button class="btn" id="suite-reveal-btn" onclick="suiteReveal()">Reveal</button>
+                      <button class="btn" id="suite-copy-btn" onclick="suiteCopy()">Copy</button>
+                      <button class="btn btn-danger" id="suite-regen-btn" onclick="suiteRegen()" title="Generate a new token — you must re-register in pktHub after" style="font-size:11px;padding:7px 10px">Regen</button>
+                    </div>
+                    <p class="field-hint" id="suite-token-hint" style="margin-top:6px"></p>
+                  </div>
+                </div>
+                <div class="field-row" style="border-bottom:none">
+                  <div><p class="field-label">Instructions</p></div>
+                  <div class="field-input">
+                    <ol style="font-size:12px;color:#9ca3af;padding-left:18px;margin:0;line-height:2">
+                      <li>Click <strong style="color:#f9fafb">Reveal</strong> then <strong style="color:#f9fafb">Copy</strong> to get the token</li>
+                      <li>In pktHub &rarr; <strong style="color:#f9fafb">Settings &rarr; App Registration</strong>, register this app and paste the token</li>
+                      <li>The token is permanent &mdash; click <strong style="color:#f87171">Regen</strong> only to revoke access (re-register in pktHub after)</li>
+                    </ol>
+                  </div>
                 </div>
               </div>
-
             </div>
-          </div>
-        </div>
-        <div class="section-footer">
-          <button class="btn btn-primary" onclick="saveSection('ssl')">Save SSL settings</button>
-          <span id="save-ssl-result"></span>
+          </div><!-- /tab-suite -->
+
+          <!-- ══ AI ASSISTANT (moved from General, renamed from "AI Provider") ══ -->
+          <div id="tab-ai" class="hidden">
+            <div class="section-card">
+              <div class="section-header"><h2>AI Assistant</h2></div>
+              <div class="section-body">
+                <div class="field-row">
+                  <div><p class="field-label">Provider</p></div>
+                  <div class="field-input">
+                    <div class="prov-bar">
+                      <button class="prov-btn active" id="btn-anthropic" onclick="setProvider('anthropic')">Anthropic (Claude)</button>
+                      <button class="prov-btn" id="btn-openai" onclick="setProvider('openai')">OpenAI</button>
+                    </div>
+                    <input type="hidden" id="provider" value="anthropic">
+                  </div>
+                </div>
+                <div id="section-anthropic">
+                  <div class="field-row">
+                    <div><p class="field-label">Anthropic API Key</p><p class="field-hint">console.anthropic.com → API Keys</p></div>
+                    <div class="field-input">
+                      <div class="field-input-row">
+                        <input type="password" id="anthropic_key" placeholder="sk-ant-…" autocomplete="off">
+                        <button class="btn" onclick="testKey('anthropic')">Test</button>
+                      </div>
+                      <div class="result" id="test-ant-result"></div>
+                    </div>
+                  </div>
+                  <div class="field-row">
+                    <div><p class="field-label">Model</p></div>
+                    <div class="field-input">
+                      <select id="anthropic_model">
+                        <option value="claude-opus-4-8">claude-opus-4-8 (most capable)</option>
+                        <option value="claude-sonnet-5">claude-sonnet-5 (balanced)</option>
+                        <option value="claude-haiku-4-5-20251001">claude-haiku-4-5 (fastest)</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+                <div id="section-openai" class="hidden">
+                  <div class="field-row">
+                    <div><p class="field-label">OpenAI API Key</p><p class="field-hint">platform.openai.com → API Keys</p></div>
+                    <div class="field-input">
+                      <div class="field-input-row">
+                        <input type="password" id="openai_key" placeholder="sk-…" autocomplete="off">
+                        <button class="btn" onclick="testKey('openai')">Test</button>
+                      </div>
+                      <div class="result" id="test-oai-result"></div>
+                    </div>
+                  </div>
+                  <div class="field-row">
+                    <div><p class="field-label">Model</p></div>
+                    <div class="field-input">
+                      <select id="openai_model">
+                        <option value="gpt-4o">gpt-4o</option>
+                        <option value="gpt-4o-mini">gpt-4o-mini</option>
+                        <option value="o1">o1</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="section-footer">
+                <button class="btn btn-primary" onclick="saveSection('ai')">Save</button>
+                <span id="save-ai-result"></span>
+              </div>
+            </div>
+          </div><!-- /tab-ai -->
+
+          <!-- ══ SSL/TLS (moved from old Integrations tab) ══ -->
+          <div id="tab-ssl" class="hidden">
+            <div class="section-card">
+              <div class="section-header"><h2>SSL / TLS</h2></div>
+              <div class="section-body">
+                <div class="field-row">
+                  <div><p class="field-label">Enable HTTPS</p><p class="field-hint">Restart service after installing certificate</p></div>
+                  <div class="field-input">
+                    <button type="button" class="toggle" id="toggle-ssl_enabled" onclick="toggleBool('ssl_enabled')"><span class="toggle-knob"></span></button>
+                    <input type="hidden" id="ssl_enabled" value="false">
+                  </div>
+                </div>
+
+                <!-- SSL status -->
+                <div class="field-row" style="border-bottom:none;padding-bottom:0">
+                  <div><p class="field-label">Certificate</p><p class="field-hint">Upload a certificate to enable HTTPS</p></div>
+                  <div class="field-input">
+
+                    <div class="ssl-status" id="ssl-status-bar">
+                      <div class="ssl-dot gray" id="ssl-dot"></div>
+                      <span id="ssl-status-text" style="font-size:12px;color:#9ca3af">No certificate installed · running HTTP</span>
+                      <button class="btn btn-danger" id="ssl-remove-btn" onclick="removeSsl()" style="display:none;margin-left:auto;padding:4px 10px;font-size:11px">× Remove</button>
+                    </div>
+
+                    <!-- Mode selector -->
+                    <div class="mode-bar">
+                      <button class="mode-btn active" id="mode-pfx" onclick="setSslMode('pfx')">PFX / P12</button>
+                      <button class="mode-btn" id="mode-pem" onclick="setSslMode('pem')">PEM (cert + key)</button>
+                    </div>
+
+                    <!-- PFX upload -->
+                    <div id="ssl-pfx">
+                      <div class="drop-zone" id="dz-pfx" ondragover="dzDragOver(event,'pfx')" ondragleave="dzDragLeave('pfx')" ondrop="dzDrop(event,'pfx')">
+                        <input type="file" accept=".pfx,.p12" onchange="dzPick(event,'pfx')">
+                        <div class="drop-zone-icon">📄</div>
+                        <div class="drop-zone-label" id="dz-pfx-label">Drop .pfx / .p12 here or click to browse</div>
+                      </div>
+                      <div style="margin-top:10px">
+                        <input type="password" id="pfx_passphrase" placeholder="PFX passphrase (required)">
+                      </div>
+                      <div style="margin-top:8px;display:flex;align-items:center;gap:10px">
+                        <button class="btn btn-primary" id="pfx-upload-btn" onclick="uploadPfx()" disabled>Upload &amp; Install</button>
+                        <span id="pfx-upload-result"></span>
+                      </div>
+                    </div>
+
+                    <!-- PEM upload -->
+                    <div id="ssl-pem" class="hidden">
+                      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                        <div>
+                          <p style="font-size:11px;color:#6b7280;margin-bottom:6px">Certificate (.pem / .crt)</p>
+                          <div class="drop-zone" id="dz-cert" ondragover="dzDragOver(event,'cert')" ondragleave="dzDragLeave('cert')" ondrop="dzDrop(event,'cert')">
+                            <input type="file" accept=".pem,.crt,.cer" onchange="dzPick(event,'cert')">
+                            <div class="drop-zone-icon">📜</div>
+                            <div class="drop-zone-label" id="dz-cert-label">Drop cert or click</div>
+                          </div>
+                        </div>
+                        <div>
+                          <p style="font-size:11px;color:#6b7280;margin-bottom:6px">Private Key (.pem / .key)</p>
+                          <div class="drop-zone" id="dz-key" ondragover="dzDragOver(event,'key')" ondragleave="dzDragLeave('key')" ondrop="dzDrop(event,'key')">
+                            <input type="file" accept=".pem,.key" onchange="dzPick(event,'key')">
+                            <div class="drop-zone-icon">🔑</div>
+                            <div class="drop-zone-label" id="dz-key-label">Drop key or click</div>
+                          </div>
+                        </div>
+                      </div>
+                      <div style="margin-top:8px;display:flex;align-items:center;gap:10px">
+                        <button class="btn btn-primary" id="pem-upload-btn" onclick="uploadPem()" disabled>Upload &amp; Install</button>
+                        <span id="pem-upload-result"></span>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+              <div class="section-footer">
+                <button class="btn btn-primary" onclick="saveSection('ssl')">Save SSL settings</button>
+                <span id="save-ssl-result"></span>
+              </div>
+            </div>
+          </div><!-- /tab-ssl -->
+
         </div>
       </div>
+    </div><!-- /tab-security -->
 
-      <!-- Other integrations -->
+    <!-- ══ USER KEYS (Lucidchart token, split out of old "Integrations" card) ══ -->
+    <div id="tab-userkeys" class="hidden">
       <div class="section-card">
-        <div class="section-header"><h2>Integrations</h2></div>
+        <div class="section-header"><h2>User Keys</h2></div>
         <div class="section-body">
-          <div class="field-row">
+          <div class="field-row" style="border-bottom:none">
             <div><p class="field-label">Lucid API Token</p><p class="field-hint">Used for diagram export to Lucidchart</p></div>
             <div class="field-input"><input type="password" id="lucid_api_token" placeholder="••••••••" autocomplete="off"></div>
           </div>
-          <div class="field-row">
-            <div><p class="field-label">Wireshark remote capture</p><p class="field-hint">Enable live feed ingestion from remote tshark / pkt-capture hosts</p></div>
+        </div>
+        <div class="section-footer">
+          <button class="btn btn-primary" onclick="saveSection('userkeys')">Save</button>
+          <span id="save-userkeys-result"></span>
+        </div>
+      </div>
+    </div><!-- /tab-userkeys -->
+
+    <!-- ══ CAPTURE INGEST (Wireshark remote capture, split out of old "Integrations" card; app-specific) ══ -->
+    <div id="tab-ingest" class="hidden">
+      <div class="section-card">
+        <div class="section-header"><h2>Capture Ingest</h2></div>
+        <div class="section-body">
+          <div class="field-row" style="border-bottom:none">
+            <div><p class="field-label">Wireshark remote capture</p><p class="field-hint">Enable live feed ingestion from remote tshark / pktpcap hosts</p></div>
             <div class="field-input">
               <button type="button" class="toggle" id="toggle-wireshark_capture_enabled" onclick="toggleBool('wireshark_capture_enabled');updateWsToggleUI()"><span class="toggle-knob"></span></button>
               <input type="hidden" id="wireshark_capture_enabled" value="false">
@@ -810,7 +908,7 @@
             </div>
 
             <div>
-              <p style="font-size:11px;color:#9ca3af;margin-bottom:4px">pkt-capture command (run on remote host)</p>
+              <p style="font-size:11px;color:#9ca3af;margin-bottom:4px">pktpcap command (run on remote host)</p>
               <code id="ws-cmd" style="display:block;font-size:10px;color:#e6edf3;background:#1f2937;padding:8px 10px;border-radius:4px;white-space:pre-wrap;word-break:break-all;font-family:monospace"></code>
             </div>
           </div>
@@ -820,92 +918,102 @@
           <span id="save-integrations-result"></span>
         </div>
       </div>
-    
+    </div><!-- /tab-ingest -->
 
-      <!-- pktHub Integration -->
-      <div class="section-card">
-        <div class="section-header"><h2>pktHub Integration</h2></div>
-        <div class="section-body">
-          <div class="field-row">
-            <div>
-              <p class="field-label">Suite Token</p>
-              <p class="field-hint">Copy this token and paste it into pktHub &rarr; Settings &rarr; App Registration when registering this app.</p>
-            </div>
-            <div class="field-input">
-              <div class="field-input-row">
-                <input type="password" id="suite-token-display" value="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;" readonly style="flex:1;font-family:'SF Mono','Fira Code',monospace;font-size:12px;background:#0d1117;cursor:default;letter-spacing:2px">
-                <button class="btn" id="suite-reveal-btn" onclick="suiteReveal()">Reveal</button>
-                <button class="btn" id="suite-copy-btn" onclick="suiteCopy()">Copy</button>
-                <button class="btn btn-danger" id="suite-regen-btn" onclick="suiteRegen()" title="Generate a new token — you must re-register in pktHub after" style="font-size:11px;padding:7px 10px">Regen</button>
+    <!-- ══ DATA (wraps the old top-level "Database" and "Backup" tabs) ══ -->
+    <div id="tab-data" class="hidden">
+      <div class="subtab-layout">
+        <nav class="subtab-nav" id="data-subtab-nav">
+          <button class="subtab-btn active" onclick="switchDataSubtab('database')">Storage</button>
+          <button class="subtab-btn" onclick="switchDataSubtab('backups')">Backups</button>
+        </nav>
+        <div class="subtab-content">
+          <div id="tab-database">
+            <div class="section-card">
+              <div class="section-header"><h2>Database</h2></div>
+              <div class="section-body">
+                <div class="field-row" style="border-bottom:none">
+                  <div><p class="field-label">SQLite path</p><p class="field-hint">Database file path. Restart required after changing.</p></div>
+                  <div class="field-input">
+                    <div class="field-input-row">
+                      <input type="text" id="db_path" placeholder="pktpcap.db">
+                      <button class="btn" onclick="testDb()">Test</button>
+                      <button class="btn" onclick="applyDb()">Apply</button>
+                    </div>
+                    <div class="result" id="db-result"></div>
+                  </div>
+                </div>
               </div>
-              <p class="field-hint" id="suite-token-hint" style="margin-top:6px"></p>
             </div>
           </div>
-          <div class="field-row" style="border-bottom:none">
-            <div><p class="field-label">Instructions</p></div>
-            <div class="field-input">
-              <ol style="font-size:12px;color:#9ca3af;padding-left:18px;margin:0;line-height:2">
-                <li>Click <strong style="color:#f9fafb">Reveal</strong> then <strong style="color:#f9fafb">Copy</strong> to get the token</li>
-                <li>In pktHub &rarr; <strong style="color:#f9fafb">Settings &rarr; App Registration</strong>, register this app and paste the token</li>
-                <li>The token is permanent &mdash; click <strong style="color:#f87171">Regen</strong> only to revoke access (re-register in pktHub after)</li>
-              </ol>
-            </div>
-          </div>
-        </div>
-      </div>
-</div>
 
-    <!-- ══ DATABASE ══ -->
-    <div id="tab-database" class="hidden">
-      <div class="section-card">
-        <div class="section-header"><h2>Database</h2></div>
-        <div class="section-body">
-          <div class="field-row">
-            <div><p class="field-label">SQLite path</p><p class="field-hint">Database file path. Restart required after changing.</p></div>
-            <div class="field-input">
-              <div class="field-input-row">
-                <input type="text" id="db_path" placeholder="pktpcap.db">
-                <button class="btn" onclick="testDb()">Test</button>
-                <button class="btn" onclick="applyDb()">Apply</button>
+          <div id="tab-backups" class="hidden">
+            <div class="section-card">
+              <div class="section-header"><h2>Backup</h2></div>
+              <div class="section-body">
+                <div class="field-row">
+                  <div><p class="field-label">Auto backup</p><p class="field-hint">Enable scheduled automatic backups</p></div>
+                  <div class="field-input">
+                    <button type="button" class="toggle" id="toggle-auto_backup" onclick="toggleBool('auto_backup')"><span class="toggle-knob"></span></button>
+                    <input type="hidden" id="auto_backup" value="false">
+                  </div>
+                </div>
+                <div class="field-row">
+                  <div><p class="field-label">Backup path</p><p class="field-hint">Directory to write backup archives</p></div>
+                  <div class="field-input"><input type="text" id="backup_path" placeholder="/mnt/backups"></div>
+                </div>
+                <div class="field-row">
+                  <div><p class="field-label">Backup interval</p><p class="field-hint">How often to run a backup</p></div>
+                  <div class="field-input" style="flex-direction:row;align-items:center;gap:8px">
+                    <input type="number" id="backup_interval_hours" min="1" style="max-width:120px">
+                    <span style="font-size:12px;color:#6b7280">hours</span>
+                  </div>
+                </div>
+                <div class="field-row">
+                  <div><p class="field-label">Keep backups</p><p class="field-hint">Number of backups to retain before rotating</p></div>
+                  <div class="field-input" style="flex-direction:row;align-items:center;gap:8px">
+                    <input type="number" id="backup_rotation" min="1" style="max-width:120px">
+                    <span style="font-size:12px;color:#6b7280">copies</span>
+                  </div>
+                </div>
+                <div class="field-row" style="border-bottom:none">
+                  <div><p class="field-label">Include captures</p><p class="field-hint">Include capture files in backup (large)</p></div>
+                  <div class="field-input">
+                    <button type="button" class="toggle" id="toggle-backup_include_captures" onclick="toggleBool('backup_include_captures')"><span class="toggle-knob"></span></button>
+                    <input type="hidden" id="backup_include_captures" value="false">
+                  </div>
+                </div>
               </div>
-              <div class="result" id="db-result"></div>
+              <div class="section-footer">
+                <button class="btn btn-primary" onclick="saveSection('backup')">Save</button>
+                <button class="btn" onclick="runBackupNow()">Run Backup Now</button>
+                <span id="save-backup-result"></span>
+                <span class="result" id="run-backup-result"></span>
+              </div>
+            </div>
+
+            <div class="section-card">
+              <div class="section-header"><h2>Snapshots</h2></div>
+              <div class="section-body" style="padding:0">
+                <div id="backups-loading" style="padding:24px;text-align:center;font-size:13px;color:#6b7280">Loading…</div>
+                <table class="users-table" id="backups-table" style="display:none">
+                  <thead>
+                    <tr>
+                      <th>Snapshot</th>
+                      <th>Files</th>
+                      <th>Size</th>
+                      <th>Created</th>
+                    </tr>
+                  </thead>
+                  <tbody id="backups-tbody"></tbody>
+                </table>
+                <div id="backups-empty" style="display:none;padding:40px;text-align:center;font-size:13px;color:#6b7280">No backup snapshots yet.</div>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-
-    <!-- ══ USERS ══ -->
-    <div id="tab-users" class="hidden">
-      <div class="section-card">
-        <div class="section-header" style="display:flex;align-items:center;justify-content:space-between">
-          <h2>Users</h2>
-          <button class="btn btn-primary" style="font-size:12px;padding:6px 14px" onclick="openUserModal(null)">+ Add User</button>
-        </div>
-        <div class="section-body" style="padding:0">
-          <div id="users-loading" style="padding:24px;text-align:center;font-size:13px;color:#6b7280">Loading…</div>
-          <table class="users-table" id="users-table" style="display:none">
-            <thead>
-              <tr>
-                <th>User</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th>Status</th>
-                <th>Last Login</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody id="users-tbody"></tbody>
-          </table>
-          <div id="users-empty" style="display:none;padding:40px;text-align:center;font-size:13px;color:#6b7280">No users found. Add one to get started.</div>
-        </div>
-      </div>
-      <p style="font-size:11px;color:#6b7280;margin-top:10px">
-        Roles: <strong style="color:#f9fafb">admin</strong> — full access &nbsp;·&nbsp;
-        <strong style="color:#f9fafb">analyst</strong> — read + export &nbsp;·&nbsp;
-        <strong style="color:#f9fafb">viewer</strong> — read-only
-      </p>
-    </div><!-- /tab-users -->
+    </div><!-- /tab-data -->
 
   </div><!-- /content -->
 </div><!-- /main -->
@@ -981,16 +1089,45 @@ let sslMode = 'pfx'
 let pfxFile = null, certFile = null, keyFile = null
 
 // ── Tab switching ─────────────────────────────────────────────────────────────
-const TABS = ['general','storage','backup','auth','notifications','integrations','database','users']
+const TABS = ['general','security','data','notifications','userkeys','storage','ingest']
+const SECURITY_SUBTABS = ['users','auth','suite','ai','ssl']
+const DATA_SUBTABS = ['database','backups']
+let currentSecuritySubtab = 'users'
+let currentDataSubtab = 'database'
+
 function switchTab(id) {
   TABS.forEach(t => {
     document.getElementById('tab-' + t).classList.toggle('hidden', t !== id)
   })
-  document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+  document.querySelectorAll('#tab-bar > .tab-btn').forEach((btn, i) => {
     btn.classList.toggle('active', TABS[i] === id)
   })
-  if (id === 'integrations') { loadSslStatus(); loadSuiteToken(); }
+  if (id === 'security') switchSecuritySubtab(currentSecuritySubtab)
+  if (id === 'data') switchDataSubtab(currentDataSubtab)
+}
+
+function switchSecuritySubtab(id) {
+  currentSecuritySubtab = id
+  SECURITY_SUBTABS.forEach(t => {
+    document.getElementById('tab-' + t).classList.toggle('hidden', t !== id)
+  })
+  document.querySelectorAll('#security-subtab-nav .subtab-btn').forEach((btn, i) => {
+    btn.classList.toggle('active', SECURITY_SUBTABS[i] === id)
+  })
   if (id === 'users') loadUsers()
+  if (id === 'ssl') loadSslStatus()
+  if (id === 'suite') loadSuiteToken()
+}
+
+function switchDataSubtab(id) {
+  currentDataSubtab = id
+  DATA_SUBTABS.forEach(t => {
+    document.getElementById('tab-' + t).classList.toggle('hidden', t !== id)
+  })
+  document.querySelectorAll('#data-subtab-nav .subtab-btn').forEach((btn, i) => {
+    btn.classList.toggle('active', DATA_SUBTABS[i] === id)
+  })
+  if (id === 'backups') loadBackups()
 }
 
 // ── Load ──────────────────────────────────────────────────────────────────────
@@ -1050,6 +1187,7 @@ async function load() {
     setBool('notify_tracecat_enabled', !!cfg.notify_tracecat_enabled)
     setVal('notify_tracecat_webhook_url', cfg.notify_tracecat_webhook_url || '')
     setVal('notify_tracecat_api_token', cfg.notify_tracecat_api_token || '')
+    updateAllNotifVisibility()
     setVal('lucid_api_token', cfg.lucid_api_token || '')
     setBool('wireshark_capture_enabled', !!cfg.wireshark_capture_enabled)
     setBool('ssl_enabled', !!cfg.ssl_enabled)
@@ -1069,13 +1207,13 @@ function updateWsToggleUI() {
 
   const ip = cfg.server_ip || location.hostname
   const proto = cfg.ssl_enabled ? 'https' : 'http'
-  const port = cfg.port || 80
+  const port = cfg.port || 8765
   const token = cfg.feed_token || '(save settings to generate token)'
 
   document.getElementById('ws-endpoint').textContent = `${proto}://${ip}:${port}/api/feed/<session-name>`
   document.getElementById('ws-token').textContent = token
   document.getElementById('ws-cmd').textContent =
-    `/mnt/software/pktpcap/pkt-capture \\\n  --host ${ip} \\\n  --port ${port} \\\n  --token ${token} \\\n  --name my-capture`
+    `<install_dir>/pktpcap \\\n  --host ${ip} \\\n  --port ${port} \\\n  --token ${token} \\\n  --name my-capture`
 }
 
 function copyWsEndpoint() {
@@ -1104,9 +1242,44 @@ function setBool(id, v) {
 }
 function getBool(id) { return document.getElementById(id)?.value === 'true' }
 function toggleBool(id) { setBool(id, !getBool(id)) }
-function toggleNotif(id) { document.getElementById('notif-' + id).classList.toggle('hidden') }
+const NOTIF_CHANNELS = ['slack', 'email', 'pagerduty', 'webhook', 'tracecat']
+function updateNotifVisibility(id) {
+  document.getElementById('notif-' + id + '-fields').classList.toggle('hidden', !getBool('notify_' + id + '_enabled'))
+}
+function updateAllNotifVisibility() { NOTIF_CHANNELS.forEach(updateNotifVisibility) }
 
-// ── AI Provider ───────────────────────────────────────────────────────────────
+async function sendTestNotification(channel, resultId) {
+  const btn = event.target
+  const res = document.getElementById(resultId)
+  btn.disabled = true
+  btn.textContent = 'Sending…'
+  res.className = 'test-result-text'
+  res.textContent = ''
+  try {
+    const r = await fetch('/api/notifications/test', {
+      method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ channel })
+    })
+    const result = await r.json()
+    if (result.status === 'sent') {
+      res.className = 'test-result-text sent'
+      res.textContent = '✓ Sent' + (result.detail ? ' — ' + result.detail : '')
+    } else if (result.status === 'skipped') {
+      res.className = 'test-result-text skipped'
+      res.textContent = '⚠ Skipped — ' + (result.detail || '')
+    } else {
+      res.className = 'test-result-text failed'
+      res.textContent = '✗ Failed — ' + (result.detail || result.status)
+    }
+  } catch(e) {
+    res.className = 'test-result-text failed'
+    res.textContent = '✗ Failed — ' + e.message
+  } finally {
+    btn.disabled = false
+    btn.textContent = 'Send Test'
+  }
+}
+
+// ── AI Assistant ──────────────────────────────────────────────────────────────
 function setProvider(p) {
   document.getElementById('provider').value = p
   document.getElementById('btn-anthropic').classList.toggle('active', p === 'anthropic')
@@ -1200,8 +1373,10 @@ function buildBody(section) {
     },
     ssl: { ssl_enabled: getBool('ssl_enabled') },
     integrations: {
-      lucid_api_token: getVal('lucid_api_token'),
       wireshark_capture_enabled: getBool('wireshark_capture_enabled'),
+    },
+    userkeys: {
+      lucid_api_token: getVal('lucid_api_token'),
     },
   }
   const body = bodies[section] || {}
@@ -1452,6 +1627,54 @@ async function applyDb() {
   } catch(e) { res.className = 'result err'; res.textContent = '✗ ' + e.message }
 }
 
+// ── Backup ────────────────────────────────────────────────────────────────────
+async function runBackupNow() {
+  const res = document.getElementById('run-backup-result')
+  res.className = 'result info'
+  res.textContent = 'Running…'
+  try {
+    const r = await fetch('/api/backup/run', { method: 'POST' })
+    const result = await r.json()
+    if (result.ok) {
+      res.className = 'result ok'
+      res.textContent = 'Backup created: ' + result.path.split('/').pop()
+      loadBackups()
+    } else {
+      res.className = 'result err'
+      res.textContent = result.error || 'Backup failed'
+    }
+  } catch(e) { res.className = 'result err'; res.textContent = e.message }
+}
+
+function fmtBytes(b) {
+  if (b >= 1e9) return (b/1e9).toFixed(1) + 'GB'
+  if (b >= 1e6) return (b/1e6).toFixed(1) + 'MB'
+  if (b >= 1e3) return (b/1e3).toFixed(1) + 'KB'
+  return b + 'B'
+}
+
+async function loadBackups() {
+  const loading = document.getElementById('backups-loading')
+  const table   = document.getElementById('backups-table')
+  const empty   = document.getElementById('backups-empty')
+  loading.style.display = 'block'; table.style.display = 'none'; empty.style.display = 'none'
+  try {
+    const r = await fetch('/api/backup/list')
+    const backups = await r.json()
+    loading.style.display = 'none'
+    if (!backups.length) { empty.style.display = 'block'; return }
+    table.style.display = 'table'
+    document.getElementById('backups-tbody').innerHTML = backups.map(b => `<tr>
+      <td>${esc(b.name)}</td>
+      <td style="color:#9ca3af;font-size:12px">${b.files.map(esc).join(', ')}</td>
+      <td style="color:#9ca3af;font-size:12px">${fmtBytes(b.size_bytes)}</td>
+      <td style="color:#6b7280;font-size:12px">${new Date(b.created_at).toLocaleString()}</td>
+    </tr>`).join('')
+  } catch(e) {
+    loading.textContent = 'Failed to load backups: ' + e.message
+  }
+}
+
 // ── Users ─────────────────────────────────────────────────────────────────────
 let _users = []
 let _userEditId = null
@@ -1485,8 +1708,15 @@ function renderUsers() {
     const status     = u.status || 'active'
     const isActive   = status === 'active'
     const lastLogin  = u.last_login ? new Date(u.last_login).toLocaleDateString() : '—'
+    const canDefault = role === 'admin' && isActive
+    const starTitle  = u.is_default_admin
+      ? 'Default admin — auto-logged-in when all auth methods are disabled'
+      : (canDefault ? 'Make default admin' : 'Only active admins can be the default admin')
     return `<tr>
-      <td><div class="user-cell"><div class="user-avatar">${initial}</div><span>${esc(u.username)}</span></div></td>
+      <td><div class="user-cell"><div class="user-avatar">${initial}</div><span>${esc(u.username)}</span>
+        <button ${u.is_default_admin || !canDefault ? 'disabled' : ''} title="${starTitle}" onclick="makeDefaultAdmin(${u.id})"
+          style="background:none;border:none;cursor:${u.is_default_admin || !canDefault ? 'default' : 'pointer'};font-size:13px;line-height:1;color:${u.is_default_admin ? '#facc15' : '#6b7280'}">${u.is_default_admin ? '★' : '☆'}</button>
+      </div></td>
       <td style="color:#9ca3af">${esc(u.email || '—')}</td>
       <td><span class="badge badge-${role}">${role}</span></td>
       <td><span class="badge badge-${status}">${status}</span></td>
@@ -1575,6 +1805,15 @@ async function submitResetModal() {
     if (result.ok) { closeResetModal() }
     else { res.className = 'result err'; res.textContent = '✗ ' + (result.error || 'Reset failed') }
   } catch(e) { res.className = 'result err'; res.textContent = '✗ ' + e.message }
+}
+
+async function makeDefaultAdmin(uid) {
+  try {
+    const r = await fetch(`/api/users/${uid}/set-default-admin`, { method: 'PATCH' })
+    const result = await r.json()
+    if (result.ok) loadUsers()
+    else alert('Failed: ' + (result.error || 'Unknown error'))
+  } catch(e) { alert('Failed: ' + e.message) }
 }
 
 async function toggleUserStatus(uid, currentStatus) {
