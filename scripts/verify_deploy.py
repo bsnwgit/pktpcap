@@ -6,7 +6,7 @@ listening, and responding to HTTP.
 Usage:
   PKTPCAP_SSH_HOST=<host> PKTPCAP_SSH_USER=<user> PKTPCAP_SSH_KEY=<path-to-pem> python3 verify_deploy.py
 or:
-  python3 verify_deploy.py --host <host> --user <user> --key <path-to-pem> [--port 80]
+  python3 verify_deploy.py --host <host> --user <user> --key <path-to-pem> [--port 8765]
 """
 import argparse
 import os
@@ -25,8 +25,8 @@ def parse_args():
                          help="SSH username")
     parser.add_argument("--key", default=os.environ.get("PKTPCAP_SSH_KEY"),
                          help="Path to SSH private key (.pem)")
-    parser.add_argument("--port", type=int, default=int(os.environ.get("PKTPCAP_PORT", 80)),
-                         help="Port pktPCAP listens on (default: 80)")
+    parser.add_argument("--port", type=int, default=int(os.environ.get("PKTPCAP_PORT", 8765)),
+                         help="Port pktPCAP listens on (default: 8765)")
     args = parser.parse_args()
     missing = [name for name, val in (("--host/PKTPCAP_SSH_HOST", args.host),
                                        ("--user/PKTPCAP_SSH_USER", args.user),
