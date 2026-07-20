@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>pktPCAP</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
 <style>
   :root { color-scheme: light; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -341,7 +343,7 @@
       <!-- Active feeds -->
       <div class="lf-section-label">Active Sessions</div>
       <div id="feeds-list" class="lf-feed-list">
-        <div class="lf-empty">Loading feedsΓÇª</div>
+        <div class="lf-empty">Loading feeds…</div>
       </div>
 
       <!-- Connect section -->
@@ -383,11 +385,11 @@
 
         <!-- tshark tab -->
         <div id="feed-tab-tshark">
-          <div class="feed-cmd-box" id="feed-cmd-box">LoadingΓÇª</div>
+          <div class="feed-cmd-box" id="feed-cmd-box">Loading…</div>
           <div class="lf-action-row">
             <button onclick="copyFeedCmd()" class="feed-btn">Copy Command</button>
             <span id="feed-copy-ok" class="lf-copy-ok" style="display:none">Γ£ô Copied</span>
-            <span class="lf-token-hint">Token: <code id="feed-token-display" class="lf-token-code">loadingΓÇª</code></span>
+            <span class="lf-token-hint">Token: <code id="feed-token-display" class="lf-token-code">loading…</code></span>
           </div>
         </div>
 
@@ -395,18 +397,18 @@
         <div id="feed-tab-wireshark" style="display:none">
           <div class="lf-ws-status-bar">
             <span id="ws-status-dot" class="lf-ws-dot" style="background:#4b5563"></span>
-            <span id="ws-status-label" class="lf-ws-label">Disabled ΓÇö Wireshark remote capture is off</span>
+            <span id="ws-status-label" class="lf-ws-label">Disabled — Wireshark remote capture is off</span>
             <button id="ws-toggle-btn" onclick="toggleWsCapture()" class="feed-btn">Enable</button>
           </div>
-          <div class="feed-cmd-box" id="ws-config-box" style="line-height:1.8;white-space:pre;color:#6b7280">LoadingΓÇª</div>
+          <div class="feed-cmd-box" id="ws-config-box" style="line-height:1.8;white-space:pre;color:#6b7280">Loading…</div>
           <div class="lf-action-row">
             <button onclick="copyWsConfig()" class="feed-btn">Copy Settings</button>
             <span id="ws-copy-ok" class="lf-copy-ok" style="display:none">Γ£ô Copied</span>
           </div>
           <div class="lf-ws-howto">
             <span class="lf-ws-howto-title">How it works: </span>
-            Wireshark SSHs into the pktPCAP server and runs the <code class="lf-code-accent">pkt-capture</code> wrapper
-            instead of dumpcap. The wrapper tees the stream ΓÇö Wireshark gets its live view, and the capture is
+            Wireshark SSHs into the pktPCAP server and runs the <code class="lf-code-accent">pktpcap</code> wrapper
+            instead of dumpcap. The wrapper tees the stream — Wireshark gets its live view, and the capture is
             simultaneously recorded in pktPCAP. The feed appears above as
             <code class="lf-code-green">ws-&lt;your-ip&gt;-&lt;time&gt;</code>.
             In Wireshark: Capture ΓåÆ Options ΓåÆ SSH Remote Capture, set the fields above, then start.
@@ -427,7 +429,7 @@
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
             Packet Analyzer
           </div>
-          <div class="az-page-sub">Upload .pcap / .pcapng captures ΓÇö parse, correlate, and analyze with AI</div>
+          <div class="az-page-sub">Upload .pcap / .pcapng captures — parse, correlate, and analyze with AI</div>
         </div>
       </div>
 
@@ -448,7 +450,7 @@
       <div class="az-options-card" id="issue-section">
         <label class="issue-label" for="issue-input">What would you like analyzed?</label>
         <textarea class="issue-input" id="issue-input"
-          placeholder="Describe a specific problem, request auto-triage, a security review ΓÇö or leave blank for general analysis."></textarea>
+          placeholder="Describe a specific problem, request auto-triage, a security review — or leave blank for general analysis."></textarea>
         <button class="analyze-btn" id="analyze-btn" onclick="startAnalysis()" disabled>
           Analyze Captures
         </button>
@@ -460,7 +462,7 @@
   <!-- ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ LOADING SCREEN -->
   <div id="loading-screen">
     <div class="loading-spinner"></div>
-    <div class="loading-text">Parsing capturesΓÇª</div>
+    <div class="loading-text">Parsing captures…</div>
     <div class="loading-step" id="loading-step">Reading file headers</div>
   </div>
 
@@ -554,7 +556,7 @@
       <div class="chat-messages" id="chat-messages"></div>
       <div class="chat-input-area">
         <textarea class="chat-input" id="chat-input" rows="1"
-          placeholder="Reply to assistant, share what you found, add contextΓÇª"
+          placeholder="Reply to assistant, share what you found, add context…"
           onkeydown="onChatKey(event)"
           oninput="autoResize(this)"></textarea>
         <button class="send-btn" id="send-btn" onclick="sendMessage()" disabled>Send</button>
@@ -570,7 +572,7 @@
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px">
       <div>
         <div style="font-size:16px;font-weight:700;color:#f9fafb;margin-bottom:4px">Application Logs</div>
-        <div id="logs-subtitle" style="font-size:13px;color:#6b7280">LoadingΓÇª</div>
+        <div id="logs-subtitle" style="font-size:13px;color:#6b7280">Loading…</div>
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <button id="logs-live-btn" onclick="toggleLogsLive()" style="display:flex;align-items:center;gap:6px;font-size:12px;padding:5px 12px;background:#1f2937;border:1px solid #374151;color:#d1d5db;border-radius:8px;cursor:pointer;font-family:inherit">
@@ -590,11 +592,11 @@
       <!-- Level chips -->
       <div id="logs-level-chips" style="display:flex;gap:4px"></div>
       <!-- Logger select -->
-      <select id="logs-logger-select" onchange="loadLogs()" style="font-size:12px;background:#1f2937;border:1px solid #374151;color:#d1d5db;border-radius:8px;padding:4px 10px;font-family:inherit;display:none">
+      <select id="logs-logger-select" onchange="_loadLogsResetPage()" style="font-size:12px;background:#1f2937;border:1px solid #374151;color:#d1d5db;border-radius:8px;padding:4px 10px;font-family:inherit;display:none">
         <option value="">All loggers</option>
       </select>
       <!-- Search -->
-      <input id="logs-search" type="text" placeholder="Search messagesΓÇª" onkeydown="if(event.key==='Enter')loadLogs()"
+      <input id="logs-search" type="text" placeholder="Search messages…" onkeydown="if(event.key==='Enter')_loadLogsResetPage()"
         style="font-size:12px;background:#1f2937;border:1px solid #374151;color:#f9fafb;border-radius:8px;padding:4px 12px;width:200px;font-family:inherit;outline:none">
       <!-- Capture level (admin) -->
       <div id="logs-capture-level-wrap" style="margin-left:auto;display:flex;align-items:center;gap:8px;font-size:12px;color:#6b7280;display:none">
@@ -613,9 +615,12 @@
     <!-- Error -->
     <div id="logs-error" style="display:none;background:rgba(127,29,29,.3);border:1px solid rgba(185,28,28,.5);border-radius:8px;padding:8px 14px;font-size:13px;color:#fca5a5;margin-bottom:12px"></div>
 
+    <!-- Pagination -->
+    <div id="logs-pagination" style="display:none;align-items:center;gap:6px;margin-bottom:12px"></div>
+
     <!-- Table -->
     <div style="background:#111827;border:1px solid #1f2937;border-radius:12px;overflow:hidden">
-      <div id="logs-loading" style="display:flex;align-items:center;justify-content:center;height:160px;color:#6b7280;font-size:13px">LoadingΓÇª</div>
+      <div id="logs-loading" style="display:flex;align-items:center;justify-content:center;height:160px;color:#6b7280;font-size:13px">Loading…</div>
       <div id="logs-empty" style="display:none;flex-direction:column;align-items:center;justify-content:center;height:160px;color:#6b7280;font-size:13px;gap:8px">
         <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" opacity=".4"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
         <span>No log records match your filters</span>
@@ -637,7 +642,7 @@
         <span id="logs-footer-count"></span>
         <span id="logs-footer-live" style="display:none;align-items:center;gap:6px;color:#60a5fa">
           <span style="width:6px;height:6px;border-radius:50%;background:#60a5fa;display:inline-block;animation:pulse 1.5s ease-in-out infinite"></span>
-          Live ΓÇö refreshing every 5s
+          Live — refreshing every 5s
         </span>
       </div>
     </div>
@@ -664,7 +669,7 @@ let uploadedFiles = [];
 let analysisResult = null;
 let conversationHistory = [];
 let isThinking = false;
-// Single analyzer mode ΓÇö user describes intent in the textarea
+// Single analyzer mode — user describes intent in the textarea
 
 const _ALL_NAV = ['nav-dashboard','nav-analyzer','nav-feeds','nav-logs'];
 
@@ -708,7 +713,7 @@ function showAnalyzer() {
   _hideAllScreens();
   _setActiveNav('nav-analyzer');
   document.getElementById('upload-screen').style.display = 'flex';
-  document.querySelector('.top-bar-title').textContent = (window._appName || 'pktPCAP') + ' ΓÇö Analyzer';
+  document.querySelector('.top-bar-title').textContent = (window._appName || 'pktPCAP') + ' — Analyzer';
 }
 
 function showLiveFeeds() {
@@ -716,7 +721,7 @@ function showLiveFeeds() {
   _hideAllScreens();
   _setActiveNav('nav-feeds');
   document.getElementById('live-feeds-screen').style.display = 'flex';
-  document.querySelector('.top-bar-title').textContent = (window._appName || 'pktPCAP') + ' ΓÇö Live Feeds';
+  document.querySelector('.top-bar-title').textContent = (window._appName || 'pktPCAP') + ' — Live Feeds';
   document.getElementById('header-files').style.display = 'none';
   loadFeedToken();
   loadFeeds();
@@ -730,7 +735,7 @@ function showLogs() {
   _setActiveNav('nav-logs');
   document.getElementById('logs-screen').style.display = 'flex';
   document.getElementById('logs-screen').style.flexDirection = 'column';
-  document.querySelector('.top-bar-title').textContent = (window._appName || 'pktPCAP') + ' ΓÇö Logs';
+  document.querySelector('.top-bar-title').textContent = (window._appName || 'pktPCAP') + ' — Logs';
   document.getElementById('header-files').style.display = 'none';
   _initLogsPage();
   loadLogs();
@@ -755,6 +760,47 @@ let _logsLive = false;
 let _logsPollTimer = null;
 let _logsInited = false;
 let _logsExpandedId = null;
+let _logsPage = 1;
+const _LOGS_PAGE_SIZE = 50;
+
+function _loadLogsResetPage() {
+  _logsPage = 1;
+  loadLogs();
+}
+
+/** Prev/Next + numbered page-block bar, rendered into a target container. */
+function _renderPagination(containerId, page, totalPages, onChange) {
+  const el = document.getElementById(containerId);
+  if (totalPages <= 1) { el.style.display = 'none'; el.innerHTML = ''; return; }
+  el.style.display = 'flex';
+  el.innerHTML = '';
+  const mkBtn = (label, targetPage, opts) => {
+    opts = opts || {};
+    const b = document.createElement('button');
+    b.textContent = label;
+    b.disabled = !!opts.disabled;
+    b.style.cssText = 'font-size:11px;min-width:26px;padding:4px 10px;border-radius:8px;cursor:pointer;font-family:inherit;transition:all .15s;' +
+      (opts.active
+        ? 'background:rgba(37,99,235,.3);border:1px solid #3b82f6;color:#bfdbfe'
+        : 'background:#1f2937;border:1px solid #374151;color:#9ca3af') +
+      (opts.disabled ? ';opacity:.4;cursor:not-allowed' : '');
+    if (!opts.disabled) b.onclick = () => onChange(targetPage);
+    return b;
+  };
+  const dots = () => {
+    const s = document.createElement('span');
+    s.textContent = '..';
+    s.style.cssText = 'padding:0 4px;color:#6b7280;font-size:11px';
+    return s;
+  };
+  el.appendChild(mkBtn('← Prev', Math.max(1, page - 1), { disabled: page === 1 }));
+  const blockStart = Math.floor((page - 1) / 5) * 5 + 1;
+  const blockEnd   = Math.min(blockStart + 4, totalPages);
+  if (blockStart > 1) { el.appendChild(mkBtn('1', 1)); el.appendChild(dots()); }
+  for (let p = blockStart; p <= blockEnd; p++) el.appendChild(mkBtn(String(p), p, { active: p === page }));
+  if (blockEnd < totalPages) { el.appendChild(dots()); el.appendChild(mkBtn(String(totalPages), totalPages)); }
+  el.appendChild(mkBtn('Next →', Math.min(totalPages, page + 1), { disabled: page === totalPages }));
+}
 
 function _stopLogsPoll() {
   if (_logsPollTimer) { clearInterval(_logsPollTimer); _logsPollTimer = null; }
@@ -771,7 +817,7 @@ function _initLogsPage() {
     btn.id = 'logs-chip-' + lvl;
     btn.textContent = lvl;
     btn.style.cssText = 'font-size:11px;padding:3px 10px;border-radius:8px;cursor:pointer;font-family:inherit;transition:all .15s;border:1px solid #374151;background:#1f2937;color:#9ca3af';
-    btn.onclick = () => { _logsActiveLevel = lvl; _updateLevelChips(); loadLogs(); };
+    btn.onclick = () => { _logsActiveLevel = lvl; _updateLevelChips(); _loadLogsResetPage(); };
     chips.appendChild(btn);
   });
   _updateLevelChips();
@@ -812,7 +858,10 @@ async function loadLogs(silent) {
 
   const search = document.getElementById('logs-search').value;
   const logger = document.getElementById('logs-logger-select').value;
-  const params = new URLSearchParams({limit:'300'});
+  const params = new URLSearchParams({
+    limit:  String(_LOGS_PAGE_SIZE),
+    offset: String((_logsPage - 1) * _LOGS_PAGE_SIZE),
+  });
   if (_logsActiveLevel !== 'ALL') params.set('level', _logsActiveLevel);
   if (logger)  params.set('logger', logger);
   if (search)  params.set('search', search);
@@ -862,7 +911,7 @@ function _renderLogs(res, stats) {
   if (curLogger) sel.value = curLogger;
   sel.style.display = (stats.loggers && stats.loggers.length > 0) ? '' : 'none';
 
-  // Admin capture level control ΓÇö always show it
+  // Admin capture level control — always show it
   document.getElementById('logs-capture-level-wrap').style.display = 'flex';
 
   // Table
@@ -872,6 +921,7 @@ function _renderLogs(res, stats) {
     document.getElementById('logs-empty').style.display = 'flex';
     document.getElementById('logs-table-wrap').style.display = 'none';
     document.getElementById('logs-footer').style.display = 'none';
+    document.getElementById('logs-pagination').style.display = 'none';
     return;
   }
 
@@ -914,10 +964,15 @@ function _renderLogs(res, stats) {
   document.getElementById('logs-table-wrap').style.display = 'block';
   const footer = document.getElementById('logs-footer');
   footer.style.display = 'flex';
+  const rangeStart = (_logsPage - 1) * _LOGS_PAGE_SIZE + 1;
+  const rangeEnd   = (_logsPage - 1) * _LOGS_PAGE_SIZE + records.length;
   document.getElementById('logs-footer-count').textContent =
-    'Showing ' + records.length.toLocaleString() + ' of ' + (res.total||0).toLocaleString() + ' records (newest first)';
+    'Showing ' + rangeStart.toLocaleString() + '–' + rangeEnd.toLocaleString() + ' of ' + (res.total||0).toLocaleString() + ' records (newest first)';
   const liveEl = document.getElementById('logs-footer-live');
   liveEl.style.display = _logsLive ? 'flex' : 'none';
+
+  const totalPages = Math.max(1, Math.ceil((res.total || 0) / _LOGS_PAGE_SIZE));
+  _renderPagination('logs-pagination', _logsPage, totalPages, p => { _logsPage = p; loadLogs(); });
 }
 
 function _insertExpandRow(tbody, id, excInfo) {
@@ -971,9 +1026,10 @@ function toggleLogsLive() {
 async function clearLogs() {
   if (!confirm('Clear all app logs?')) return;
   const btn = document.getElementById('logs-clear-btn');
-  btn.disabled = true; btn.textContent = 'ClearingΓÇª';
+  btn.disabled = true; btn.textContent = 'Clearing…';
   try {
     await fetch('/api/logs', {method:'DELETE'});
+    _logsPage = 1;
     loadLogs();
   } catch(e) {
     alert('Clear failed: ' + e.message);
@@ -1141,7 +1197,7 @@ function parsePCAPNG(buffer, filename) {
     // ΓöÇΓöÇ Section Header Block (0x0A0D0D0A) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
     // Just re-read byte order; interfaces reset per section
     if (bType === 0x0a0d0d0a) {
-      // nothing extra needed ΓÇö interfaces already reset if this is a second SHB
+      // nothing extra needed — interfaces already reset if this is a second SHB
     }
 
     // ΓöÇΓöÇ Interface Description Block (0x00000001) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
@@ -1219,7 +1275,7 @@ function parsePCAPNG(buffer, filename) {
     offset += bLen;
   }
 
-  if (!packets.length) throw new Error('pcapng parsed but no packets found ΓÇö file may be empty or use an unsupported block type');
+  if (!packets.length) throw new Error('pcapng parsed but no packets found — file may be empty or use an unsupported block type');
   return packets;
 }
 
@@ -1238,7 +1294,7 @@ function analyzePackets(pkts) {
     protocols[p.protocol]=(protocols[p.protocol]||0)+1;
     totalBytes+=p.capturedLen;
 
-    // Port tracking ΓÇö count both src and dst, keyed as "PROTO/port"
+    // Port tracking — count both src and dst, keyed as "PROTO/port"
     if ((p.protocol==='TCP'||p.protocol==='UDP') && p.srcPort && p.dstPort) {
       // Only count the lower-numbered port (usually the service port) to avoid double-counting
       const svc = Math.min(p.srcPort, p.dstPort);
@@ -1322,25 +1378,25 @@ function analyzePackets(pkts) {
   const ICMP_TYPE_NAMES={3:'Unreachable',4:'Source Quench',5:'Redirect',11:'Time Exceeded',12:'Parameter Problem'};
   const DNS_RCODES=['NOERROR','FORMERR','SERVFAIL','NXDOMAIN','NOTIMP','REFUSED'];
   if (failedHS>0) anomalies.push({severity:'high',type:'Failed TCP Handshakes',
-    detail:`${failedHS} connection(s) have SYN with no SYN-ACK ΓÇö possible firewall block, routing blackhole, or host unreachable`,
-    evidence:issueStreams.filter(s=>s.failedHS).slice(0,10).map(s=>`Stream: ${s.key} ΓÇö SYN sent, no SYN-ACK received`)});
+    detail:`${failedHS} connection(s) have SYN with no SYN-ACK — possible firewall block, routing blackhole, or host unreachable`,
+    evidence:issueStreams.filter(s=>s.failedHS).slice(0,10).map(s=>`Stream: ${s.key} — SYN sent, no SYN-ACK received`)});
   if (totalRsts>10) anomalies.push({severity:'high',type:'High TCP RST Rate',
-    detail:`${totalRsts} RST packets ΓÇö abrupt connection terminations across multiple streams`,
-    evidence:issueStreams.filter(s=>s.rsts>0).sort((a,b)=>b.rsts-a.rsts).slice(0,10).map(s=>`Stream: ${s.key} ΓÇö ${s.rsts} RST(s)`)});
+    detail:`${totalRsts} RST packets — abrupt connection terminations across multiple streams`,
+    evidence:issueStreams.filter(s=>s.rsts>0).sort((a,b)=>b.rsts-a.rsts).slice(0,10).map(s=>`Stream: ${s.key} — ${s.rsts} RST(s)`)});
   else if (totalRsts>3) anomalies.push({severity:'medium',type:'TCP RSTs Detected',
-    detail:`${totalRsts} RST packets ΓÇö connection refusals or mid-session terminations`,
-    evidence:issueStreams.filter(s=>s.rsts>0).sort((a,b)=>b.rsts-a.rsts).slice(0,10).map(s=>`Stream: ${s.key} ΓÇö ${s.rsts} RST(s)`)});
+    detail:`${totalRsts} RST packets — connection refusals or mid-session terminations`,
+    evidence:issueStreams.filter(s=>s.rsts>0).sort((a,b)=>b.rsts-a.rsts).slice(0,10).map(s=>`Stream: ${s.key} — ${s.rsts} RST(s)`)});
   if (totalRetrans>20) anomalies.push({severity:'high',type:'Excessive Retransmissions',
-    detail:`${totalRetrans} retransmissions ΓÇö significant packet loss on the path`,
-    evidence:issueStreams.filter(s=>s.retrans>0).sort((a,b)=>b.retrans-a.retrans).slice(0,10).map(s=>`Stream: ${s.key} ΓÇö ${s.retrans} retransmission(s)`)});
+    detail:`${totalRetrans} retransmissions — significant packet loss on the path`,
+    evidence:issueStreams.filter(s=>s.retrans>0).sort((a,b)=>b.retrans-a.retrans).slice(0,10).map(s=>`Stream: ${s.key} — ${s.retrans} retransmission(s)`)});
   else if (totalRetrans>5) anomalies.push({severity:'medium',type:'TCP Retransmissions',
-    detail:`${totalRetrans} retransmissions ΓÇö some loss present`,
-    evidence:issueStreams.filter(s=>s.retrans>0).sort((a,b)=>b.retrans-a.retrans).slice(0,10).map(s=>`Stream: ${s.key} ΓÇö ${s.retrans} retransmission(s)`)});
+    detail:`${totalRetrans} retransmissions — some loss present`,
+    evidence:issueStreams.filter(s=>s.retrans>0).sort((a,b)=>b.retrans-a.retrans).slice(0,10).map(s=>`Stream: ${s.key} — ${s.retrans} retransmission(s)`)});
   if (totalZeroWin>5) anomalies.push({severity:'medium',type:'TCP Zero Window',
-    detail:`${totalZeroWin} zero-window ads ΓÇö receiver buffer exhaustion, slow application or overloaded host`,
-    evidence:issueStreams.filter(s=>s.zeroWin>0).sort((a,b)=>b.zeroWin-a.zeroWin).slice(0,10).map(s=>`Stream: ${s.key} ΓÇö ${s.zeroWin} zero-window ad(s)`)});
+    detail:`${totalZeroWin} zero-window ads — receiver buffer exhaustion, slow application or overloaded host`,
+    evidence:issueStreams.filter(s=>s.zeroWin>0).sort((a,b)=>b.zeroWin-a.zeroWin).slice(0,10).map(s=>`Stream: ${s.key} — ${s.zeroWin} zero-window ad(s)`)});
   if (dnsUnanswered.length>3) anomalies.push({severity:'high',type:'Unanswered DNS Queries',
-    detail:`${dnsUnanswered.length} DNS queries with no response ΓÇö DNS server unreachable or dropping queries`,
+    detail:`${dnsUnanswered.length} DNS queries with no response — DNS server unreachable or dropping queries`,
     evidence:dnsUnanswered.slice(0,10).map(d=>`Query: ${d.qname} (at ${safeIso(d.ts)})`)});
   else if (dnsUnanswered.length>0) anomalies.push({severity:'medium',type:'DNS Queries Unanswered',
     detail:`${dnsUnanswered.length} DNS queries received no response`,
@@ -1409,7 +1465,7 @@ function securityScan(pkts){
       srcTargets[p.srcIP].pairs.add(p.dstIP+':'+p.dstPort);
     }
 
-    // Cleartext ΓÇö count by service port (either direction)
+    // Cleartext — count by service port (either direction)
     if (p.protocol==='TCP'){
       const svcPort=p.dstPort&&CLEARTEXT[p.dstPort]?p.dstPort:p.srcPort&&CLEARTEXT[p.srcPort]?p.srcPort:null;
       if (svcPort) {
@@ -1456,12 +1512,12 @@ function securityScan(pkts){
     if (t.pairs.size>50&&t.ports.size>20)
       threats.push({severity:'high',category:'Reconnaissance',type:'Port Scan',
         detail:`${srcIP} hit ${t.pairs.size} unique host:port pairs across ${t.hosts.size} hosts / ${t.ports.size} ports`,
-        evidence:[`Source: ${srcIP}`,`Hosts targeted: ${[...t.hosts].slice(0,5).join(', ')}${t.hosts.size>5?' ΓÇªand '+(t.hosts.size-5)+' more':''}`,
-          `Sample targets: ${[...t.pairs].slice(0,8).join(', ')}${t.pairs.size>8?' ΓÇª':''}`,
-          `Distinct ports: ${[...t.ports].slice(0,10).sort((a,b)=>a-b).join(', ')}${t.ports.size>10?' ΓÇª':''}`]});
+        evidence:[`Source: ${srcIP}`,`Hosts targeted: ${[...t.hosts].slice(0,5).join(', ')}${t.hosts.size>5?' …and '+(t.hosts.size-5)+' more':''}`,
+          `Sample targets: ${[...t.pairs].slice(0,8).join(', ')}${t.pairs.size>8?' …':''}`,
+          `Distinct ports: ${[...t.ports].slice(0,10).sort((a,b)=>a-b).join(', ')}${t.ports.size>10?' …':''}`]});
     else if (t.pairs.size>20&&t.ports.size>10)
       threats.push({severity:'medium',category:'Reconnaissance',type:'Possible Port Scan',
-        detail:`${srcIP} hit ${t.pairs.size} unique host:port combos ΓÇö possible scan`,
+        detail:`${srcIP} hit ${t.pairs.size} unique host:port combos — possible scan`,
         evidence:[`Source: ${srcIP}`,`Sample targets: ${[...t.pairs].slice(0,8).join(', ')}`,
           `Distinct ports seen: ${[...t.ports].slice(0,10).sort((a,b)=>a-b).join(', ')}`]});
   }
@@ -1471,7 +1527,7 @@ function securityScan(pkts){
     if (count>0){
       const sev=([23,512,513,514].includes(+port))?'high':'medium';
       threats.push({severity:sev,category:'Credential Risk',type:`Cleartext ${CLEARTEXT[port]}`,
-        detail:`${count} packets on port ${port} (${CLEARTEXT[port]}) ΓÇö credentials/data in plaintext`,
+        detail:`${count} packets on port ${port} (${CLEARTEXT[port]}) — credentials/data in plaintext`,
         evidence:[`Protocol: ${CLEARTEXT[port]} (port ${port})`,`Packet count: ${count}`,
           ...[...(cleartextIPs[port]||[])].slice(0,8).map(f=>`Flow: ${f}`)]});
     }
@@ -1482,10 +1538,10 @@ function securityScan(pkts){
     if (count>15){
       const [srcIP,dstPort]=key.split('|');
       const tgts=[...(bruteTargets[key]||[])];
-      threats.push({severity:'high',category:'Brute Force',type:`Brute Force ΓÇö ${PORT_NAMES[dstPort]||'port '+dstPort}`,
-        detail:`${srcIP} sent ${count} SYN packets to port ${dstPort} (${PORT_NAMES[dstPort]||''}) ΓÇö credential spray or brute force`,
+      threats.push({severity:'high',category:'Brute Force',type:`Brute Force — ${PORT_NAMES[dstPort]||'port '+dstPort}`,
+        detail:`${srcIP} sent ${count} SYN packets to port ${dstPort} (${PORT_NAMES[dstPort]||''}) — credential spray or brute force`,
         evidence:[`Attacker: ${srcIP}`,`Target port: ${dstPort} (${PORT_NAMES[dstPort]||'unknown service'})`,
-          `SYN count: ${count}`,`Target host(s): ${tgts.slice(0,5).join(', ')}${tgts.length>5?' ΓÇªand '+(tgts.length-5)+' more':''}`]});
+          `SYN count: ${count}`,`Target host(s): ${tgts.slice(0,5).join(', ')}${tgts.length>5?' …and '+(tgts.length-5)+' more':''}`]});
     }
   }
 
@@ -1495,7 +1551,7 @@ function securityScan(pkts){
     if (bytes>1048576){
       const [src,dst]=flow.split('ΓåÆ');
       threats.push({severity:bytes>10485760?'high':'medium',category:'Data Transfer',type:'Large Outbound Transfer',
-        detail:`${flow} ΓÇö ${fmtBytes(bytes)} sent to external host ΓÇö possible exfiltration or bulk upload`,
+        detail:`${flow} — ${fmtBytes(bytes)} sent to external host — possible exfiltration or bulk upload`,
         evidence:[`Source (internal): ${src}`,`Destination (external): ${dst}`,`Volume transferred: ${fmtBytes(bytes)}`,
           `Threshold: ${bytes>10485760?'HIGH (>10 MB)':'MEDIUM (>1 MB)'}`]});
     }
@@ -1506,9 +1562,9 @@ function securityScan(pkts){
     if (s.targets.size>=3){
       const tgts=[...s.targets];
       threats.push({severity:'high',category:'Lateral Movement',type:`Admin Port Spread (${PORT_NAMES[s.port]||'port '+s.port})`,
-        detail:`${s.srcIP} connected to ${s.targets.size} internal hosts on port ${s.port} (${PORT_NAMES[s.port]||''}) ΓÇö possible lateral movement`,
+        detail:`${s.srcIP} connected to ${s.targets.size} internal hosts on port ${s.port} (${PORT_NAMES[s.port]||''}) — possible lateral movement`,
         evidence:[`Source: ${s.srcIP}`,`Admin port: ${s.port} (${PORT_NAMES[s.port]||'unknown'})`,
-          `Target hosts (${tgts.length}): ${tgts.slice(0,8).join(', ')}${tgts.length>8?' ΓÇª':''}`]});
+          `Target hosts (${tgts.length}): ${tgts.slice(0,8).join(', ')}${tgts.length>8?' …':''}`]});
     }
   }
 
@@ -1516,12 +1572,12 @@ function securityScan(pkts){
   for (const [srcIP,stats] of Object.entries(dnsPerSrc)){
     if (stats.longNames.length>2)
       threats.push({severity:'medium',category:'Covert Channel',type:'DNS Tunneling Indicator',
-        detail:`${srcIP}: ${stats.longNames.length} queries with names >50 chars ΓÇö e.g. "${stats.longNames[0].slice(0,55)}ΓÇª"`,
+        detail:`${srcIP}: ${stats.longNames.length} queries with names >50 chars — e.g. "${stats.longNames[0].slice(0,55)}…"`,
         evidence:[`Source: ${srcIP}`,`Long-name query count: ${stats.longNames.length}`,
           ...stats.longNames.slice(0,6).map(n=>`Query: ${n}`)]});
     else if (stats.count>100)
       threats.push({severity:'medium',category:'Covert Channel',type:'High DNS Query Rate',
-        detail:`${srcIP} issued ${stats.count} DNS queries ΓÇö possible tunneling or misconfiguration`,
+        detail:`${srcIP} issued ${stats.count} DNS queries — possible tunneling or misconfiguration`,
         evidence:[`Source: ${srcIP}`,`Total DNS queries: ${stats.count}`]});
   }
 
@@ -1529,7 +1585,7 @@ function securityScan(pkts){
   const suspectDNS=[...dnsServers].filter(ip=>!KNOWN_DNS.has(ip)&&!ip.endsWith('.1')&&!ip.endsWith('.2')&&!ip.endsWith('.254'));
   if (suspectDNS.length>0)
     threats.push({severity:'low',category:'DNS',type:'Non-Standard DNS Resolvers',
-      detail:`Queries sent to: ${suspectDNS.slice(0,5).join(', ')} ΓÇö verify these are authorized DNS servers`,
+      detail:`Queries sent to: ${suspectDNS.slice(0,5).join(', ')} — verify these are authorized DNS servers`,
       evidence:[`Non-standard resolvers observed:`, ...suspectDNS.slice(0,10).map(ip=>`  ${ip}`),
         `Known-good DNS servers: 8.8.8.8, 8.8.4.4, 1.1.1.1, 9.9.9.9`]});
 
@@ -1569,15 +1625,15 @@ async function startAnalysis(){
     const allPkts=[];
     for(let i=0;i<uploadedFiles.length;i++){
       const f=uploadedFiles[i];
-      setStep(`Parsing ${f.name} (${i+1}/${uploadedFiles.length})ΓÇª`);
+      setStep(`Parsing ${f.name} (${i+1}/${uploadedFiles.length})…`);
       const buf=await readBuf(f);
       allPkts.push(...parsePCAP(buf,f.name));
     }
-    setStep('Running analysisΓÇª'); await tick();
+    setStep('Running analysis…'); await tick();
     analysisResult=analyzePackets(allPkts);
     analysisResult.issueDescription=issue;
     analysisResult.fileNames=uploadedFiles.map(f=>f.name);
-    setStep('RenderingΓÇª'); await tick();
+    setStep('Rendering…'); await tick();
     renderUI();
     document.getElementById('loading-screen').style.display='none';
     document.getElementById('analysis-screen').style.display='flex';
@@ -1644,7 +1700,7 @@ function renderUI(){
           return`<tr>
             <td style="font-weight:700;color:#f9fafb">${p.port}</td>
             <td><span style="font-size:10px;padding:1px 5px;border-radius:3px;background:${p.proto==='TCP'?'rgba(96,165,250,.15)':'rgba(188,140,255,.15)'};color:${col}">${p.proto}</span></td>
-            <td style="color:${svc?'#f59e0b':'#6b7280'}">${svc||'ΓÇö'}</td>
+            <td style="color:${svc?'#f59e0b':'#6b7280'}">${svc||'—'}</td>
             <td>${p.pkts.toLocaleString()}</td>
             <td><div class="bar-track" style="margin-top:2px"><div class="bar-fill" style="width:${pct}%;background:${col}"></div></div></td>
           </tr>`;
@@ -1828,7 +1884,7 @@ function renderCard(item, extraBadges=''){
   if(!window._cardStreamKeyMap) window._cardStreamKeyMap={};
   if(!window._cardItemMap) window._cardItemMap={};
   const rowKeys=hasEv ? ev.map(e=>{
-    const m=String(e).match(/^Stream:\s+(.+? Γåö .+?) ΓÇö/);
+    const m=String(e).match(/^Stream:\s+(.+? Γåö .+?) —/);
     return m ? m[1].trim() : null;
   }) : [];
   const anyKeys=rowKeys.some(k=>k!==null);
@@ -1933,7 +1989,7 @@ async function generateInitialMessage(issue){
 
 A network engineer has provided ${ctx.files.length>1?ctx.files.length+' merged packet captures':'a packet capture'} and described what they want analyzed:
 
-"${issue||'Perform a comprehensive analysis ΓÇö check for connectivity issues, anomalies, security threats, protocol errors, and anything unusual'}"
+"${issue||'Perform a comprehensive analysis — check for connectivity issues, anomalies, security threats, protocol errors, and anything unusual'}"
 
 Files: ${ctx.files.join(', ')}
 
@@ -1941,7 +1997,7 @@ Capture data:
 ${JSON.stringify(ctx,null,2)}
 
 Instructions:
-- You are talking to a network engineer ΓÇö technical language is appropriate
+- You are talking to a network engineer — technical language is appropriate
 - If a specific problem is described, focus your analysis on it and reference evidence from the capture
 - If a security review is requested, look for threats: port scans, lateral movement, data exfiltration, brute force, cleartext credentials, DNS tunneling; rate each finding HIGH/MEDIUM/LOW
 - If general triage or no description is given, do a structured review across: connectivity, performance, security, protocol errors, unusual patterns
@@ -1983,7 +2039,7 @@ Capture data: ${JSON.stringify(ctx,null,2)}
 Conversation:
 ${hist}
 
-Continue the diagnostic. Build on established facts ΓÇö don't repeat what's confirmed. If the engineer provides new info (e.g. "no drops on the firewall"), factor it in and redirect. Reference capture evidence when relevant. Be explicit when speculating: "this could indicateΓÇª" or "one possibility isΓÇª". Suggest out-of-capture checks when warranted (CLI commands, logs, config areas to check). Ask one question at a time. Technical language is appropriate.`;
+Continue the diagnostic. Build on established facts — don't repeat what's confirmed. If the engineer provides new info (e.g. "no drops on the firewall"), factor it in and redirect. Reference capture evidence when relevant. Be explicit when speculating: "this could indicate…" or "one possibility is…". Suggest out-of-capture checks when warranted (CLI commands, logs, config areas to check). Ask one question at a time. Technical language is appropriate.`;
 
   try {
     const raw=await localAsk(prompt,[JSON.stringify(ctx)]);
@@ -2043,7 +2099,7 @@ Capture overview: ${JSON.stringify({files:ctx.files,metadata:ctx.metadata,protoc
 The engineer clicked on a specific item for investigation:
 ${JSON.stringify(data,null,2)}
 
-${hist?'Prior conversation:\n'+hist+'\n\n':''}Provide a focused technical analysis of this specific item. Cover: what it indicates, likely causes, severity in context of this capture, and 1-2 concrete next steps (CLI commands, config areas, logs to check). Be precise ΓÇö reference IPs, ports, counts from the data. If this item connects to something else in the capture context, call it out. Technical language appropriate. Keep it tight.`;
+${hist?'Prior conversation:\n'+hist+'\n\n':''}Provide a focused technical analysis of this specific item. Cover: what it indicates, likely causes, severity in context of this capture, and 1-2 concrete next steps (CLI commands, config areas, logs to check). Be precise — reference IPs, ports, counts from the data. If this item connects to something else in the capture context, call it out. Technical language appropriate. Keep it tight.`;
   try {
     const raw=await localAsk(prompt,[JSON.stringify(ctx)]);
     const r=extractText(raw);
@@ -2168,7 +2224,7 @@ function renderStreamModal(title, flowPkts){
       return`<span style="font-size:9px;color:${fc};border:1px solid ${fc};border-radius:2px;padding:0 3px;margin-right:2px">${f}</span>`;
     }).join(''):'';
     const ascii=p.payload?payloadToAscii(p.payload).slice(0,80):'';
-    const payDisplay=ascii?`<span style="color:#c9d1d9;font-size:10px;margin-left:6px;word-break:break-all">${esc(ascii)}${p.payload&&p.payload.length>80?'ΓÇª':''}</span>`:'';
+    const payDisplay=ascii?`<span style="color:#c9d1d9;font-size:10px;margin-left:6px;word-break:break-all">${esc(ascii)}${p.payload&&p.payload.length>80?'…':''}</span>`:'';
     const retransBadge=(p.flags&&i>0&&shown.slice(0,i).some(pp=>pp.srcIP===p.srcIP&&pp.srcPort===p.srcPort&&pp.seqNum===p.seqNum&&p.seqNum!==undefined&&p.seqNum!==0))
       ?`<span style="font-size:9px;color:#f85149;margin-left:4px">RETR</span>`:'';
     return`<tr id="spkt_${i}" onclick="showPacketDetail(${i})" style="cursor:pointer">
@@ -2324,7 +2380,7 @@ function showPacketDetail(i){
   detailTd.style.cssText='padding:0;border-top:2px solid #58a6ff;vertical-align:top;background:#0d1117';
   detailTd.innerHTML=`
     <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 14px;background:#161b22;border-bottom:1px solid #21262d;position:sticky;top:0;z-index:2">
-      <span style="font-size:11px;font-weight:700;color:#58a6ff">Packet #${i+1} ΓÇö ${esc(p.srcIP||'?')}:${p.srcPort||'?'} ΓåÆ ${esc(p.dstIP||'?')}:${p.dstPort||'?'}</span>
+      <span style="font-size:11px;font-weight:700;color:#58a6ff">Packet #${i+1} — ${esc(p.srcIP||'?')}:${p.srcPort||'?'} ΓåÆ ${esc(p.dstIP||'?')}:${p.dstPort||'?'}</span>
       <div style="display:flex;gap:8px;align-items:center">
         <button onclick="sendPacketToAssistant()" title="Send to Diagnostic Assistant" style="background:none;border:none;color:#e6edf3;font-size:13px;cursor:pointer;padding:0;line-height:1;transition:color 0.15s" onmouseover="this.style.color='#58a6ff'" onmouseout="this.style.color='#c9d1d9'">\u{1F4AC}</button>
         <button onclick="closePacketDetail()" title="Close" style="background:none;border:none;color:#e6edf3;font-size:15px;cursor:pointer;padding:0;line-height:1">Γ£ò</button>
@@ -2389,7 +2445,7 @@ async function loadFeedToken() {
     _updateWsToggleUI();
     const el = document.getElementById('feed-token-display');
     if (el) el.textContent = window._feedToken
-      ? window._feedToken.slice(0,8) + 'ΓÇª'
+      ? window._feedToken.slice(0,8) + '…'
       : '(none)';
     updateFeedCommand();
   } catch(e) { /* ignore */ }
@@ -2427,7 +2483,7 @@ function renderFeeds(feeds) {
   const list = document.getElementById('feeds-list');
   if (!list) return;
   if (!feeds.length) {
-    list.innerHTML = '<div style="text-align:center;padding:32px;color:#4b5563;font-size:12px">No active or recent feeds ΓÇö run the command below on a remote host to start streaming.</div>';
+    list.innerHTML = '<div style="text-align:center;padding:32px;color:#4b5563;font-size:12px">No active or recent feeds — run the command below on a remote host to start streaming.</div>';
     return;
   }
   list.innerHTML = feeds.map(f => {
@@ -2439,7 +2495,7 @@ function renderFeeds(feeds) {
       ? '<span style="color:#4ade80">live</span>'
       : 'disconnected ' + _fmtDur(Date.now()/1000 - f.last_seen) + ' ago';
     const truncWarning = f.truncated
-      ? ' ┬╖ <span style="color:#f59e0b" title="Buffer full ΓÇö oldest data was dropped">ΓÜá buffer full</span>' : '';
+      ? ' ┬╖ <span style="color:#f59e0b" title="Buffer full — oldest data was dropped">ΓÜá buffer full</span>' : '';
     return `
     <div class="feed-card ${borderClass}">
       <div class="feed-dot ${f.connected?'live':''}" style="background:${statusColor};${statusGlow}"></div>
@@ -2519,7 +2575,7 @@ function _updateWsToggleUI() {
   const btn   = document.getElementById('ws-toggle-btn');
   const box   = document.getElementById('ws-config-box');
   if (dot)   { dot.style.background = enabled ? '#22c55e' : '#4b5563'; dot.style.boxShadow = enabled ? '0 0 6px #22c55e55' : 'none'; }
-  if (label) label.textContent = enabled ? 'Active ΓÇö Wireshark remote capture is enabled' : 'Disabled ΓÇö enable to allow Wireshark to connect';
+  if (label) label.textContent = enabled ? 'Active — Wireshark remote capture is enabled' : 'Disabled — enable to allow Wireshark to connect';
   if (btn)   { btn.textContent = enabled ? 'Disable' : 'Enable'; btn.style.background = enabled ? 'rgba(239,68,68,.15)' : ''; btn.style.color = enabled ? '#f87171' : ''; btn.style.borderColor = enabled ? 'rgba(239,68,68,.3)' : ''; }
   if (box)   { box.style.opacity = '1'; box.style.color = enabled ? '#6ee7b7' : '#6b7280'; }
 }
@@ -2647,7 +2703,7 @@ async function localAsk(prompt, dataArr){
 
   <!-- Input -->
   <div style="padding:10px 12px;border-top:1px solid #1f2937;display:flex;gap:8px;flex-shrink:0">
-    <textarea id="ai-input-fab" rows="1" placeholder="Ask about your network trafficΓÇª"
+    <textarea id="ai-input-fab" rows="1" placeholder="Ask about your network traffic…"
       style="flex:1;background:#1f2937;border:1px solid #374151;border-radius:8px;color:#f9fafb;padding:8px 10px;font-family:inherit;font-size:12px;resize:none;outline:none;min-height:36px;max-height:96px;overflow-y:auto;line-height:1.5"
       onkeydown="onAIFabKey(event)" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,96)+'px'"></textarea>
     <button onclick="sendAIFab()" id="ai-send-fab"
@@ -2708,7 +2764,7 @@ async function localAsk(prompt, dataArr){
     // Thinking bubble
     var tb = document.createElement('div');
     tb.style.cssText = 'display:flex;justify-content:flex-start';
-    tb.innerHTML = '<div style="background:#1f2937;color:#9ca3af;border-radius:12px;padding:7px 10px;font-size:11px;font-style:italic">ThinkingΓÇª</div>';
+    tb.innerHTML = '<div style="background:#1f2937;color:#9ca3af;border-radius:12px;padding:7px 10px;font-size:11px;font-style:italic">Thinking…</div>';
     msgs.appendChild(tb);
     msgs.scrollTop = msgs.scrollHeight;
 
@@ -2734,7 +2790,7 @@ async function localAsk(prompt, dataArr){
       tb.remove();
       var ab = document.createElement('div');
       ab.style.cssText = 'display:flex;justify-content:flex-start';
-      ab.innerHTML = '<div style="max-width:85%;background:#450a0a;color:#fca5a5;border:1px solid #7f1d1d;border-radius:12px;padding:7px 10px;font-size:11px">Network error ΓÇö could not reach AI service.</div>';
+      ab.innerHTML = '<div style="max-width:85%;background:#450a0a;color:#fca5a5;border:1px solid #7f1d1d;border-radius:12px;padding:7px 10px;font-size:11px">Network error — could not reach AI service.</div>';
       msgs.appendChild(ab);
       msgs.scrollTop = msgs.scrollHeight;
     })
