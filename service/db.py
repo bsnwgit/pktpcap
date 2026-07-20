@@ -6,7 +6,7 @@ All app settings and users live in the SQLite database.
 PCAP capture files are stored on disk at the path from the storage_path setting.
 """
 
-import json, sqlite3, threading, hashlib, secrets, datetime
+import json, os, sqlite3, threading, hashlib, secrets, datetime
 from pathlib import Path
 
 BASE = Path(__file__).parent
@@ -15,7 +15,7 @@ CONFIG_FILE = BASE / "config.json"
 # ── Default settings (used as fallback if key not in DB) ─────────────────────
 
 DEFAULT_SETTINGS = {
-    "port": 80,
+    "port": 8765,
     "app_name": "pktPCAP",
     "provider": "anthropic",
     "anthropic_key": "",
@@ -144,17 +144,45 @@ class Database:
                     value TEXT NOT NULL
                 );
                 CREATE TABLE IF NOT EXISTS users (
-                    id            INTEGER PRIMARY KEY AUTOINCREMENT,
-                    username      TEXT    NOT NULL UNIQUE,
-                    email         TEXT    DEFAULT '',
-                    role          TEXT    NOT NULL DEFAULT 'viewer',
-                    status        TEXT    NOT NULL DEFAULT 'active',
-                    password_hash TEXT    NOT NULL,
-                    last_login    TEXT,
-                    created_at    TEXT    NOT NULL
+                    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username          TEXT    NOT NULL UNIQUE,
+                    email             TEXT    DEFAULT '',
+                    role              TEXT    NOT NULL DEFAULT 'viewer',
+                    status            TEXT    NOT NULL DEFAULT 'active',
+                    password_hash     TEXT    NOT NULL,
+                    last_login        TEXT,
+                    created_at        TEXT    NOT NULL,
+                    is_default_admin  INTEGER NOT NULL DEFAULT 0
                 );
+                CREATE TABLE IF NOT EXISTS app_logs (
+                    id        INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ts        TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+                    level     TEXT    NOT NULL,
+                    level_no  INTEGER NOT NULL,
+                    logger    TEXT    NOT NULL,
+                    message   TEXT    NOT NULL,
+                    exc_info  TEXT
+                );
+                CREATE INDEX IF NOT EXISTS idx_app_logs_id ON app_logs(id);
+                CREATE TABLE IF NOT EXISTS integrations (
+                    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name              TEXT    NOT NULL UNIQUE,
+                    app_name          TEXT    NOT NULL,
+                    base_url          TEXT    NOT NULL DEFAULT '',
+                    suite_token       TEXT    NOT NULL DEFAULT '',
+                    enabled           INTEGER NOT NULL DEFAULT 1,
+                    health_status     TEXT    NOT NULL DEFAULT 'unknown',
+                    last_health_check TEXT,
+                    updated_at        TEXT    NOT NULL DEFAULT (datetime('now'))
+                );
+                CREATE INDEX IF NOT EXISTS idx_integrations_app_name ON integrations(app_name);
             """)
             c.commit()
+            # Migration: add is_default_admin to existing databases that predate this column
+            user_cols = {row[1] for row in c.execute("PRAGMA table_info(users)").fetchall()}
+            if "is_default_admin" not in user_cols:
+                c.execute("ALTER TABLE users ADD COLUMN is_default_admin INTEGER NOT NULL DEFAULT 0")
+                c.commit()
 
     # ── Settings ──────────────────────────────────────────────────────────────
 
@@ -201,7 +229,7 @@ class Database:
 
     def get_users(self) -> list:
         rows = self._conn().execute(
-            "SELECT id, username, email, role, status, last_login, created_at FROM users"
+            "SELECT id, username, email, role, status, last_login, created_at, is_default_admin FROM users"
         ).fetchall()
         return [dict(r) for r in rows]
 
@@ -250,11 +278,59 @@ class Database:
             self._conn().execute("DELETE FROM users WHERE id = ?", (uid,))
             self._conn().commit()
 
+    def set_default_admin(self, uid: int):
+        """Mark exactly one user as the account auto-logged-in when auth is disabled."""
+        with self._write_lock:
+            c = self._conn()
+            c.execute("UPDATE users SET is_default_admin = 0")
+            c.execute("UPDATE users SET is_default_admin = 1 WHERE id = ?", (uid,))
+            c.commit()
+
     def count_active_admins(self) -> int:
         row = self._conn().execute(
             "SELECT COUNT(*) FROM users WHERE role = 'admin' AND status = 'active'"
         ).fetchone()
         return row[0]
+
+    # ── Integrations ──────────────────────────────────────────────────────────
+    # Named connections to sibling pkt* apps pktpcap could pull data from in
+    # the future. No consumer feature uses this yet — this just lays down the
+    # same outbound Suite Integration infrastructure pktIPAM/pktflow/pktWiFi
+    # already have, so a connection can be wired up later without a schema
+    # change first.
+
+    def get_integrations(self) -> list:
+        rows = self._conn().execute("SELECT * FROM integrations ORDER BY name").fetchall()
+        return [dict(r) for r in rows]
+
+    def get_integration(self, iid: int):
+        row = self._conn().execute("SELECT * FROM integrations WHERE id = ?", (iid,)).fetchone()
+        return dict(row) if row else None
+
+    def create_integration(self, name: str, app_name: str, base_url: str, suite_token: str, enabled: bool) -> int:
+        with self._write_lock:
+            cur = self._conn().execute(
+                "INSERT INTO integrations (name, app_name, base_url, suite_token, enabled) VALUES (?, ?, ?, ?, ?)",
+                (name, app_name, base_url, suite_token, int(enabled)),
+            )
+            self._conn().commit()
+            return cur.lastrowid
+
+    def update_integration(self, iid: int, fields: dict):
+        if not fields:
+            return
+        fields = dict(fields)
+        fields["updated_at"] = datetime.datetime.utcnow().isoformat()
+        sets = ", ".join(f"{k} = ?" for k in fields)
+        vals = list(fields.values()) + [iid]
+        with self._write_lock:
+            self._conn().execute(f"UPDATE integrations SET {sets} WHERE id = ?", vals)
+            self._conn().commit()
+
+    def delete_integration(self, iid: int):
+        with self._write_lock:
+            self._conn().execute("DELETE FROM integrations WHERE id = ?", (iid,))
+            self._conn().commit()
 
     def export_all(self) -> dict:
         """Export full data including password hashes (for migration)."""
@@ -351,6 +427,10 @@ def _migrate_legacy(db: Database):
 
 
 def _ensure_admin(db: Database):
-    """Create a default admin/admin account if no users exist."""
+    """Create the initial admin account if no users exist. install.sh sets
+    PKTPCAP_ADMIN_PASSWORD to a random value; falls back to 'admin' only for
+    a manual/dev setup that skips the installer."""
     if db._conn().execute("SELECT COUNT(*) FROM users").fetchone()[0] == 0:
-        db.create_user("admin", "admin@local", "admin", hash_password("admin"))
+        password = os.environ.get("PKTPCAP_ADMIN_PASSWORD", "admin")
+        uid = db.create_user("admin", "admin@local", "admin", hash_password(password))
+        db.set_default_admin(uid)

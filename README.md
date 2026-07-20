@@ -18,8 +18,20 @@ pktPCAP is a locally-hosted packet capture analyzer. Drop a `.pcap` or `.pcapng`
 - Runs entirely on your infrastructure — captures never leave your environment
 - Works without an API key (rule-based analysis only)
 - Three analysis modes: Specific Issue, Auto-Triage, Security Review
-- In-app log viewer, user management, SSL support, and a live pcapng feed endpoint
+- In-app log viewer, user management, Okta SAML SSO, SSL support, and a live pcapng feed endpoint (generic tshark/curl **or** native Wireshark GUI remote capture)
+- Multi-channel alert notifications (Slack, Email, PagerDuty, generic webhook, Tracecat) and scheduled/on-demand backups
 - Deploys as a systemd service on Ubuntu Server bare metal — no container runtime required
+
+---
+
+## Recent Changes (2026-07)
+
+- **Docker removed.** The Dockerfile, `docker-compose.yml`, entrypoint script, CI workflow, and `.env.example` are gone. Deployment is now native: `install.sh` sets up a Python venv and a systemd unit directly on Ubuntu Server 22.04/24.04 bare metal — no container runtime needed.
+- **Install script rebuilt.** `install.sh` is now fully interactive — it prompts for the install directory and port (with defaults), generates a random admin password and prints it once, and installs + starts the systemd service automatically, including opening the firewall port via `ufw` if present.
+- **Default port changed from `80` to `8765`.** No more binding to a privileged port by default; the systemd unit only grants `CAP_NET_BIND_SERVICE` in case an admin explicitly sets a port below 1024.
+- **Remote-capture script renamed** from the old `pkt-capture` name to `pktpcap` (installed at `<install_dir>/pktpcap`). It's the wrapper Wireshark's SSH Remote Capture feature invokes on the server; see [Wireshark GUI remote capture](#wireshark-gui-remote-capture-ssh).
+- **Infra leakage sanitized.** Personal deploy scripts, hardcoded server IPs/SSH key paths/usernames, and a committed `PROJECT_CONTEXT.md` were removed from the repo; the remaining helper scripts take host/path values as CLI args or env vars.
+- **Login form now submits on Enter** in either the username or password field — no need to click into the button.
 
 ---
 
@@ -30,33 +42,51 @@ pktPCAP is a locally-hosted packet capture analyzer. Drop a `.pcap` or `.pcapng`
 git clone https://github.com/bsnwgit/pktpcap.git
 cd pktpcap
 
-# 2. Run the installer — system packages, Python venv + deps, database init,
-#    systemd service (installed + started)
+# 2. Run the installer (do NOT prefix with sudo — it calls sudo itself
+#    where needed). Run it as a normal, non-root user:
 bash install.sh
+```
 
-# 3. Open the firewall for the app port (adjust if PKTPCAP_INSTALL_DIR/port differ)
-sudo ufw allow 80/tcp
+`install.sh` is interactive when run from a terminal. It will:
 
-# 4. Open http://<server-ip> and log in with admin / admin — change the
-#    password immediately, it is not rotated on subsequent installs
+1. Prompt for the **install directory** (default `/opt/pktpcap`)
+2. Prompt for the **port** (default `8765`)
+3. Install system packages, create a Python venv, and install dependencies
+4. Copy the application into the install directory
+5. Initialize the SQLite database and create the `admin` account with a **random password**, printed once to the terminal — save it, it is never shown again
+6. Install, enable, and start the `pktpcap` systemd service
+7. Open the port in `ufw` automatically, if `ufw` is installed (otherwise it prints a reminder to open it manually)
+
+At the end it prints a boxed summary with the URL and admin credentials (on a fresh install only — an existing database is left untouched and the box says so instead).
+
+Open `http://<server-ip>:<port>` (default port `8765`) and log in with the `admin` username and the generated password from the install output.
+
+**Non-interactive / scripted installs** — set env vars to skip every prompt:
+
+```bash
+PKTPCAP_INSTALL_DIR=/opt/pktpcap PKTPCAP_PORT=8765 \
+PKTPCAP_SERVICE_USER=pktpcap PKTPCAP_SERVICE_GROUP=pktpcap \
+bash install.sh
 ```
 
 ### Environment variables
 
-`install.sh` reads these to customize the install location and service identity:
+`install.sh` reads these to customize the install location, port, and service identity. The install-directory and port **prompts only appear when running interactively from a terminal** with the variable unset; setting the variable, or running the script non-interactively (piped input, cron, CI), skips the prompt and uses the variable's value (or the default) directly:
 
 | Variable | Default | Description |
 |---|---|---|
 | `PKTPCAP_INSTALL_DIR` | `/opt/pktpcap` | Where the app is installed |
+| `PKTPCAP_PORT` | `8765` | Listening port; also written into the `pktpcap` remote-capture wrapper and opened in `ufw` |
 | `PKTPCAP_LOG_DIR` | `$PKTPCAP_INSTALL_DIR/logs` | systemd journal file location |
 | `PKTPCAP_SERVICE_USER` | current user | User the systemd service runs as |
 | `PKTPCAP_SERVICE_GROUP` | same as service user | Group the systemd service runs as |
+| `PKTPCAP_ADMIN_PASSWORD` | (not read by `install.sh`) | `install.sh` always generates its own random password and ignores this variable if set. It's only honored by a **manual** `init_db()` call (see [Installation](#installation) step 6) — useful if you're bootstrapping the database yourself outside the installer |
 
 ---
 
 ## Installation
 
-`install.sh` (see [Quick Start](#quick-start)) automates everything below except **opening the firewall**, which is always manual. This section is the full manual walkthrough — useful to customize the install, run steps individually, or understand what the script does.
+`install.sh` (see [Quick Start](#quick-start)) automates every step below, including opening the firewall (if `ufw` is present). This section is the full manual walkthrough — useful to customize the install, run steps individually, or understand what the script does.
 
 ### 1. Clone the repository
 
@@ -106,10 +136,11 @@ The `ssl/` directory is where you place `server.crt` + `server.key` if you want 
 
 ### 6. Configure
 
-Nothing is required — settings live in a SQLite database (`pktpcap.db`) that's created automatically on first start, seeded with sensible defaults and a default `admin`/`admin` account. To pre-initialize it (so you can confirm it worked before starting the service):
+Nothing is required — settings live in a SQLite database (`pktpcap.db`) that's created automatically on first start, seeded with sensible defaults (including a default port of `8765`) and an `admin` account. To pre-initialize it (so you can confirm it worked before starting the service) with a real password instead of the `admin`/`admin` fallback:
 
 ```bash
 cd /opt/pktpcap
+PKTPCAP_ADMIN_PASSWORD="$(openssl rand -base64 12 | tr -d '/+=' | head -c 16)" \
 /opt/pktpcap/venv/bin/python3 -c "from db import init_db; init_db()"
 ```
 
@@ -131,12 +162,12 @@ sudo systemctl enable --now pktpcap
 sudo systemctl status pktpcap
 ```
 
-The unit grants `CAP_NET_BIND_SERVICE` so the service can bind port 80 without running as root.
+The unit grants `CAP_NET_BIND_SERVICE` in case you set Port below 1024 in Settings — the default (`8765`) doesn't need it.
 
 ### 8. Open the firewall
 
 ```bash
-sudo ufw allow 80/tcp
+sudo ufw allow 8765/tcp
 ```
 
 ### 9. Verify
@@ -145,7 +176,7 @@ sudo ufw allow 80/tcp
 curl -s http://localhost/api/health
 ```
 
-Log in at `http://<server-ip>` with `admin` / `admin`, then change the password immediately in **Settings → Users**.
+Log in at `http://<server-ip>:8765` with `admin` and either the password you set in step 6's `PKTPCAP_ADMIN_PASSWORD`, or `admin` if you skipped it (the `admin`/`admin` fallback only applies to this manual path — `install.sh` never leaves it in place, it always generates a random password). Change the password immediately in **Settings → Security → Users** if you used the fallback.
 
 ---
 
@@ -292,7 +323,7 @@ tshark -i <interface> -w - | curl -s \
 
 Replace:
 - `<interface>` — capture interface name (see `tshark -D`)
-- `<feed-token>` — token from pktPCAP Settings page
+- `<feed-token>` — token from **Settings → Capture Ingest** (see [Wireshark GUI remote capture](#wireshark-gui-remote-capture-ssh) below for where this lives in the UI)
 - `<pktpcap-host>` — hostname or IP of the machine running pktPCAP
 - `<session-name>` — alphanumeric label for this capture session
 
@@ -362,6 +393,32 @@ sudo systemctl status pktpcap-feed
 
 ---
 
+### Wireshark GUI Remote Capture (SSH)
+
+Besides the generic tshark/curl pipe above, pktPCAP also supports feeding a **live Wireshark GUI session** directly, using Wireshark's built-in **SSH Remote Capture** interface type — no separate script to babysit, and you get a live packet view in Wireshark itself while pktPCAP simultaneously buffers the same stream.
+
+This is powered by a small wrapper script, **`pktpcap`** (renamed from the old `pkt-capture`), installed at `<install_dir>/pktpcap` by `install.sh`. Wireshark SSHs into the pktPCAP host and runs this wrapper instead of `dumpcap` directly; the wrapper tees the capture — one copy goes to Wireshark over the SSH pipe, the other is POSTed to pktPCAP's own `/api/feed/<name>` endpoint, using the same buffered-session mechanism as the tshark method.
+
+**Enable it:** Settings → **Capture Ingest** → toggle **Wireshark remote capture** on. Enabling it reveals the feed endpoint URL, the bearer token, and a pre-filled `pktpcap` command — copy these into Wireshark's capture options.
+
+**In Wireshark:** Capture → Options → **+ (Manage Interfaces)** → **Remote Interfaces**, or the SSH remote capture interface type, then set:
+
+| Field | Value |
+|---|---|
+| SSH Host | pktPCAP server IP |
+| SSH User | a user with permission to run `dumpcap` (see the group note below) |
+| Auth | key file, or password |
+| Remote Capture Command | `<install_dir>/pktpcap` (default `/opt/pktpcap/pktpcap`) |
+| Interface | the interface name on the pktPCAP host, e.g. `eth0` |
+
+The wrapper itself checks whether Wireshark remote capture is enabled in Settings before running (`GET /api/settings` → `wireshark_capture_enabled`) and exits with an error if it's off, so leaving Wireshark configured but the toggle disabled fails safely rather than silently.
+
+> **Note:** on the pktPCAP host, running `dumpcap` over SSH still needs either `root` or a user in the `wireshark` group with `dumpcap` setuid permissions — same requirement as the generic tshark method above (`sudo usermod -aG wireshark <ssh-user>`, then log out/in).
+
+Once a live Wireshark session is running, its captured bytes are also visible from the pktPCAP UI as a normal Live Feed session (see [Live feed (remote capture)](#live-feed-remote-capture) below) — click **Load from Feed** to pull them in for the same rule-based/AI analysis as an uploaded file.
+
+---
+
 ### Feed Session Lifecycle
 
 ```
@@ -385,19 +442,22 @@ Buffer limit is **200 MB per named session**. If the stream exceeds this, the se
 
 | Feature | Description |
 |---|---|
-| File analysis | Parse `.pcap` / `.pcapng` up to 500 MB (configurable) |
+| File analysis | Parse `.pcap` / `.pcapng` / `.cap` up to 500 MB (configurable); drop multiple files to merge & correlate |
 | Seven analysis tabs | Summary, Anomalies, Flows, TCP, UDP, DNS, Threats |
 | AI assistant | Anthropic Claude or OpenAI GPT — proxied through the local server |
 | Three analysis modes | Specific Issue · Auto-Triage · Security Review |
-| Live feed | Remote `tshark`/Wireshark hosts can stream pcapng directly to the server |
-| In-app log viewer | SQLite ring-buffer of app logs, queryable from the Logs page |
-| User management | Create/edit/delete local users with password reset |
+| Live feed — tshark/curl | Any remote host with `tshark` streams pcapng directly to the server over HTTP |
+| Live feed — Wireshark GUI | Native Wireshark SSH Remote Capture support via the bundled `pktpcap` wrapper script — see [Wireshark GUI remote capture](#wireshark-gui-remote-capture-ssh) |
+| In-app log viewer | SQLite ring-buffer of app logs, queryable from the Logs page; live log-level change from the UI |
+| User management | Create/edit/delete local users with password reset; designate a default admin |
 | Role-based access | `admin`, `analyst`, `viewer` — Settings and log clear require admin |
-| SAML SSO | Okta integration via `python3-saml` |
+| SAML SSO | Okta integration via `python3-saml`, with auto-provisioning and role-sync from Okta attributes on login |
+| Alert notifications | Slack, Email (SMTP), PagerDuty, generic Webhook, and Tracecat — each independently enabled with a built-in test-send button |
+| Scheduled + on-demand backups | Snapshots the SQLite DB, `config.json`, and optionally capture storage on an interval, with rotation; "Run Backup Now" and a snapshot browser in Settings |
 | SSL/HTTPS | Auto-detected from `ssl/` directory; custom cert path configurable in Settings |
 | Settings UI | Web UI at `/settings` — no config file editing needed |
 | Deployment | systemd service on Ubuntu Server 22.04/24.04 LTS (bare metal); no container runtime required |
-| pktHub integration | Suite-token header auth for embedding in the pktHub dashboard suite |
+| pktHub / Suite integration | Suite-token header auth for embedding in the pktHub dashboard suite; token lives in Settings → Security → Suite Integration |
 
 ---
 
@@ -422,23 +482,105 @@ All settings are stored in a SQLite database (`pktpcap.db`). A minimal `config.j
 }
 ```
 
-Settings managed via the UI (`/settings`):
+All settings below live in the SQLite `settings` table and are managed entirely through the web UI at `/settings` — organized into tabs that match the sections below. There is no settings file to hand-edit.
+
+### General
 
 | Key | Default | Description |
 |---|---|---|
-| `port` | `80` | Listening port |
+| `app_name` | `pktPCAP` | Displayed in the browser tab and header |
+| `port` | `8765` | Listening port — **restart required** after changing (Settings → General → **Restart Service**) |
+| `timezone` | `UTC` | Affects display of timestamps in the UI |
+
+### Captures (Data → Storage)
+
+| Key | Default | Description |
+|---|---|---|
+| `storage_path` | — | Directory where capture files are stored |
+| `max_upload_mb` | `500` | Maximum size per uploaded capture file |
+| `storage_quota_gb` | `50` | Total disk quota for all captures |
+| `retention_days` | `90` | Delete captures older than this |
+| `auto_purge` | `false` | Automatically enforce the retention period |
+
+### Database (Data → Storage)
+
+| Key | Default | Description |
+|---|---|---|
+| `db_path` | `pktpcap.db` | SQLite file path — **Test** validates it opens, **Apply** switches to it (restart required) |
+
+### Backups (Data → Backups)
+
+| Key | Default | Description |
+|---|---|---|
+| `auto_backup` | `false` | Enable the scheduled background backup thread |
+| `backup_path` | — | Directory snapshots are written to (falls back to `service/backups/` if unset) |
+| `backup_interval_hours` | `24` | How often the scheduler runs while `auto_backup` is on |
+| `backup_rotation` | `7` | Number of snapshot directories to keep before pruning the oldest |
+| `backup_include_captures` | `false` | Also copy `storage_path` into each snapshot (can be large) |
+
+Each snapshot is a `backup_<timestamp>/` directory containing `pktpcap.db`, `config.json`, and (if enabled) a `captures/` copy. **Run Backup Now** in Settings triggers one immediately; the **Snapshots** table below it lists existing backups with size and file contents. This is the *in-app* backup feature (`service/backup_job.py`) — distinct from the standalone `backup.py` at the repo root, which is a 2-rotation checkout snapshotter for developers (see [Project Structure](#project-structure)).
+
+### Notifications
+
+Each channel below has its own enable toggle and a **Test** button (`POST /api/notifications/test`) that sends a real test message using the saved settings.
+
+| Key | Default | Description |
+|---|---|---|
+| `notify_slack_enabled` / `notify_slack_webhook_url` / `notify_slack_channel` | `false` / — / — | Slack incoming webhook |
+| `notify_email_enabled` / `notify_email_smtp_host` / `notify_email_smtp_port` / `notify_smtp_tls` / `notify_email_username` / `notify_email_password` / `notify_email_from` / `notify_email_default_to` | `false` / — / `587` / `true` / — / — / — / — | SMTP email (supports STARTTLS + auth) |
+| `notify_pagerduty_enabled` / `notify_pagerduty_integration_key` | `false` / — | PagerDuty Events API v2 |
+| `notify_webhook_enabled` / `notify_webhook_url` / `notify_webhook_method` / `notify_webhook_payload_template` | `false` / — / `POST` / `{"text":"{{message}}"}` | Generic JSON webhook; template supports `{{message}}`, `{{alert_name}}`, `{{severity}}`, `{{fired_at}}` |
+| `notify_tracecat_enabled` / `notify_tracecat_webhook_url` / `notify_tracecat_api_token` | `false` / — / — | Tracecat webhook integration |
+
+### Security → Users / Auth
+
+| Key | Default | Description |
+|---|---|---|
+| `local_auth_enabled` | `true` | Username/password login using local accounts; disabling hides local login fields (SSO-only) |
+| `session_timeout_minutes` | `480` | Session idle timeout |
+| `okta_saml_enabled` | `false` | Enable Okta SAML 2.0 SSO |
+| `okta_metadata_xml` | — | Paste Okta's IdP metadata XML here — auto-fills entity ID, SSO URL, and cert below |
+| `okta_entity_id` / `okta_sso_url` / `okta_cert` | — | IdP Entity ID, SSO URL, and X.509 cert (auto-filled from metadata XML, or set individually) |
+| `okta_sp_entity_id` | (auto) | Optional custom SP Entity ID; the ACS URL and SP metadata (`/api/auth/saml/metadata`) are read-only/generated |
+| `okta_sp_cert` / `okta_sp_key` | — | Optional SP certificate/key, for signed authentication requests |
+
+SAML users are **auto-provisioned** on first login (Okta access is treated as trusted) and their role is **synced from Okta attributes** (`role`, `Role`, `userRole`, `pktpcap_role`, or `appRole`) on every subsequent login if Okta sends one — otherwise the role set at provisioning time is left alone.
+
+### Security → Suite Integration
+
+The Suite Token (Settings → Security → **Suite Integration**) is what pktHub (or another suite app) uses to authenticate as a forwarded user via the `X-Suite-Token` / `X-Suite-User` / `X-Suite-Role` headers — no separate login flow needed when embedded. Reveal/copy it from Settings and paste it into pktHub's App Registration; **Regen** invalidates the old token immediately (re-register in pktHub afterward).
+
+### Security → AI Assistant
+
+| Key | Default | Description |
+|---|---|---|
 | `provider` | `anthropic` | AI provider (`anthropic` or `openai`) |
-| `anthropic_key` | — | Anthropic API key |
-| `anthropic_model` | `claude-opus-4-8` | Model string |
-| `openai_key` | — | OpenAI API key |
-| `openai_model` | `gpt-4o` | Model string |
-| `ssl_enabled` | `false` | Enable HTTPS (**file presence in `ssl/` is authoritative**) |
+| `anthropic_key` | — | Anthropic API key — **Test** sends a "Say PONG" round-trip |
+| `anthropic_model` | `claude-opus-4-8` | Also selectable: `claude-sonnet-5`, `claude-haiku-4-5-20251001` |
+| `openai_key` | — | OpenAI API key — **Test** sends a "Say PONG" round-trip |
+| `openai_model` | `gpt-4o` | Also selectable: `gpt-4o-mini`, `o1`, or any model name typed manually |
+
+### Security → SSL/TLS
+
+| Key | Default | Description |
+|---|---|---|
+| `ssl_enabled` | `false` | Enable HTTPS — **file presence in `ssl/` is authoritative for auto-detection regardless of this flag** (see [SSL / TLS](#ssl--tls)) |
 | `ssl_cert` / `ssl_key` | — | Cert/key paths (overridden by `ssl/server.crt` + `ssl/server.key` if present) |
-| `storage_path` | — | Where uploaded captures are saved |
-| `max_upload_mb` | `500` | Upload size limit |
-| `storage_quota_gb` | `50` | Total storage cap |
-| `retention_days` | `90` | Auto-delete captures older than N days |
-| `auto_purge` | `false` | Enable automatic retention enforcement |
+| `pfx_mode` / `pfx_path` / `pfx_passphrase` | — | Optional PFX/PKCS#12 cert upload path, converted server-side |
+| `pem_cert_path` / `pem_key_path` | — | Optional PEM cert/key path pair as an alternative to the `ssl/` directory |
+
+### User Keys
+
+| Key | Default | Description |
+|---|---|---|
+| `lucid_api_token` | — | Used for diagram export to Lucidchart |
+
+### Capture Ingest
+
+| Key | Default | Description |
+|---|---|---|
+| `wireshark_capture_enabled` | `false` | Accept live feeds from the `pktpcap` remote-capture wrapper / Wireshark SSH Remote Capture — see [Wireshark GUI remote capture](#wireshark-gui-remote-capture-ssh) |
+| `feed_token` | (auto-generated) | Bearer token required on every `POST /api/feed/<name>` request — shown (with Copy/Rotate) in this tab once Wireshark capture is enabled; also usable with the generic tshark/curl method |
 
 ---
 
@@ -446,8 +588,8 @@ Settings managed via the UI (`/settings`):
 
 ### Analyzing a capture file
 
-1. Open the app in your browser
-2. Drag-and-drop a `.pcap` or `.pcapng` file onto the upload zone, or click to browse
+1. Open the app in your browser and log in (the login form submits on Enter from either field, no need to click Sign In)
+2. Drag-and-drop a `.pcap`, `.pcapng`, or `.cap` file onto the upload zone, or click to browse — drop multiple files to merge & correlate them
 3. Choose an analysis mode:
    - **Specific Issue** — describe a known problem; AI focuses on it
    - **Auto-Triage** — AI scans for anything suspicious
@@ -469,9 +611,12 @@ Settings managed via the UI (`/settings`):
 
 ### Live feed (remote capture)
 
-pktPCAP can receive a live pcapng stream from a remote host running `tshark` or Wireshark. The server buffers up to 200 MB per named session.
+pktPCAP can receive a live pcapng stream from a remote host running `tshark` or Wireshark. The server buffers up to 200 MB per named session. The **Live Feeds** page has two tabs matching the two collection methods:
 
-**On the remote host:**
+- **tshark** — generic curl-piped stream, works from any host with `tshark` + `curl` (see [Remote Collector — Software & Configuration](#remote-collector--software--configuration))
+- **Wireshark GUI** — native SSH Remote Capture using the bundled `pktpcap` wrapper, giving you a live view in Wireshark itself while pktPCAP buffers the same stream (see [Wireshark GUI remote capture](#wireshark-gui-remote-capture-ssh))
+
+**On the remote host (tshark method):**
 
 ```bash
 tshark -i <interface> -w - | curl -s \
@@ -481,7 +626,7 @@ tshark -i <interface> -w - | curl -s \
   "http://<pktpcap-host>/api/feed/<session-name>"
 ```
 
-Retrieve the feed token from the Settings page, then load the buffered capture from the UI.
+Retrieve the feed token and endpoint from **Settings → Capture Ingest**, then click **Load from Feed** in the Live Feeds page to pull the buffered capture into the normal analysis view.
 
 ---
 
@@ -520,7 +665,8 @@ All endpoints are served from the app root (default `http://your-host`).
 | `POST` | `/api/logout` | End session |
 | `GET` | `/api/auth/current-user` | Return current user info and role |
 | `GET` | `/api/auth/saml/login` | Redirect to SAML IdP (if configured) |
-| `POST` | `/api/auth/saml/acs` | SAML Assertion Consumer Service callback |
+| `POST` | `/api/auth/saml/callback` | SAML Assertion Consumer Service (ACS) callback — auto-provisions/role-syncs the user |
+| `GET` | `/api/auth/saml/metadata` | SP metadata XML (register this with the IdP) |
 
 ### Users
 
@@ -531,6 +677,36 @@ All endpoints are served from the app root (default `http://your-host`).
 | `PUT` | `/api/users/<id>` | Update a user |
 | `DELETE` | `/api/users/<id>` | Delete a user |
 | `POST` | `/api/users/<id>/reset-password` | Reset a user's password |
+| `PATCH` | `/api/users/<id>/set-default-admin` | Mark a user as the default/fallback admin account |
+
+### Notifications
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/api/notifications/test` | Send a real test message on one channel (`slack`, `email`, `pagerduty`, `webhook`, `tracecat`) using saved settings — returns `sent` / `skipped` (channel disabled or unconfigured) / `failed` |
+
+### Database
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/db-config` | Return the current `config.json` (`db_type` / `db_path`) |
+| `POST` | `/api/db-config/test` | Open a candidate SQLite path and run `SELECT 1` without switching to it |
+| `POST` | `/api/db-config` | Switch the active database path |
+
+### Backups
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/api/backup/run` | Run a backup snapshot immediately (same as "Run Backup Now" in Settings) |
+| `GET` | `/api/backup/list` | List existing snapshots — name, size, files, created time |
+
+### Suite Integration
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/suite/token` | Return the current suite token and whether one is set — for display in Settings |
+| `POST` | `/api/suite/register` | Called **by pktHub** (not by an admin directly) to push/set this app's suite token during registration — body `{"suite_token": "..."}` |
+| `POST` | `/api/suite/regenerate` | Generate a new local suite token, invalidating the old one — re-register in pktHub afterward |
 
 ### Logs
 
@@ -563,24 +739,26 @@ All endpoints are served from the app root (default `http://your-host`).
 
 ```
 pktpcap/
-├── service/                    ← Application source
-│   ├── server.py               ← Flask entry point
-│   ├── db.py                   ← SQLite database layer
+├── service/                    ← Application source (copied to the install dir by install.sh)
+│   ├── server.py               ← Flask entry point — all routes, SAML, notifications, feeds
+│   ├── db.py                   ← SQLite database layer, default settings, admin bootstrap
+│   ├── backup_job.py           ← In-app scheduled/on-demand backup engine (Settings → Data → Backups)
+│   ├── suite_client.py         ← pktpcap-as-client helper for calling a sibling pkt* app's suite API (not yet wired to a UI feature)
 │   ├── logging_handler.py      ← SQLite async log ring-buffer
 │   ├── requirements.txt
-│   ├── config.json             ← Runtime config — GITIGNORED
+│   ├── config.json             ← Runtime config ({db_type, db_path}) — GITIGNORED
 │   ├── static/
-│   │   ├── index.html          ← Full single-page app
+│   │   ├── index.html          ← Full single-page app (upload/analyze, live feeds, logs) — server-rendered via Flask + static assets, not a React SPA
 │   │   ├── nav.js              ← Shared sidebar nav component
 │   │   └── logo.png
-│   ├── pkt-capture              ← Wireshark SSH remote-capture wrapper (dumpcap + feed upload)
+│   ├── pktpcap                  ← Remote-capture wrapper script (renamed from pkt-capture) — used by Wireshark's SSH Remote Capture; installed at <install_dir>/pktpcap with __PORT__ substituted by install.sh
 │   └── templates/
-│       ├── login.html          ← Login page (local auth + SSO)
-│       └── settings.html       ← Settings UI (admin only)
+│       ├── login.html          ← Login page (local auth + SSO; Enter-to-submit)
+│       └── settings.html       ← Settings UI (admin only) — General/Captures/Notifications/User Keys/Capture Ingest/Security (Users, Auth, Suite Integration, AI Assistant, SSL)/Data (Storage, Backups)
 │
-├── install.sh                   ← Ubuntu Server install script (see Installation)
+├── install.sh                   ← Interactive Ubuntu Server install script (see Installation)
 ├── pktpcap.service              ← systemd unit template (placeholders substituted by install.sh)
-├── backup.py                    ← Local 2-rotation backup script
+├── backup.py                    ← Standalone dev-machine checkout backup (2-rotation) — NOT the in-app feature; see backup_job.py above
 │
 ├── scripts/
 │   └── verify_deploy.py         ← SSH into a deployed host and check service/port/health
@@ -588,9 +766,11 @@ pktpcap/
 ├── ssl/                        ← SSL certs — GITIGNORED (place certs here)
 │   └── .gitkeep
 │
-├── favicon.ico / icon-*.png    ← App icons
+├── favicon.ico / favicon.svg / icon-*.png ← App icons
 └── lockup-*.png / lockup.svg   ← Logo assets
 ```
+
+pktPCAP is **server-rendered** (Flask serving static HTML/JS + Jinja templates), not a React/Vite single-page app like some sibling `pkt*` tools — there's no separate frontend build step; editing `service/static/index.html` or the templates takes effect on the next request (or `POST /api/restart`).
 
 ---
 
@@ -620,7 +800,11 @@ Both pages fetch `/api/auth/current-user` to populate the user/logout footer.
 
 ## Architecture Notes
 
-**Path resolution:** `BASE = Path(__file__).parent` throughout — the server resolves all paths relative to `server.py`, so it works identically whether run directly or inside a container.
+**Path resolution:** `BASE = Path(__file__).parent` throughout — the server resolves all paths (static files, `ssl/`, `config.json`, screenshots) relative to `server.py`, regardless of the current working directory it's launched from.
+
+**Backup scheduler:** `service/backup_job.py` starts a daemon thread at boot that sleeps for `backup_interval_hours` and runs a snapshot whenever `auto_backup` is on; "Run Backup Now" and `POST /api/backup/run` call the same `run_backup()` function directly, outside the schedule.
+
+**Remote-capture wrapper:** `service/pktpcap` (installed at `<install_dir>/pktpcap`) is invoked by Wireshark as its SSH Remote Capture command in place of `dumpcap`. It checks `wireshark_capture_enabled` via `/api/settings`, then tees `dumpcap`'s output: one stream goes back over the SSH pipe to Wireshark's GUI, the other is POSTed to this server's own `/api/feed/<name>` endpoint using the same feed-token auth as the generic tshark method.
 
 **AI proxy:** The frontend calls `localAsk(prompt, dataArray)` which POSTs to `/api/ai`. The server forwards the request to Anthropic or OpenAI and streams the response back. API keys never leave the host.
 
@@ -638,8 +822,8 @@ Both pages fetch `/api/auth/current-user` to populate the user/logout footer.
 
 | Provider | Models |
 |---|---|
-| Anthropic | `claude-opus-4-8`, `claude-sonnet-4-6`, `claude-haiku-4-5-20251001` |
-| OpenAI | `gpt-4o`, `gpt-4o-mini`, and any model name entered manually |
+| Anthropic | `claude-opus-4-8`, `claude-sonnet-5`, `claude-haiku-4-5-20251001` |
+| OpenAI | `gpt-4o`, `gpt-4o-mini`, `o1`, and any model name entered manually |
 
 ---
 
