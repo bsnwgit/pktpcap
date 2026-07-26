@@ -41,15 +41,15 @@ function fmtTs(ts: string): string {
 }
 
 // -- Two-tab push-command reference (tshark/curl vs Wireshark SSH) ---------------
-// The feed token is masked by default here (unlike Settings -> Capture Ingest,
-// which is admin-only and shows it in the clear) — this page is reachable by
-// any signed-in user, so the token stays hidden until explicitly revealed.
+// The token appears in the clear inside the generated commands below — it
+// has to, or copy-paste-and-run doesn't work. There's no separate "reveal"
+// step; anyone who can reach this page (any signed-in user) already needed
+// to see it to actually push a capture.
 function PushCommands() {
   const { user } = useAuth()
   const isAdmin = user?.role === 'admin'
   const [tab, setTab] = useState<'tshark' | 'wireshark'>('tshark')
   const [config, setConfig] = useState<{ wireshark_capture_enabled: boolean; tshark_capture_enabled: boolean; feed_token: string } | null>(null)
-  const [revealed, setRevealed] = useState(false)
   const [copied, setCopied] = useState(false)
   const [ownInterfaces, setOwnInterfaces] = useState<string[]>([])
   const [togglingTshark, setTogglingTshark] = useState(false)
@@ -90,21 +90,16 @@ function PushCommands() {
   const host = window.location.hostname || 'SERVER-IP'
   const port = window.location.port || '80'
   const token = config?.feed_token || ''
-  const masked = token ? token.slice(0, 4) + '•'.repeat(20) : 'Not set — configure in Settings → Capture Ingest'
-  const shownToken = revealed ? token : masked
 
   const name = sessionName.trim() || 'my-capture'
   const iface = ifaceName.trim() || 'any'
   const filter = bpfFilter.trim()
   const filterArg = filter ? ` -f "${filter}"` : ''
 
-  // Built with the real token always — copy needs the working command even
-  // while the on-screen version is masked (bug fix: token no longer renders
-  // in the clear by default on this page).
-  const buildTsharkCmd = (tok: string) =>
-    `tshark -i ${iface}${filterArg} -w - | curl -s -X POST \\\n  -H "Authorization: Bearer ${tok || 'YOUR_TOKEN'}" \\\n  -H "Content-Type: application/octet-stream" \\\n  --data-binary @- \\\n  "http://${host}:${port}/api/feed/${name}"`
-  const tsharkCmdDisplay = buildTsharkCmd(revealed ? token : '****')
-  const tsharkCmdReal = buildTsharkCmd(token)
+  // The command must show the real, working token — it's the whole point of
+  // this box (copy-paste-and-run). Masking belongs on a passive display of
+  // the token by itself, not on a command that has to actually execute.
+  const tsharkCmd = `tshark -i ${iface}${filterArg} -w - | curl -s -X POST \\\n  -H "Authorization: Bearer ${token || 'YOUR_TOKEN_HERE'}" \\\n  -H "Content-Type: application/octet-stream" \\\n  --data-binary @- \\\n  "http://${host}:${port}/api/feed/${name}"`
 
   const wsCmd = `SSH Host:   ${host}\nSSH Port:   22\nSSH User:   <your-ssh-user>\nAuth:       SSH Key file (<your-key.pem>)\nCommand:    <install_dir>/pktpcap   (default: /opt/pktpcap/pktpcap)\nInterface:  ${iface}\nFilter:     ${filter || '(none)'}`
 
@@ -120,7 +115,7 @@ function PushCommands() {
         <HelpButton title="Push a Live Capture — How It Works">
           <p><span className="text-gray-300 font-medium">tshark / curl</span> works from any host with tshark installed — the interface name is whatever <code className="text-gray-400">tshark -D</code> lists on THAT remote host, which pktPCAP has no way to see in advance, so it stays a free-text field you fill in yourself.</p>
           <p><span className="text-gray-300 font-medium">Wireshark SSH Remote Capture</span> is different: Wireshark SSHes INTO this pktPCAP server and runs the capture here, so the interface list below (this server's own NICs) is the relevant one for that tab only.</p>
-          <p>The feed token is masked by default — click Reveal if you need to read it off, or use Copy to grab it without displaying it.</p>
+          <p>The generated commands include your real feed token — anyone who can push a capture already needs to see it. Treat it like a password: don't paste these commands somewhere untrusted.</p>
         </HelpButton>
       </div>
       <div className="px-6 py-4 space-y-4">
@@ -176,20 +171,14 @@ function PushCommands() {
           {!isAdmin && <span className="text-xs text-gray-500 ml-2">Ask an admin to change this</span>}
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs text-gray-400">Feed token:</span>
-          <code className="bg-gray-950 border border-gray-800 rounded px-2 py-1 text-xs font-mono text-gray-300">{shownToken}</code>
-          {token && (
-            <button onClick={() => setRevealed(v => !v)} className="text-xs text-gray-400 hover:text-white border border-gray-700 rounded-lg px-2 py-1 bg-gray-800">
-              {revealed ? 'Hide' : 'Reveal'}
-            </button>
-          )}
-        </div>
+        {!token && (
+          <p className="text-xs text-yellow-400">No feed token set — configure one in Settings → Capture Ingest before using either command below.</p>
+        )}
 
         {tab === 'tshark' ? (
           <div className="space-y-1.5">
-            <pre className="bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-xs font-mono text-emerald-400 whitespace-pre-wrap overflow-x-auto">{tsharkCmdDisplay}</pre>
-            <button onClick={() => copy(tsharkCmdReal)}
+            <pre className="bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-xs font-mono text-emerald-400 whitespace-pre-wrap overflow-x-auto">{tsharkCmd}</pre>
+            <button onClick={() => copy(tsharkCmd)}
               className="text-xs px-3 py-1.5 rounded-lg text-white transition-colors" style={{ background: copied ? '#16a34a' : '#374151' }}>
               {copied ? '✓ Copied' : 'Copy Command'}
             </button>
