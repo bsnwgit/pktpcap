@@ -331,6 +331,7 @@
           <div class="lf-page-title">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
             Live Feeds
+            <button class="pkt-help-btn" title="How this works" onclick="helpLiveFeeds()">?</button>
           </div>
           <div class="lf-page-sub">Receive live packet captures streamed from remote hosts via tshark or Wireshark</div>
         </div>
@@ -437,6 +438,7 @@
           <div class="az-page-title">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
             Packet Analyzer
+            <button class="pkt-help-btn" title="How this works" onclick="helpAnalyzer()">?</button>
           </div>
           <div class="az-page-sub">Upload .pcap / .pcapng captures — parse, correlate, and analyze with AI</div>
         </div>
@@ -580,7 +582,10 @@
     <!-- Header -->
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px">
       <div>
-        <div style="font-size:16px;font-weight:700;color:#f9fafb;margin-bottom:4px">Application Logs</div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:16px;font-weight:700;color:#f9fafb;margin-bottom:4px">
+          Application Logs
+          <button class="pkt-help-btn" title="How this works" onclick="helpLogs()">?</button>
+        </div>
         <div id="logs-subtitle" style="font-size:13px;color:#9ca3af">Loading…</div>
       </div>
       <div style="display:flex;gap:8px;align-items:center">
@@ -2983,7 +2988,27 @@ function doSignOut() {
     window.location.href = '/login';
   });
 }
+function helpAnalyzer() {
+  openPktHelp('Packet Analyzer — How It Works', `
+    <p>Drop one or more .pcap/.pcapng/.cap files — multiple files are merged and correlated as one analysis rather than run separately.</p>
+    <p>Describe a specific problem or leave the box blank for a general triage. The result view's tabs (Summary, Anomalies, Flows, TCP, UDP, DNS, Threats) all reflect the same parsed capture, just sliced differently — the AI assistant on the side can answer follow-up questions about anything in them.</p>
+  `);
+}
+function helpLiveFeeds() {
+  openPktHelp('Live Feeds — How It Works', `
+    <p><strong>tshark / CLI</strong> gives you a command to run on a remote host that streams packets back here over the network — the feed is recorded as a capture automatically while it runs.</p>
+    <p><strong>Wireshark GUI</strong> instead has Wireshark itself SSH into this server and run the pktPCAP wrapper in place of dumpcap — you get Wireshark's live view locally, and the stream is simultaneously recorded here, appearing as a <code>ws-&lt;ip&gt;-&lt;time&gt;</code> feed.</p>
+    <p>Saved Captures below are completed recordings from either method, available for analysis the same way an uploaded file is.</p>
+  `);
+}
+function helpLogs() {
+  openPktHelp('Application Logs — How It Works', `
+    <p>This is the app's own internal log — capture parsing, feed sessions, API errors — not packet contents.</p>
+    <p>Capture level controls how much is written going forward (admin-only) — lowering it to DEBUG generates far more volume but is useful when troubleshooting a specific feed or analysis run.</p>
+  `);
+}
 </script>
+<script src="/static/help.js"></script>
 <script src="/static/nav.js"></script>
 
 </body>
