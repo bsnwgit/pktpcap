@@ -322,7 +322,7 @@
     <div id="tab-general">
 
       <div class="section-card">
-        <div class="section-header"><h2>General</h2></div>
+        <div class="section-header"><h2 style="display:flex;align-items:center;gap:8px">General <button class="pkt-help-btn" title="How this works" onclick="helpGeneral()">?</button></h2></div>
         <div class="section-body">
           <div class="field-row">
             <div><p class="field-label">App name</p><p class="field-hint">Displayed in browser tab and header</p></div>
@@ -368,7 +368,7 @@
     <!-- ══ STORAGE ══ -->
     <div id="tab-storage" class="hidden">
       <div class="section-card">
-        <div class="section-header"><h2>Captures</h2></div>
+        <div class="section-header"><h2 style="display:flex;align-items:center;gap:8px">Captures <button class="pkt-help-btn" title="How this works" onclick="helpCaptures()">?</button></h2></div>
         <div class="section-body">
           <div class="field-row">
             <div><p class="field-label">Storage path</p><p class="field-hint">Directory where capture files are stored</p></div>
@@ -414,7 +414,7 @@
     <!-- ══ NOTIFICATIONS ══ -->
     <div id="tab-notifications" class="hidden">
       <div class="section-card">
-        <div class="section-header"><h2>Notifications</h2></div>
+        <div class="section-header"><h2 style="display:flex;align-items:center;gap:8px">Notifications <button class="pkt-help-btn" title="How this works" onclick="helpNotifications()">?</button></h2></div>
         <div class="section-body">
 
           <!-- Slack -->
@@ -585,7 +585,7 @@
           <div id="tab-users">
             <div class="section-card">
               <div class="section-header" style="display:flex;align-items:center;justify-content:space-between">
-                <h2>Users</h2>
+                <h2 style="display:flex;align-items:center;gap:8px">Users <button class="pkt-help-btn" title="How this works" onclick="helpUsers()">?</button></h2>
                 <button class="btn btn-primary" style="font-size:12px;padding:6px 14px" onclick="openUserModal(null)">+ Add User</button>
               </div>
               <div class="section-body" style="padding:0">
@@ -619,7 +619,7 @@
           <!-- ══ AUTH (moved from top-level tab) ══ -->
           <div id="tab-auth" class="hidden">
             <div class="section-card">
-              <div class="section-header"><h2>Authentication</h2></div>
+              <div class="section-header"><h2 style="display:flex;align-items:center;gap:8px">Authentication <button class="pkt-help-btn" title="How this works" onclick="helpAuth()">?</button></h2></div>
               <div class="section-body">
 
                 <div class="field-row">
@@ -703,7 +703,7 @@
           <!-- ══ SUITE INTEGRATION (renamed from "pktHub Integration") ══ -->
           <div id="tab-suite" class="hidden">
             <div class="section-card">
-              <div class="section-header"><h2>Suite Integration</h2></div>
+              <div class="section-header"><h2 style="display:flex;align-items:center;gap:8px">Suite Integration <button class="pkt-help-btn" title="How this works" onclick="helpSuite()">?</button></h2></div>
               <div class="section-body">
                 <div class="field-row">
                   <div>
@@ -737,7 +737,7 @@
           <!-- ══ AI ASSISTANT (moved from General, renamed from "AI Provider") ══ -->
           <div id="tab-ai" class="hidden">
             <div class="section-card">
-              <div class="section-header"><h2>AI Assistant</h2></div>
+              <div class="section-header"><h2 style="display:flex;align-items:center;gap:8px">AI Assistant <button class="pkt-help-btn" title="How this works" onclick="helpAI()">?</button></h2></div>
               <div class="section-body">
                 <div class="field-row">
                   <div><p class="field-label">Provider</p></div>
@@ -804,7 +804,7 @@
           <!-- ══ SSL/TLS (moved from old Integrations tab) ══ -->
           <div id="tab-ssl" class="hidden">
             <div class="section-card">
-              <div class="section-header"><h2>SSL / TLS</h2></div>
+              <div class="section-header"><h2 style="display:flex;align-items:center;gap:8px">SSL / TLS <button class="pkt-help-btn" title="How this works" onclick="helpSSL()">?</button></h2></div>
               <div class="section-body">
                 <div class="field-row">
                   <div><p class="field-label">Enable HTTPS</p><p class="field-hint">Restart service after installing certificate</p></div>
@@ -890,7 +890,7 @@
     <!-- ══ USER KEYS (Lucidchart token, split out of old "Integrations" card) ══ -->
     <div id="tab-userkeys" class="hidden">
       <div class="section-card">
-        <div class="section-header"><h2>User Keys</h2></div>
+        <div class="section-header"><h2 style="display:flex;align-items:center;gap:8px">User Keys <button class="pkt-help-btn" title="How this works" onclick="helpUserKeys()">?</button></h2></div>
         <div class="section-body">
           <p class="uak-signedin">Signed in as <strong id="uak-whoami">…</strong> — these keys apply to your account only.</p>
 
@@ -915,7 +915,7 @@
     <!-- ══ CAPTURE INGEST (Wireshark remote capture, split out of old "Integrations" card; app-specific) ══ -->
     <div id="tab-ingest" class="hidden">
       <div class="section-card">
-        <div class="section-header"><h2>Capture Ingest</h2></div>
+        <div class="section-header"><h2 style="display:flex;align-items:center;gap:8px">Capture Ingest <button class="pkt-help-btn" title="How this works" onclick="helpIngest()">?</button></h2></div>
         <div class="section-body">
           <div class="field-row">
             <div><p class="field-label">tshark / CLI capture</p><p class="field-hint">Allow direct tshark/curl pushes to the feed endpoint (Live Feeds &gt; tshark/CLI tab)</p></div>
@@ -980,7 +980,7 @@
         <div class="subtab-content">
           <div id="tab-database">
             <div class="section-card">
-              <div class="section-header"><h2>Database</h2></div>
+              <div class="section-header"><h2 style="display:flex;align-items:center;gap:8px">Database <button class="pkt-help-btn" title="How this works" onclick="helpDatabase()">?</button></h2></div>
               <div class="section-body">
                 <div class="field-row" style="border-bottom:none">
                   <div><p class="field-label">SQLite path</p><p class="field-hint">Database file path. Restart required after changing.</p></div>
@@ -999,7 +999,7 @@
 
           <div id="tab-backups" class="hidden">
             <div class="section-card">
-              <div class="section-header"><h2>Backup</h2></div>
+              <div class="section-header"><h2 style="display:flex;align-items:center;gap:8px">Backup <button class="pkt-help-btn" title="How this works" onclick="helpBackup()">?</button></h2></div>
               <div class="section-body">
                 <div class="field-row">
                   <div><p class="field-label">Auto backup</p><p class="field-hint">Enable scheduled automatic backups</p></div>
@@ -2106,6 +2106,7 @@ function doSignOut() {
   fetch('/api/logout', { method: 'POST' }).finally(() => { window.location.href = '/login' })
 }
 </script>
+<script src="/static/help.js"></script>
 <script src="/static/nav.js"></script>
 
 <script>
@@ -2163,6 +2164,78 @@ async function suiteRegen() {
   } finally {
     if (btn) btn.disabled = false;
   }
+}
+
+// ── Section help content ─────────────────────────────────────────────────────
+function helpGeneral() {
+  openPktHelp('General — How It Works', `
+    <p>Port changes and some backend settings need a service restart to take effect — use Restart Service here rather than restarting from the OS, it also serves as a way to recover from a stuck backend without SSHing in.</p>
+  `);
+}
+function helpCaptures() {
+  openPktHelp('Captures — How It Works', `
+    <p>Controls storage for uploaded and recorded capture files (not the database). Retention and auto-purge work together — auto-purge must be on for old captures to actually be deleted once they pass the retention period.</p>
+    <p>Storage quota is a hard ceiling across all captures combined — new uploads are rejected once it's hit, independent of the retention/purge settings.</p>
+  `);
+}
+function helpNotifications() {
+  openPktHelp('Notifications — How It Works', `
+    <p>Each channel (Slack, Email, PagerDuty, Webhook, Tracecat) is independent — enable only the ones you use, and use Send Test on each to confirm delivery before relying on it for alerts.</p>
+    <p>Webhook's payload template supports a <code>{{message}}</code> placeholder that gets substituted with the actual alert text at send time.</p>
+  `);
+}
+function helpUsers() {
+  openPktHelp('Users — How It Works', `
+    <p>This only manages <strong>local accounts</strong> — SAML/Okta SSO users are auto-provisioned on first login and managed in your identity provider, not here.</p>
+    <p>The <span style="color:#facc15">★</span> marks the <strong>default admin</strong> — when every auth method on the Auth tab ends up disabled or misconfigured, the app skips the login page entirely and signs everyone in as this account instead of locking everyone out. Click the star on any active admin to reassign it.</p>
+  `);
+}
+function helpAuth() {
+  openPktHelp('Authentication — How It Works', `
+    <p>Local auth and SAML SSO can both be enabled at once — users can sign in either way. Turning off Local auth without a working SAML config in place is what triggers the default-admin fallback described on the Users tab.</p>
+    <p>Pasting the IdP metadata XML from Okta auto-fills the Entity ID, SSO URL, and certificate fields below it — you can also fill them in by hand if you only have the individual values.</p>
+  `);
+}
+function helpSuite() {
+  openPktHelp('Suite Integration — How It Works', `
+    <p>This token is what lets pktHub proxy into this app and check its health — copy it here and paste it into pktHub's App Registration when adding this app to the suite.</p>
+    <p>Regenerating immediately invalidates the old token — pktHub will show a token-mismatch alert until you re-register with the new one.</p>
+  `);
+}
+function helpAI() {
+  openPktHelp('AI Assistant — How It Works', `
+    <p>Powers the chat assistant on the Analyzer results screen — it answers questions about a parsed capture using the same data shown in the Summary/Anomalies/Flows/etc tabs, not raw packet bytes beyond what's been extracted.</p>
+    <p>Test verifies the key works before you save — switching providers keeps both keys stored, so you can flip back without re-entering credentials.</p>
+  `);
+}
+function helpSSL() {
+  openPktHelp('SSL / TLS — How It Works', `
+    <p>Upload a certificate as either a single <strong>PFX/P12</strong> bundle or a separate <strong>PEM</strong> cert + key pair — whichever your CA or self-signing process produced.</p>
+    <p>A restart is required after installing or removing a certificate for the change to take effect.</p>
+  `);
+}
+function helpUserKeys() {
+  openPktHelp('User Keys — How It Works', `
+    <p>These keys are <strong>personal, not shared</strong> — each user stores their own under their own account, and only that user's own requests use them. Nobody else, including admins, can see the value.</p>
+    <p>Leave a field blank and save to clear a key.</p>
+  `);
+}
+function helpIngest() {
+  openPktHelp('Capture Ingest — How It Works', `
+    <p>These toggles gate the two ways a remote host can push a live capture into this app — matching the tshark/CLI and Wireshark GUI tabs on the Live Feeds page. Turning one off here immediately blocks new feeds of that type, without affecting captures already recorded.</p>
+    <p>The bearer token authenticates pushes to the feed endpoint — Rotate it if it's been exposed; anything still using the old token will be rejected until reconfigured.</p>
+  `);
+}
+function helpDatabase() {
+  openPktHelp('Database — How It Works', `
+    <p>SQLite file path for this app's own database — analysis metadata, users, settings. Capture files themselves live under the Captures storage path, not here. Test checks the path is writable before Apply switches to it, which requires a restart.</p>
+  `);
+}
+function helpBackup() {
+  openPktHelp('Backup — How It Works', `
+    <p>Backs up the database on the interval you set, rotating out old copies beyond the count in Keep backups. Include captures adds the actual .pcap files to the archive — usually much larger, so it's off by default.</p>
+    <p>Run Backup Now creates a snapshot immediately without waiting for the schedule — new snapshots appear in the list below.</p>
+  `);
 }
 
 </script>
