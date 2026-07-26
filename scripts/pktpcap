@@ -1,0 +1,50 @@
+#!/bin/bash
+# /opt/pktpcap/pktpcap
+# Wireshark SSH Remote Capture wrapper for pktPCAP.
+# Must be enabled in pktPCAP Settings > Capture Ingest > Wireshark toggle before use.
+#
+# Wireshark SSH Remote Capture settings:
+#   SSH Host:    <pktpcap-server-ip>
+#   SSH User:    <ssh-user>
+#   Auth:        Key file (<your-ssh-key.pem>)
+#   Command:     /opt/pktpcap/pktpcap
+#   Interface:   eth0
+
+set -uo pipefail
+
+DUMPCAP=/usr/bin/dumpcap
+
+# Fetch wireshark_capture_enabled + feed_token in one unauthenticated call.
+# This dedicated endpoint (not the general /api/settings, which requires a
+# real login under the FastAPI rebuild) exists specifically for this script —
+# see app/api/feeds.py's wrapper_config() docstring for why.
+CONFIG_JSON=$(curl -sf "http://localhost:__PORT__/api/capture/wrapper-config" 2>/dev/null || echo "{}")
+
+ENABLED=$(echo "$CONFIG_JSON" | python3 -c "import sys,json; print('1' if json.load(sys.stdin).get('wireshark_capture_enabled') else '0')" 2>/dev/null || echo "0")
+
+if [ "$ENABLED" != "1" ]; then
+    echo "pktPCAP: Wireshark remote capture is currently disabled." >&2
+    echo "Enable it in pktPCAP Settings > Capture Ingest, then retry." >&2
+    exit 1
+fi
+
+# Build feed name from SSH client IP + timestamp
+CLIENT_IP=$(echo "${SSH_CLIENT:-}" | awk '{print $1}' | tr '.' '-')
+TS=$(date +%H%M%S)
+FEED_NAME="ws-${CLIENT_IP:-unknown}-${TS}"
+
+TOKEN=$(echo "$CONFIG_JSON" | python3 -c "import sys,json; print(json.load(sys.stdin).get('feed_token',''))" 2>/dev/null || true)
+
+if [ -z "$TOKEN" ]; then
+    exec "$DUMPCAP" "$@"
+fi
+
+# Tee: stdout -> Wireshark via SSH, process sub -> pktPCAP feed
+"$DUMPCAP" "$@" | tee >(
+    curl -s -X POST \
+        -H "Authorization: Bearer ${TOKEN}" \
+        -H "Content-Type: application/octet-stream" \
+        --data-binary @- \
+        "http://localhost:__PORT__/api/feed/${FEED_NAME}" \
+        >/dev/null 2>&1
+)
