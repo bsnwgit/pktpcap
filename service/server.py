@@ -87,6 +87,37 @@ def _get_or_create_feed(name, remote_addr):
         return _feed_sessions[name]
 
 
+_CAPTURE_FILE_RE = _re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9_\-]{0,79}\.pcapng$")
+
+def _captures_dir():
+    """The configured on-disk capture directory (Settings > Captures > Storage
+    path), or None if not configured. Feed sessions only ever live in memory
+    until this is set -- nothing writes to disk without it."""
+    storage_path = (load_config().get("storage_path") or "").strip()
+    return Path(storage_path) if storage_path else None
+
+def _save_feed_to_disk(feed_session):
+    """Persist a finished feed session's buffered bytes to storage_path so it
+    survives past the in-memory session (200MB cap, lost on restart/eviction).
+    No-ops quietly if no storage_path is configured."""
+    d = _captures_dir()
+    if not d:
+        return None
+    data = feed_session.get_bytes()
+    if not data:
+        return None
+    try:
+        d.mkdir(parents=True, exist_ok=True)
+        ts = datetime.datetime.fromtimestamp(feed_session.last_seen).strftime("%Y%m%d-%H%M%S")
+        fname = f"{feed_session.name}_{ts}.pcapng"
+        (d / fname).write_bytes(data)
+        log.info("Saved capture %s (%d bytes) to %s", fname, len(data), d)
+        return fname
+    except OSError:
+        log.exception("Failed to save feed %s to storage_path", feed_session.name)
+        return None
+
+
 def _ensure_suite_token():
     """Generate a suite token if one is not already set."""
     import sqlite3 as _sq_st, secrets as _sec_st
@@ -125,6 +156,15 @@ def _get_server_ip():
         return ip
     except Exception:
         return "127.0.0.1"
+
+def _list_local_interfaces():
+    """Return this server's own network interface names, e.g. for the
+    Wireshark-GUI SSH-remote-capture tab where tshark runs on this host."""
+    try:
+        names = [n for _, n in socket.if_nameindex() if n != "lo"]
+        return sorted(names)
+    except (AttributeError, OSError):
+        return []
 
 # -- Flask app -----------------------------------------------------------------
 
@@ -436,7 +476,7 @@ def saml_metadata():
 def get_settings():
     cfg    = load_config()
     masked = dict(cfg)
-    BULLET = "ΓÇó"
+    BULLET = "•"
     for k in ("anthropic_key", "openai_key", "notify_email_password",
               "notify_pagerduty_integration_key", "notify_tracecat_api_token",
               "lucid_api_token"):
@@ -451,7 +491,7 @@ def post_settings():
     body = request.get_json(force=True)
     db   = get_db()
     cfg  = db.get_all_settings()
-    BULLET = "ΓÇó"
+    BULLET = "•"
 
     for field in (
         "app_name", "provider", "anthropic_model", "openai_model",
@@ -485,7 +525,7 @@ def post_settings():
         "local_auth_enabled", "okta_saml_enabled", "notify_smtp_tls",
         "notify_slack_enabled", "notify_email_enabled", "notify_pagerduty_enabled",
         "notify_webhook_enabled", "notify_tracecat_enabled", "pfx_mode",
-        "wireshark_capture_enabled",
+        "wireshark_capture_enabled", "tshark_capture_enabled",
     ):
         if field in body:
             cfg[field] = bool(body[field])
@@ -499,6 +539,399 @@ def post_settings():
 
     db.set_many_settings(cfg)
     return jsonify({"ok": True, "port": cfg.get("port", 8765)})
+
+# -- API: per-user external lookup API keys --------------------------------------
+
+SUPPORTED_KEY_PROVIDERS = {
+    "abuseipdb":      "AbuseIPDB",
+    "ipqualityscore": "IPQualityScore",
+    "ipinfo":         "ipinfo.io",
+    "ipapi_is":       "ipapi.is",
+    "mxtoolbox":      "MXToolbox",
+}
+_TEST_IP = "8.8.8.8"
+
+# The ipinfo.io response sections a user can individually show/hide in the IP
+# Lookup modal. Display preference only — ipinfo.io always returns whatever
+# the account's plan unlocks; this just controls what renders.
+IPINFO_FIELDS = ["geolocation", "asn", "company", "privacy", "abuse", "domains"]
+
+# Same idea for ipapi.is — its response sections a user can individually
+# show/hide. "detection" covers the is_vpn/is_proxy/is_tor/is_datacenter/
+# is_abuser/is_mobile/is_satellite/is_crawler/is_bogon flags plus the vpn{}
+# detail object.
+IPAPI_IS_FIELDS = ["geolocation", "asn", "company", "detection", "abuse"]
+
+# MXToolbox only auto-wires 3 of its 21 commands into the IP Lookup modal
+# (see get_ip_info() below) — the rest are domain/email record checks and
+# active probes, reachable only via the generic /api/mxtoolbox/lookup
+# endpoint, not this per-IP lookup. These 3 keys match the mxtoolbox result
+# dict's own field names.
+MXTOOLBOX_FIELDS = ["ptr", "asn", "blacklist"]
+
+@app.route("/api/whoami", methods=["GET"])
+def whoami():
+    username = session.get("username")
+    if not username:
+        uid = session.get("user_id")
+        if isinstance(uid, int):
+            row = get_db()._conn().execute("SELECT username FROM users WHERE id = ?", (uid,)).fetchone()
+            username = row["username"] if row else uid
+        else:
+            username = uid
+    return jsonify({"username": username})
+
+@app.route("/api/user-api-keys", methods=["GET"])
+def get_user_api_keys():
+    username = session.get("username") or session.get("user_id")
+    stored = get_db().get_user_api_keys(username)
+    return jsonify([
+        {
+            "provider": p, "label": label,
+            "api_key": stored.get(p, {}).get("api_key", ""),
+            "updated_at": stored.get(p, {}).get("updated_at"),
+            "enabled_fields": stored.get(p, {}).get("enabled_fields"),
+            "free_tier": stored.get(p, {}).get("free_tier", False),
+        }
+        for p, label in SUPPORTED_KEY_PROVIDERS.items()
+    ])
+
+@app.route("/api/user-api-keys/ipinfo/fields", methods=["PUT"])
+def set_ipinfo_fields():
+    username = session.get("username") or session.get("user_id")
+    fields = (request.get_json(silent=True) or {}).get("enabled_fields", [])
+    unknown = [f for f in fields if f not in IPINFO_FIELDS]
+    if unknown:
+        return jsonify({"error": f"Unknown field(s): {', '.join(unknown)}"}), 400
+    row = get_db().set_ipinfo_fields(username, fields)
+    return jsonify({
+        "provider": "ipinfo", "label": SUPPORTED_KEY_PROVIDERS["ipinfo"],
+        "api_key": row["api_key"], "updated_at": row["updated_at"],
+        "enabled_fields": row["enabled_fields"],
+    })
+
+@app.route("/api/user-api-keys/ipapi_is/fields", methods=["PUT"])
+def set_ipapi_is_fields():
+    username = session.get("username") or session.get("user_id")
+    fields = (request.get_json(silent=True) or {}).get("enabled_fields", [])
+    unknown = [f for f in fields if f not in IPAPI_IS_FIELDS]
+    if unknown:
+        return jsonify({"error": f"Unknown field(s): {', '.join(unknown)}"}), 400
+    row = get_db().set_ipapi_is_fields(username, fields)
+    return jsonify({
+        "provider": "ipapi_is", "label": SUPPORTED_KEY_PROVIDERS["ipapi_is"],
+        "api_key": row["api_key"], "updated_at": row["updated_at"],
+        "enabled_fields": row["enabled_fields"],
+    })
+
+@app.route("/api/user-api-keys/ipapi_is/free-tier", methods=["PUT"])
+def set_ipapi_is_free_tier():
+    username = session.get("username") or session.get("user_id")
+    free_tier = bool((request.get_json(silent=True) or {}).get("free_tier", False))
+    row = get_db().set_ipapi_is_free_tier(username, free_tier)
+    return jsonify({
+        "provider": "ipapi_is", "label": SUPPORTED_KEY_PROVIDERS["ipapi_is"],
+        "api_key": row["api_key"], "updated_at": row["updated_at"],
+        "enabled_fields": row["enabled_fields"], "free_tier": row["free_tier"],
+    })
+
+@app.route("/api/user-api-keys/mxtoolbox/fields", methods=["PUT"])
+def set_mxtoolbox_fields():
+    username = session.get("username") or session.get("user_id")
+    fields = (request.get_json(silent=True) or {}).get("enabled_fields", [])
+    unknown = [f for f in fields if f not in MXTOOLBOX_FIELDS]
+    if unknown:
+        return jsonify({"error": f"Unknown field(s): {', '.join(unknown)}"}), 400
+    row = get_db().set_mxtoolbox_fields(username, fields)
+    return jsonify({
+        "provider": "mxtoolbox", "label": SUPPORTED_KEY_PROVIDERS["mxtoolbox"],
+        "api_key": row["api_key"], "updated_at": row["updated_at"],
+        "enabled_fields": row["enabled_fields"],
+    })
+
+@app.route("/api/user-api-keys/<provider>", methods=["PUT"])
+def set_user_api_key(provider):
+    if provider not in SUPPORTED_KEY_PROVIDERS:
+        return jsonify({"error": f"Unknown provider: {provider}"}), 404
+    username = session.get("username") or session.get("user_id")
+    key = (request.get_json(silent=True) or {}).get("api_key", "").strip()
+    get_db().set_user_api_key(username, provider, key)
+    return jsonify({"provider": provider, "label": SUPPORTED_KEY_PROVIDERS[provider], "api_key": key})
+
+@app.route("/api/user-api-keys/<provider>/test", methods=["POST"])
+def test_user_api_key(provider):
+    if provider not in SUPPORTED_KEY_PROVIDERS:
+        return jsonify({"error": f"Unknown provider: {provider}"}), 404
+    key = (request.get_json(silent=True) or {}).get("api_key", "").strip()
+    if not key:
+        return jsonify({"status": "skipped", "detail": "No API key entered"})
+
+    import urllib.request, urllib.error, urllib.parse
+
+    def _get(url, params=None, headers=None, timeout=10):
+        if params:
+            url = url + "?" + urllib.parse.urlencode(params)
+        req = urllib.request.Request(url, method="GET", headers=headers or {})
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                return resp.status, resp.read().decode(errors="replace")
+        except urllib.error.HTTPError as e:
+            return e.code, e.read().decode(errors="replace")
+
+    try:
+        if provider == "abuseipdb":
+            status, text = _get(
+                "https://api.abuseipdb.com/api/v2/check",
+                params={"ipAddress": _TEST_IP, "maxAgeInDays": 90},
+                headers={"Key": key, "Accept": "application/json"},
+            )
+            if status == 200:
+                return jsonify({"status": "ok", "detail": "Key is valid"})
+            return jsonify({"status": "failed", "detail": f"AbuseIPDB returned HTTP {status}: {text[:200]}"})
+
+        elif provider == "ipinfo":
+            status, text = _get(f"https://ipinfo.io/{_TEST_IP}/json", params={"token": key})
+            try:
+                data = json.loads(text)
+            except Exception:
+                data = {}
+            if status == 200 and "error" not in data:
+                return jsonify({"status": "ok", "detail": "Key is valid"})
+            err = data.get("error")
+            detail = err.get("message") if isinstance(err, dict) else err
+            return jsonify({"status": "failed", "detail": detail or f"ipinfo.io returned HTTP {status}: {text[:200]}"})
+
+        elif provider == "ipqualityscore":
+            status, text = _get(f"https://ipqualityscore.com/api/json/ip/{urllib.parse.quote(key, safe='')}/{_TEST_IP}")
+            try:
+                data = json.loads(text) if status == 200 else {}
+            except Exception:
+                data = {}
+            if status == 200 and data.get("success"):
+                return jsonify({"status": "ok", "detail": "Key is valid"})
+            return jsonify({"status": "failed", "detail": data.get("message") or f"IPQualityScore returned HTTP {status}: {text[:200]}"})
+
+        elif provider == "mxtoolbox":
+            status, text = _get(
+                "https://api.mxtoolbox.com/api/v1/Lookup/ptr/",
+                params={"argument": _TEST_IP},
+                headers={"Authorization": key, "Accept": "application/json"},
+            )
+            if status == 200:
+                return jsonify({"status": "ok", "detail": "Key is valid"})
+            try:
+                data = json.loads(text)
+            except Exception:
+                data = {}
+            errors = data.get("Errors") if isinstance(data, dict) else None
+            detail = errors[0].get("ErrorMessage") if isinstance(errors, list) and errors and isinstance(errors[0], dict) else None
+            return jsonify({"status": "failed", "detail": detail or f"MXToolbox returned HTTP {status}: {text[:200]}"})
+
+        elif provider == "ipapi_is":
+            status, text = _get("https://api.ipapi.is/", params={"q": _TEST_IP, "key": key})
+            try:
+                data = json.loads(text)
+            except Exception:
+                data = {}
+            if status == 200 and not data.get("error"):
+                return jsonify({"status": "ok", "detail": "Key is valid"})
+            return jsonify({"status": "failed", "detail": data.get("error") or f"ipapi.is returned HTTP {status}: {text[:200]}"})
+    except Exception as exc:
+        return jsonify({"status": "failed", "detail": f"Request error: {exc}"})
+
+    return jsonify({"status": "failed", "detail": "Unhandled provider"})
+
+# -- API: combined public-IP intelligence lookup ---------------------------------
+# GET /api/ip-info/<ip> — ipinfo.io + ipapi.is + AbuseIPDB + MXToolbox (ptr/asn/
+# blacklist) using the current user's own stored keys. Private/loopback/reserved
+# addresses are rejected — external providers have nothing useful to say about
+# them. Sequential (not concurrent) calls, matching this file's existing sync
+# urllib style — there's no event loop here to gather() against.
+
+@app.route("/api/ip-info/<ip>", methods=["GET"])
+def get_ip_info(ip):
+    import ipaddress as _ipaddress
+    try:
+        ip_obj = _ipaddress.ip_address(ip)
+    except ValueError:
+        return jsonify({"error": f"Invalid IP address: {ip}"}), 400
+    if ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_link_local or ip_obj.is_reserved or ip_obj.is_multicast:
+        return jsonify({"error": "IP info lookup is only available for public addresses"}), 400
+
+    import urllib.request, urllib.error, urllib.parse
+
+    def _get(url, params=None, headers=None, timeout=10):
+        if params:
+            url = url + "?" + urllib.parse.urlencode(params)
+        req = urllib.request.Request(url, method="GET", headers=headers or {})
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                return resp.status, resp.read().decode(errors="replace")
+        except urllib.error.HTTPError as e:
+            return e.code, e.read().decode(errors="replace")
+
+    def _json(text):
+        try:
+            return json.loads(text)
+        except Exception:
+            return {}
+
+    def _mxtoolbox_call(command, argument, key):
+        try:
+            status, text = _get(
+                f"https://api.mxtoolbox.com/api/v1/Lookup/{command}/",
+                params={"argument": argument},
+                headers={"Authorization": key, "Accept": "application/json"},
+            )
+            data = _json(text)
+            if status == 200:
+                return data, None
+            errors = data.get("Errors") if isinstance(data, dict) else None
+            detail = errors[0].get("ErrorMessage") if isinstance(errors, list) and errors and isinstance(errors[0], dict) else None
+            return None, detail or f"MXToolbox returned HTTP {status}: {text[:200]}"
+        except Exception as exc:
+            return None, f"Request error: {exc}"
+
+    username = session.get("username") or session.get("user_id")
+    stored = get_db().get_user_api_keys(username)
+    keys = {p: v.get("api_key", "") for p, v in stored.items()}
+
+    result = {
+        "ip": ip,
+        "ipinfo_enabled_fields": stored.get("ipinfo", {}).get("enabled_fields"),
+        "ipapi_is_enabled_fields": stored.get("ipapi_is", {}).get("enabled_fields"),
+        "mxtoolbox_enabled_fields": stored.get("mxtoolbox", {}).get("enabled_fields"),
+    }
+
+    ipinfo_key = keys.get("ipinfo", "")
+    if ipinfo_key:
+        try:
+            status, text = _get(f"https://ipinfo.io/{ip}/json", params={"token": ipinfo_key})
+            data = _json(text)
+            if status == 200 and "error" not in data:
+                result["ipinfo"] = data
+            else:
+                err = data.get("error")
+                result["ipinfo_error"] = (err.get("message") if isinstance(err, dict) else err) or f"ipinfo.io returned HTTP {status}: {text[:200]}"
+        except Exception as exc:
+            result["ipinfo_error"] = f"Request error: {exc}"
+    else:
+        result["ipinfo_error"] = "No ipinfo.io key configured — add one in Settings → User Keys"
+
+    ipapi_is_key = keys.get("ipapi_is", "")
+    ipapi_is_free_tier = bool(stored.get("ipapi_is", {}).get("free_tier"))
+    if ipapi_is_key or ipapi_is_free_tier:
+        try:
+            # Free tier deliberately omits the key param entirely rather than
+            # sending an empty one — matches ipapi.is's own anonymous/no-key
+            # usage (1,000 req/day, no signup) rather than an invalid-key call.
+            params = {"q": ip} if ipapi_is_free_tier else {"q": ip, "key": ipapi_is_key}
+            status, text = _get("https://api.ipapi.is/", params=params)
+            data = _json(text)
+            if status == 200 and not data.get("error"):
+                result["ipapi_is"] = data
+            else:
+                result["ipapi_is_error"] = data.get("error") or f"ipapi.is returned HTTP {status}: {text[:200]}"
+        except Exception as exc:
+            result["ipapi_is_error"] = f"Request error: {exc}"
+    else:
+        result["ipapi_is_error"] = "No ipapi.is key configured — add one in Settings → User Keys, or enable the free tier"
+
+    abuseipdb_key = keys.get("abuseipdb", "")
+    if abuseipdb_key:
+        try:
+            status, text = _get(
+                "https://api.abuseipdb.com/api/v2/check",
+                params={"ipAddress": ip, "maxAgeInDays": 90},
+                headers={"Key": abuseipdb_key, "Accept": "application/json"},
+            )
+            data = _json(text)
+            if status == 200:
+                result["abuseipdb"] = data.get("data")
+            else:
+                errors = data.get("errors") or []
+                result["abuseipdb_error"] = (errors[0].get("detail") if errors else None) or f"AbuseIPDB returned HTTP {status}: {text[:200]}"
+        except Exception as exc:
+            result["abuseipdb_error"] = f"Request error: {exc}"
+    else:
+        result["abuseipdb_error"] = "No AbuseIPDB key configured — add one in Settings → User Keys"
+
+    mxtoolbox_key = keys.get("mxtoolbox", "")
+    if mxtoolbox_key:
+        ptr, ptr_err = _mxtoolbox_call("ptr", ip, mxtoolbox_key)
+        asn, asn_err = _mxtoolbox_call("asn", ip, mxtoolbox_key)
+        blacklist, blacklist_err = _mxtoolbox_call("blacklist", ip, mxtoolbox_key)
+        result["mxtoolbox"] = {
+            "ptr": ptr, "ptr_error": ptr_err,
+            "asn": asn, "asn_error": asn_err,
+            "blacklist": blacklist, "blacklist_error": blacklist_err,
+        }
+    else:
+        result["mxtoolbox_error"] = "No MXToolbox key configured — add one in Settings → User Keys"
+
+    return jsonify(result)
+
+# -- API: generic MXToolbox command passthrough -----------------------------------
+# POST /api/mxtoolbox/lookup — every command MXToolbox's API supports, not
+# just the ptr/asn/blacklist subset auto-wired into GET /api/ip-info/<ip>:
+# DNS/email-record checks (a, aaaa, bimi, dkim, dmarc, dns, mta-sts, mx, soa,
+# spf, tlsrpt, txt) and active network probes MXToolbox's own infrastructure
+# runs against the target (blacklist, http, https, ping, smtp, tcp, trace).
+# No response modeling — passes MXToolbox's raw JSON straight through.
+
+_MXTOOLBOX_DNS_COMMANDS = {"a", "aaaa", "asn", "bimi", "dkim", "dmarc", "dns", "mta-sts", "mx", "ptr", "soa", "spf", "tlsrpt", "txt"}
+_MXTOOLBOX_NETWORK_COMMANDS = {"blacklist", "http", "https", "ping", "smtp", "tcp", "trace"}
+_MXTOOLBOX_ALL_COMMANDS = _MXTOOLBOX_DNS_COMMANDS | _MXTOOLBOX_NETWORK_COMMANDS
+
+@app.route("/api/mxtoolbox/lookup", methods=["POST"])
+def mxtoolbox_lookup():
+    body = request.get_json(silent=True) or {}
+    command = (body.get("command") or "").strip().lower()
+    argument = (body.get("argument") or "").strip()
+    port = body.get("port")
+
+    if command not in _MXTOOLBOX_ALL_COMMANDS:
+        return jsonify({"error": f"Unsupported MXToolbox command: {command}"}), 400
+    if not argument:
+        return jsonify({"error": "argument is required"}), 400
+    if command == "dkim" and ":" not in argument:
+        return jsonify({"error": "dkim requires argument in 'domain:selector' format"}), 400
+    if command == "tcp" and not port:
+        return jsonify({"error": "tcp requires a port"}), 400
+
+    username = session.get("username") or session.get("user_id")
+    stored = get_db().get_user_api_keys(username)
+    key = stored.get("mxtoolbox", {}).get("api_key", "")
+    if not key:
+        return jsonify({"error": "No MXToolbox key configured — add one in Settings → User Keys"}), 400
+
+    import urllib.request, urllib.error, urllib.parse
+
+    params = {"argument": argument}
+    if command == "tcp":
+        params["port"] = port
+
+    url = f"https://api.mxtoolbox.com/api/v1/Lookup/{command}/?" + urllib.parse.urlencode(params)
+    req = urllib.request.Request(url, method="GET", headers={"Authorization": key, "Accept": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            status, text = resp.status, resp.read().decode(errors="replace")
+    except urllib.error.HTTPError as e:
+        status, text = e.code, e.read().decode(errors="replace")
+    except Exception as exc:
+        return jsonify({"error": f"Request error: {exc}"}), 502
+
+    try:
+        data = json.loads(text)
+    except Exception:
+        data = {"raw": text[:2000]}
+
+    if status != 200:
+        errors = data.get("Errors") if isinstance(data, dict) else None
+        detail = errors[0].get("ErrorMessage") if isinstance(errors, list) and errors and isinstance(errors[0], dict) else None
+        return jsonify({"error": detail or f"MXToolbox returned HTTP {status}"}), status
+
+    return jsonify(data)
 
 # -- API: notification test -----------------------------------------------------
 
@@ -736,7 +1169,7 @@ def ai_test():
     cfg      = load_config()
     body     = request.get_json(force=True)
     provider = body.get("provider", cfg.get("provider", "anthropic"))
-    BULLET   = "ΓÇó"
+    BULLET   = "•"
 
     def pick_key(field):
         v = body.get(field, "")
@@ -865,9 +1298,7 @@ def api_reset_password(uid):
 def restart_server():
     def do_restart():
         time.sleep(0.8)
-        import subprocess
-        subprocess.Popen([sys.executable] + sys.argv)
-        os._exit(0)
+        os._exit(1)  # non-zero exit triggers systemd Restart=on-failure
     threading.Thread(target=do_restart, daemon=True).start()
     return jsonify({"ok": True})
 
@@ -1043,6 +1474,13 @@ def receive_feed(name):
     if not _FEED_NAME_RE.match(name):
         return jsonify({"error": "Invalid session name (alphanumeric, hyphens, underscores; max 64 chars)"}), 400
 
+    # Feeds named ws-<ip>-<time> come from the Wireshark SSH-remote-capture
+    # wrapper (service/pktpcap), which already gates on wireshark_capture_enabled
+    # before it ever runs dumpcap. Everything else is a direct tshark/CLI push,
+    # gated here on tshark_capture_enabled.
+    if not name.startswith("ws-") and not load_config().get("tshark_capture_enabled", True):
+        return jsonify({"error": "tshark/CLI captures are currently disabled in pktPCAP Live Feeds settings"}), 403
+
     session = _get_or_create_feed(name, request.remote_addr or "unknown")
     with session._lock:
         session.connected = True
@@ -1057,8 +1495,16 @@ def receive_feed(name):
     finally:
         with session._lock:
             session.connected = False
+        _save_feed_to_disk(session)
 
     return jsonify({"ok": True, "bytes_received": session.bytes_received})
+
+@app.route("/api/net-interfaces", methods=["GET"])
+def api_net_interfaces():
+    """This server's own interfaces -- relevant to the Wireshark-GUI SSH remote
+    capture tab, where tshark runs on this host, not the tshark/CLI tab's
+    arbitrary remote host, which we have no way to introspect in advance."""
+    return jsonify({"interfaces": _list_local_interfaces()})
 
 @app.route("/api/feeds", methods=["GET"])
 def list_feeds():
@@ -1086,6 +1532,47 @@ def download_feed(name):
 def delete_feed(name):
     with _feed_sessions_lock:
         _feed_sessions.pop(name, None)
+    return jsonify({"ok": True})
+
+@app.route("/api/captures", methods=["GET"])
+def list_captures():
+    """Capture files persisted to storage_path -- these survive past the
+    in-memory feed sessions (which are capped at 200MB and lost on restart)."""
+    d = _captures_dir()
+    if not d:
+        return jsonify({"storage_path_configured": False, "captures": []})
+    if not d.is_dir():
+        return jsonify({"storage_path_configured": True, "captures": []})
+    out = []
+    for f in d.iterdir():
+        if f.is_file() and _CAPTURE_FILE_RE.match(f.name):
+            st = f.stat()
+            out.append({"name": f.name, "size": st.st_size, "modified": st.st_mtime})
+    out.sort(key=lambda c: -c["modified"])
+    return jsonify({"storage_path_configured": True, "captures": out})
+
+@app.route("/api/captures/<fname>/download", methods=["GET"])
+def download_capture(fname):
+    d = _captures_dir()
+    if not d or not _CAPTURE_FILE_RE.match(fname):
+        return jsonify({"error": "Not found"}), 404
+    fpath = d / fname
+    if not fpath.is_file():
+        return jsonify({"error": "Not found"}), 404
+    return send_from_directory(d, fname, as_attachment=True, mimetype="application/octet-stream")
+
+@app.route("/api/captures/<fname>", methods=["DELETE"])
+def delete_capture(fname):
+    d = _captures_dir()
+    if not d or not _CAPTURE_FILE_RE.match(fname):
+        return jsonify({"error": "Not found"}), 404
+    fpath = d / fname
+    try:
+        fpath.unlink()
+    except FileNotFoundError:
+        pass
+    except OSError as e:
+        return jsonify({"error": str(e)}), 500
     return jsonify({"ok": True})
 
 
@@ -1267,7 +1754,7 @@ if __name__ == "__main__":
     if not os.path.isabs(_db_path):
         _db_path = str(BASE / _db_path)
     _log_handler = SQLiteLogHandler(db_path=_db_path)
-    _log_handler.attach_to_root_logger("")  # root logger ΓÇö catches Flask, werkzeug, everything
+    _log_handler.attach_to_root_logger("")  # root logger — catches Flask, werkzeug, everything
     # ---------------------------------------------------------------------------
 
     cfg  = load_config()
