@@ -1,0 +1,51 @@
+# pktPCAP configuration
+# Copy to <install_dir>/config.yaml, or set PKTPCAP_CONFIG=/path/to/config.yaml,
+# then restart the service.
+#
+# install.sh generates config.yaml from this file automatically, fills in
+# secret_key, and appends install_dir — edit config.yaml afterwards for any
+# further changes.
+#
+# install_dir is the app root. Every on-disk path below (db_path, log_file,
+# ssl_dir, storage_path) defaults to somewhere under install_dir and does NOT
+# need to be set explicitly — only uncomment one if you need that particular
+# path to live somewhere else.
+#
+# Feature settings (capture storage/retention, notification channels, AI
+# keys, SAML config, suite integrations, per-user lookup API keys) are all
+# managed via the Settings UI and stored in SQLite. This file only covers
+# infrastructure/startup settings.
+
+# -- Server --------------------------------------------------------------------
+host: "0.0.0.0"
+port: 8765
+# workers MUST stay 1 — live capture feed sessions are held in this process's
+# memory (app/capture/feed_sessions.py). A multi-worker deployment would
+# silently split feed ingest/list/download across separate processes and
+# lose in-progress captures. Do not raise this without redesigning feed
+# storage to be shared across workers (e.g. moving buffers to disk/Redis).
+workers: 1
+debug: false
+
+# -- App root — install.sh appends this automatically --------------------------
+# install_dir: "/opt/pktpcap"
+
+# -- SQLite app database (optional override; default: <install_dir>/pktpcap.db) --
+# db_path: "/opt/pktpcap/pktpcap.db"
+
+# -- JWT (generate with: openssl rand -hex 32) ----------------------------------
+secret_key: "CHANGE_ME_generate_with_openssl_rand_hex_32"
+
+# -- CORS (restrict to your actual origin in production) -----------------------
+cors_origins:
+  - "http://SERVER-IP:8765"
+
+# -- Logging ---------------------------------------------------------------------
+log_level: "info"
+# log_file: "/opt/pktpcap/logs/pktpcap.log"   # optional override; default: <install_dir>/logs/pktpcap.log
+
+# -- SSL certificates (optional override; default: <install_dir>/ssl) ------------
+# ssl_dir: "/opt/pktpcap/ssl"
+
+# -- Capture storage (optional override; default: <install_dir>/captures) -------
+# storage_path: "/opt/pktpcap/captures"

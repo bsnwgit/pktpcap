@@ -1,6 +1,10 @@
 # Template — install.sh substitutes __INSTALL_DIR__ / __LOG_DIR__ /
 # __SERVICE_USER__ / __SERVICE_GROUP__ before installing to systemd.
 # For a manual install, replace these placeholders yourself.
+#
+# Host/port are NOT set here — app/server.py reads them from config.yaml at
+# each process start, so Settings -> General -> Port only needs config.yaml
+# rewritten + a restart, not a unit file edit.
 [Unit]
 Description=pktPCAP Packet Capture Analyzer
 Documentation=https://github.com/bsnwgit/pktpcap
@@ -12,9 +16,10 @@ User=__SERVICE_USER__
 Group=__SERVICE_GROUP__
 WorkingDirectory=__INSTALL_DIR__
 
-Environment=PKTPCAP_NO_BROWSER=1
+Environment=PKTPCAP_CONFIG=__INSTALL_DIR__/config.yaml
+Environment=PKTPCAP_INSTALL_DIR=__INSTALL_DIR__
 
-ExecStart=__INSTALL_DIR__/venv/bin/python3 __INSTALL_DIR__/server.py
+ExecStart=__INSTALL_DIR__/venv/bin/python -m app.server
 
 # Default port is 8765 (unprivileged) — these capabilities are only needed
 # if the admin sets Port to something below 1024 in Settings.
