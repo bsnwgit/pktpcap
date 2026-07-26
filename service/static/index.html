@@ -630,7 +630,19 @@
     <div id="logs-error" style="display:none;background:rgba(127,29,29,.3);border:1px solid rgba(185,28,28,.5);border-radius:8px;padding:8px 14px;font-size:13px;color:#fca5a5;margin-bottom:12px"></div>
 
     <!-- Pagination -->
-    <div id="logs-pagination" style="display:none;align-items:center;gap:6px;margin-bottom:12px"></div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:24px;margin-bottom:12px">
+      <div id="logs-pagination" style="display:none;align-items:center;gap:6px"></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <label for="logs-per-page" style="font-size:11px;color:#9ca3af">Records per page:</label>
+        <select id="logs-per-page" onchange="_changeLogsPageSize(Number(this.value))"
+          style="font-size:12px;background:#1f2937;border:1px solid #374151;color:#f9fafb;border-radius:8px;padding:4px 8px;font-family:inherit;outline:none">
+          <option value="25">25</option>
+          <option value="50">50</option>
+          <option value="75">75</option>
+          <option value="100">100</option>
+        </select>
+      </div>
+    </div>
 
     <!-- Table -->
     <div style="background:#111827;border:1px solid #1f2937;border-radius:12px;overflow:hidden">
@@ -777,9 +789,15 @@ let _logsPollTimer = null;
 let _logsInited = false;
 let _logsExpandedId = null;
 let _logsPage = 1;
-const _LOGS_PAGE_SIZE = 50;
+let _logsPageSize = 25;
 
 function _loadLogsResetPage() {
+  _logsPage = 1;
+  loadLogs();
+}
+
+function _changeLogsPageSize(size) {
+  _logsPageSize = size;
   _logsPage = 1;
   loadLogs();
 }
@@ -875,8 +893,8 @@ async function loadLogs(silent) {
   const search = document.getElementById('logs-search').value;
   const logger = document.getElementById('logs-logger-select').value;
   const params = new URLSearchParams({
-    limit:  String(_LOGS_PAGE_SIZE),
-    offset: String((_logsPage - 1) * _LOGS_PAGE_SIZE),
+    limit:  String(_logsPageSize),
+    offset: String((_logsPage - 1) * _logsPageSize),
   });
   if (_logsActiveLevel !== 'ALL') params.set('level', _logsActiveLevel);
   if (logger)  params.set('logger', logger);
@@ -980,14 +998,14 @@ function _renderLogs(res, stats) {
   document.getElementById('logs-table-wrap').style.display = 'block';
   const footer = document.getElementById('logs-footer');
   footer.style.display = 'flex';
-  const rangeStart = (_logsPage - 1) * _LOGS_PAGE_SIZE + 1;
-  const rangeEnd   = (_logsPage - 1) * _LOGS_PAGE_SIZE + records.length;
+  const rangeStart = (_logsPage - 1) * _logsPageSize + 1;
+  const rangeEnd   = (_logsPage - 1) * _logsPageSize + records.length;
   document.getElementById('logs-footer-count').textContent =
     'Showing ' + rangeStart.toLocaleString() + '–' + rangeEnd.toLocaleString() + ' of ' + (res.total||0).toLocaleString() + ' records (newest first)';
   const liveEl = document.getElementById('logs-footer-live');
   liveEl.style.display = _logsLive ? 'flex' : 'none';
 
-  const totalPages = Math.max(1, Math.ceil((res.total || 0) / _LOGS_PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil((res.total || 0) / _logsPageSize));
   _renderPagination('logs-pagination', _logsPage, totalPages, p => { _logsPage = p; loadLogs(); });
 }
 
