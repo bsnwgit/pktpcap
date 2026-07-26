@@ -28,7 +28,7 @@
   }
   .sidebar-logo span { color: #f9fafb; }
   .sidebar-nav-section { padding: 12px 8px 4px; }
-  .sidebar-nav-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #4b5563; padding: 0 8px 6px; }
+  .sidebar-nav-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #9ca3af; padding: 0 8px 6px; }
 
   /* ── Main ── */
   .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
@@ -103,7 +103,7 @@
   input:focus, select:focus, textarea:focus {
     outline: none; border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,.2);
   }
-  input::placeholder, textarea::placeholder { color: #4b5563; }
+  input::placeholder, textarea::placeholder { color: #9ca3af; }
   textarea { resize: vertical; min-height: 80px; font-family: 'SF Mono','Fira Code',monospace; font-size: 12px; }
   select option { background: #1f2937; }
 
@@ -151,6 +151,40 @@
   .result.ok   { display: block; background: rgba(34,197,94,.1); color: #4ade80; border: 1px solid rgba(34,197,94,.2); }
   .result.err  { display: block; background: rgba(239,68,68,.1); color: #f87171; border: 1px solid rgba(239,68,68,.2); }
   .result.info { display: block; background: rgba(59,130,246,.1); color: #93c5fd; border: 1px solid rgba(59,130,246,.2); }
+
+  /* ── User Keys tab — sized/laid out to match pktFlow's golden User Keys
+     page exactly: stacked label-above-row, plain (non-pill) feedback text,
+     14px/8px-16px buttons — deliberately NOT reusing .field-row/.btn/.result
+     above, since those are sized differently from pktFlow's Tailwind values. */
+  #tab-userkeys .section-body { max-width: 512px; }
+  .uak-signedin { font-size: 14px; color: #fff; margin-bottom: 16px; }
+  .uak-row { margin-bottom: 16px; }
+  .uak-label { display: block; font-size: 12px; font-weight: 400; color: #fff; margin-bottom: 4px; }
+  .uak-input-row { display: flex; align-items: center; gap: 8px; }
+  .uak-input-row input {
+    width: 100%; background: #1f2937; border: 1px solid #374151; border-radius: 8px;
+    padding: 8px 12px; color: #fff; font-family: 'SF Mono','Fira Code',monospace; font-size: 14px;
+  }
+  .uak-input-row input::placeholder { color: #9ca3af; }
+  .uak-input-row input:disabled { opacity: 0.4; cursor: not-allowed; }
+  .uak-freetier-label { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #fff; cursor: pointer; margin-bottom: 6px; }
+  .uak-freetier-label input[type="checkbox"] { accent-color: #2563eb; }
+  .uak-btn {
+    flex-shrink: 0; background: #1f2937; border: 1px solid #374151; color: #fff;
+    font-size: 14px; font-weight: 500; border-radius: 8px; padding: 8px 16px;
+    cursor: pointer; font-family: inherit; transition: background .15s;
+  }
+  .uak-btn:hover:not(:disabled) { background: #374151; }
+  .uak-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .uak-btn-primary { background: #2563eb; border-color: #2563eb; color: #fff; }
+  .uak-btn-primary:hover:not(:disabled) { background: #3b82f6; border-color: #3b82f6; }
+  .uak-feedback { font-size: 12px; margin-top: 4px; }
+  .uak-feedback.ok  { color: #4ade80; }
+  .uak-feedback.err { color: #f87171; }
+  .uak-hint { font-size: 12px; color: #9ca3af; margin-top: 4px; }
+  .uak-field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; margin-top: 6px; }
+  .uak-field-label { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #fff; cursor: pointer; }
+  .uak-field-label input[type="checkbox"] { accent-color: #2563eb; }
 
   /* ── Provider toggle ── */
   .prov-bar {
@@ -237,7 +271,7 @@
   .modal-box { background: #111827; border: 1px solid #374151; border-radius: 12px; width: 440px; max-width: 95vw; }
   .modal-header { padding: 16px 20px; border-bottom: 1px solid #1f2937; display: flex; align-items: center; justify-content: space-between; }
   .modal-header h3 { font-size: 14px; font-weight: 600; }
-  .modal-close { background: none; border: none; color: #6b7280; cursor: pointer; font-size: 20px; line-height: 1; padding: 0 4px; }
+  .modal-close { background: none; border: none; color: #9ca3af; cursor: pointer; font-size: 20px; line-height: 1; padding: 0 4px; }
   .modal-close:hover { color: #f9fafb; }
   .modal-body { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
   .modal-footer { padding: 14px 20px; border-top: 1px solid #1f2937; display: flex; justify-content: flex-end; gap: 8px; }
@@ -257,9 +291,9 @@
       <div id="nav-user-avatar" style="width:28px;height:28px;border-radius:50%;background:#2563eb;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;font-family:Inter,sans-serif">—</div>
       <div style="flex:1;min-width:0;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
         <div id="nav-user-name" style="font-size:12px;font-weight:500;color:#ffffff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
-        <div id="nav-user-role" style="font-size:11px;color:#6b7280">—</div>
+        <div id="nav-user-role" style="font-size:11px;color:#9ca3af">—</div>
       </div>
-      <a href="#" title="Sign out" onclick="doSignOut();return false;" style="color:#6b7280;flex-shrink:0;display:flex;align-items:center" onmouseover="this.style.color='#9ca3af'" onmouseout="this.style.color='#6b7280'">
+      <a href="#" title="Sign out" onclick="doSignOut();return false;" style="color:#9ca3af;flex-shrink:0;display:flex;align-items:center" onmouseover="this.style.color='#d1d5db'" onmouseout="this.style.color='#9ca3af'">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </a>
     </div>
@@ -344,21 +378,21 @@
             <div><p class="field-label">Max upload size</p><p class="field-hint">Maximum size per uploaded capture file</p></div>
             <div class="field-input" style="flex-direction:row;align-items:center;gap:8px">
               <input type="number" id="max_upload_mb" min="1" style="max-width:120px">
-              <span style="font-size:12px;color:#6b7280">MB</span>
+              <span style="font-size:12px;color:#9ca3af">MB</span>
             </div>
           </div>
           <div class="field-row">
             <div><p class="field-label">Storage quota</p><p class="field-hint">Total disk quota for all captures</p></div>
             <div class="field-input" style="flex-direction:row;align-items:center;gap:8px">
               <input type="number" id="storage_quota_gb" min="1" style="max-width:120px">
-              <span style="font-size:12px;color:#6b7280">GB</span>
+              <span style="font-size:12px;color:#9ca3af">GB</span>
             </div>
           </div>
           <div class="field-row">
             <div><p class="field-label">Retention period</p><p class="field-hint">Delete captures older than this</p></div>
             <div class="field-input" style="flex-direction:row;align-items:center;gap:8px">
               <input type="number" id="retention_days" min="1" style="max-width:120px">
-              <span style="font-size:12px;color:#6b7280">days</span>
+              <span style="font-size:12px;color:#9ca3af">days</span>
             </div>
           </div>
           <div class="field-row">
@@ -555,7 +589,7 @@
                 <button class="btn btn-primary" style="font-size:12px;padding:6px 14px" onclick="openUserModal(null)">+ Add User</button>
               </div>
               <div class="section-body" style="padding:0">
-                <div id="users-loading" style="padding:24px;text-align:center;font-size:13px;color:#6b7280">Loading…</div>
+                <div id="users-loading" style="padding:24px;text-align:center;font-size:13px;color:#9ca3af">Loading…</div>
                 <table class="users-table" id="users-table" style="display:none">
                   <thead>
                     <tr>
@@ -569,15 +603,15 @@
                   </thead>
                   <tbody id="users-tbody"></tbody>
                 </table>
-                <div id="users-empty" style="display:none;padding:40px;text-align:center;font-size:13px;color:#6b7280">No users found. Add one to get started.</div>
+                <div id="users-empty" style="display:none;padding:40px;text-align:center;font-size:13px;color:#9ca3af">No users found. Add one to get started.</div>
               </div>
             </div>
-            <p style="font-size:11px;color:#6b7280;margin-top:10px">
+            <p style="font-size:11px;color:#9ca3af;margin-top:10px">
               Roles: <strong style="color:#f9fafb">admin</strong> — full access &nbsp;·&nbsp;
               <strong style="color:#f9fafb">analyst</strong> — read + export &nbsp;·&nbsp;
               <strong style="color:#f9fafb">viewer</strong> — read-only
             </p>
-            <p style="font-size:11px;color:#6b7280;margin-top:4px">
+            <p style="font-size:11px;color:#9ca3af;margin-top:4px">
               The <span style="color:#facc15">★</span> marks the default admin — when every auth method in the Auth tab is disabled, the app skips the login page entirely and signs everyone in as this account. Click the star on any active admin to reassign it.
             </p>
           </div><!-- /tab-users -->
@@ -599,12 +633,12 @@
                   <div><p class="field-label">Session timeout</p></div>
                   <div class="field-input" style="flex-direction:row;align-items:center;gap:8px">
                     <input type="number" id="session_timeout_minutes" min="5" max="10080" style="max-width:120px">
-                    <span style="font-size:12px;color:#6b7280">minutes</span>
+                    <span style="font-size:12px;color:#9ca3af">minutes</span>
                   </div>
                 </div>
 
                 <div style="padding:16px 0 4px">
-                  <p style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#4b5563">Okta SAML 2.0 SSO</p>
+                  <p style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#9ca3af">Okta SAML 2.0 SSO</p>
                 </div>
 
                 <div class="field-row">
@@ -643,7 +677,7 @@
                     <div><p class="field-label">ACS URL (read-only)</p><p class="field-hint">Register this URL as the Single Sign-On URL in your Okta app</p></div>
                     <div class="field-input">
                       <div style="display:flex;align-items:center;gap:8px">
-                        <input type="text" id="acs_url_display" readonly style="flex:1;background:#0d1117;border:1px solid #374151;border-radius:8px;padding:8px 12px;color:#6b7280;font-family:'SF Mono','Fira Code',monospace;font-size:12px;cursor:default">
+                        <input type="text" id="acs_url_display" readonly style="flex:1;background:#0d1117;border:1px solid #374151;border-radius:8px;padding:8px 12px;color:#9ca3af;font-family:'SF Mono','Fira Code',monospace;font-size:12px;cursor:default">
                         <a id="sp-metadata-link" href="#" style="font-size:11px;color:#60a5fa;white-space:nowrap;text-decoration:none">View SP metadata ↗</a>
                       </div>
                     </div>
@@ -817,7 +851,7 @@
                     <div id="ssl-pem" class="hidden">
                       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
                         <div>
-                          <p style="font-size:11px;color:#6b7280;margin-bottom:6px">Certificate (.pem / .crt)</p>
+                          <p style="font-size:11px;color:#9ca3af;margin-bottom:6px">Certificate (.pem / .crt)</p>
                           <div class="drop-zone" id="dz-cert" ondragover="dzDragOver(event,'cert')" ondragleave="dzDragLeave('cert')" ondrop="dzDrop(event,'cert')">
                             <input type="file" accept=".pem,.crt,.cer" onchange="dzPick(event,'cert')">
                             <div class="drop-zone-icon">📜</div>
@@ -825,7 +859,7 @@
                           </div>
                         </div>
                         <div>
-                          <p style="font-size:11px;color:#6b7280;margin-bottom:6px">Private Key (.pem / .key)</p>
+                          <p style="font-size:11px;color:#9ca3af;margin-bottom:6px">Private Key (.pem / .key)</p>
                           <div class="drop-zone" id="dz-key" ondragover="dzDragOver(event,'key')" ondragleave="dzDragLeave('key')" ondrop="dzDrop(event,'key')">
                             <input type="file" accept=".pem,.key" onchange="dzPick(event,'key')">
                             <div class="drop-zone-icon">🔑</div>
@@ -858,14 +892,22 @@
       <div class="section-card">
         <div class="section-header"><h2>User Keys</h2></div>
         <div class="section-body">
-          <div class="field-row" style="border-bottom:none">
-            <div><p class="field-label">Lucid API Token</p><p class="field-hint">Used for diagram export to Lucidchart</p></div>
-            <div class="field-input"><input type="password" id="lucid_api_token" placeholder="••••••••" autocomplete="off"></div>
-          </div>
+          <p class="uak-signedin">Signed in as <strong id="uak-whoami">…</strong> — these keys apply to your account only.</p>
+
+          <div id="uak-rows"><p class="uak-hint">Loading…</p></div>
         </div>
-        <div class="section-footer">
-          <button class="btn btn-primary" onclick="saveSection('userkeys')">Save</button>
-          <span id="save-userkeys-result"></span>
+      </div>
+
+      <div class="section-card" style="margin-top:16px">
+        <div class="section-header"><h2>Lucidchart</h2></div>
+        <div class="section-body">
+          <label class="uak-label">API token</label>
+          <div class="uak-input-row">
+            <input type="password" id="lucid_api_token" placeholder="eyJ…" autocomplete="off">
+            <button class="uak-btn uak-btn-primary" id="uak-savebtn-lucid" onclick="saveSection('userkeys')">Save</button>
+          </div>
+          <p class="uak-feedback" id="save-userkeys-result"></p>
+          <p class="uak-hint">Personal Access Token from lucid.co → Account → API Tokens. Required for topology export to Lucidchart.</p>
         </div>
       </div>
     </div><!-- /tab-userkeys -->
@@ -875,6 +917,14 @@
       <div class="section-card">
         <div class="section-header"><h2>Capture Ingest</h2></div>
         <div class="section-body">
+          <div class="field-row">
+            <div><p class="field-label">tshark / CLI capture</p><p class="field-hint">Allow direct tshark/curl pushes to the feed endpoint (Live Feeds &gt; tshark/CLI tab)</p></div>
+            <div class="field-input">
+              <button type="button" class="toggle" id="toggle-tshark_capture_enabled" onclick="toggleBool('tshark_capture_enabled')"><span class="toggle-knob"></span></button>
+              <input type="hidden" id="tshark_capture_enabled" value="true">
+            </div>
+          </div>
+
           <div class="field-row" style="border-bottom:none">
             <div><p class="field-label">Wireshark remote capture</p><p class="field-hint">Enable live feed ingestion from remote tshark / pktpcap hosts</p></div>
             <div class="field-input">
@@ -888,7 +938,7 @@
             <div id="ws-disabled-banner" style="display:none;background:#374151;border-radius:4px;padding:6px 10px;font-size:11px;color:#9ca3af;margin-bottom:10px">
               ⚠ Wireshark capture is disabled — enable the toggle above to accept live feeds
             </div>
-            <p style="font-size:11px;color:#6b7280;margin-bottom:10px">Configure your remote host to push pcapng data to this server:</p>
+            <p style="font-size:11px;color:#9ca3af;margin-bottom:10px">Configure your remote host to push pcapng data to this server:</p>
 
             <div style="margin-bottom:8px">
               <p style="font-size:11px;color:#9ca3af;margin-bottom:4px">Feed endpoint</p>
@@ -966,14 +1016,14 @@
                   <div><p class="field-label">Backup interval</p><p class="field-hint">How often to run a backup</p></div>
                   <div class="field-input" style="flex-direction:row;align-items:center;gap:8px">
                     <input type="number" id="backup_interval_hours" min="1" style="max-width:120px">
-                    <span style="font-size:12px;color:#6b7280">hours</span>
+                    <span style="font-size:12px;color:#9ca3af">hours</span>
                   </div>
                 </div>
                 <div class="field-row">
                   <div><p class="field-label">Keep backups</p><p class="field-hint">Number of backups to retain before rotating</p></div>
                   <div class="field-input" style="flex-direction:row;align-items:center;gap:8px">
                     <input type="number" id="backup_rotation" min="1" style="max-width:120px">
-                    <span style="font-size:12px;color:#6b7280">copies</span>
+                    <span style="font-size:12px;color:#9ca3af">copies</span>
                   </div>
                 </div>
                 <div class="field-row" style="border-bottom:none">
@@ -995,7 +1045,7 @@
             <div class="section-card">
               <div class="section-header"><h2>Snapshots</h2></div>
               <div class="section-body" style="padding:0">
-                <div id="backups-loading" style="padding:24px;text-align:center;font-size:13px;color:#6b7280">Loading…</div>
+                <div id="backups-loading" style="padding:24px;text-align:center;font-size:13px;color:#9ca3af">Loading…</div>
                 <table class="users-table" id="backups-table" style="display:none">
                   <thead>
                     <tr>
@@ -1007,7 +1057,7 @@
                   </thead>
                   <tbody id="backups-tbody"></tbody>
                 </table>
-                <div id="backups-empty" style="display:none;padding:40px;text-align:center;font-size:13px;color:#6b7280">No backup snapshots yet.</div>
+                <div id="backups-empty" style="display:none;padding:40px;text-align:center;font-size:13px;color:#9ca3af">No backup snapshots yet.</div>
               </div>
             </div>
           </div>
@@ -1037,7 +1087,7 @@
       <div>
         <p class="modal-label" id="um-pw-label">Password</p>
         <input type="password" id="um-password" placeholder="••••••••" autocomplete="new-password">
-        <p id="um-pw-hint" style="font-size:11px;color:#6b7280;margin-top:4px;display:none">Leave blank to keep existing password</p>
+        <p id="um-pw-hint" style="font-size:11px;color:#9ca3af;margin-top:4px;display:none">Leave blank to keep existing password</p>
       </div>
       <div>
         <p class="modal-label">Role</p>
@@ -1189,11 +1239,13 @@ async function load() {
     setVal('notify_tracecat_api_token', cfg.notify_tracecat_api_token || '')
     updateAllNotifVisibility()
     setVal('lucid_api_token', cfg.lucid_api_token || '')
+    setBool('tshark_capture_enabled', cfg.tshark_capture_enabled !== false)
     setBool('wireshark_capture_enabled', !!cfg.wireshark_capture_enabled)
     setBool('ssl_enabled', !!cfg.ssl_enabled)
     setVal('db_path', dbc.db_path || 'pktpcap.db')
     updateWsToggleUI()
   } catch(e) { console.error('load failed', e) }
+  loadUserApiKeys()
 }
 
 // ── Wireshark / Live Feed ─────────────────────────────────────────────────────
@@ -1216,14 +1268,43 @@ function updateWsToggleUI() {
     `<install_dir>/pktpcap \\\n  --host ${ip} \\\n  --port ${port} \\\n  --token ${token} \\\n  --name my-capture`
 }
 
+// navigator.clipboard requires a secure context (HTTPS or localhost) -- these
+// apps default to plain http://SERVER-IP, so the Clipboard API is undefined
+// there and .writeText throws immediately, silently no-opping the button.
+// Fall back to the hidden-textarea + execCommand('copy') trick, which works
+// regardless of secure context.
+async function copyToClipboard(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text)
+      return true
+    } catch (e) { /* fall through to legacy path */ }
+  }
+  try {
+    const textarea = document.createElement('textarea')
+    textarea.value = text
+    textarea.style.position = 'fixed'
+    textarea.style.opacity = '0'
+    textarea.style.left = '-9999px'
+    document.body.appendChild(textarea)
+    textarea.focus()
+    textarea.select()
+    const success = document.execCommand('copy')
+    document.body.removeChild(textarea)
+    return success
+  } catch (e) {
+    return false
+  }
+}
+
 function copyWsEndpoint() {
   const el = document.getElementById('ws-endpoint')
-  navigator.clipboard.writeText(el.textContent).catch(() => {})
+  copyToClipboard(el.textContent)
 }
 
 function copyWsToken() {
   const el = document.getElementById('ws-token')
-  navigator.clipboard.writeText(el.textContent).catch(() => {})
+  copyToClipboard(el.textContent)
 }
 
 async function rotateFeedToken() {
@@ -1373,6 +1454,7 @@ function buildBody(section) {
     },
     ssl: { ssl_enabled: getBool('ssl_enabled') },
     integrations: {
+      tshark_capture_enabled: getBool('tshark_capture_enabled'),
       wireshark_capture_enabled: getBool('wireshark_capture_enabled'),
     },
     userkeys: {
@@ -1401,6 +1483,171 @@ async function testKey(provider) {
     res.className = 'result ' + (result.ok ? 'ok' : 'err')
     res.textContent = result.ok ? ('✓ Connected — ' + (result.reply||'OK')) : ('✗ ' + (result.error||'Failed'))
   } catch(e) { res.className = 'result err'; res.textContent = '✗ ' + e.message }
+}
+
+// ── Per-user API key vault ───────────────────────────────────────────────────
+// Rows are built entirely from the backend's provider list (GET /api/user-api-keys),
+// so adding a new provider only ever requires a backend change — never a template edit.
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))
+}
+
+// Response sections a user can individually show/hide in the IP Lookup
+// modal, per provider — display preference only, each provider always
+// returns whatever the account's plan/tier unlocks.
+const FIELD_SETS = {
+  ipinfo: [
+    { key: 'geolocation', label: 'Geolocation' },
+    { key: 'asn',         label: 'ASN / Org' },
+    { key: 'company',     label: 'Company' },
+    { key: 'privacy',     label: 'Privacy Detection (VPN/Proxy/Tor)' },
+    { key: 'abuse',       label: 'Abuse Contact' },
+    { key: 'domains',     label: 'Hosted Domains' },
+  ],
+  ipapi_is: [
+    { key: 'geolocation', label: 'Geolocation' },
+    { key: 'asn',         label: 'ASN / Org' },
+    { key: 'company',     label: 'Company' },
+    { key: 'detection',   label: 'Threat Detection (VPN/Proxy/Tor/Datacenter)' },
+    { key: 'abuse',       label: 'Abuse Contact' },
+  ],
+  mxtoolbox: [
+    { key: 'ptr',       label: 'Reverse DNS (PTR)' },
+    { key: 'asn',       label: 'ASN' },
+    { key: 'blacklist', label: 'Blacklist Check' },
+  ],
+}
+
+async function loadUserApiKeys() {
+  try {
+    const rows = await (await fetch('/api/user-api-keys')).json()
+    const container = document.getElementById('uak-rows')
+    if (container) {
+      container.innerHTML = rows.map((r, i) => {
+        const p = escapeHtml(r.provider)
+        const isFreeTier = r.provider === 'ipapi_is' && !!r.free_tier
+        const fields = FIELD_SETS[r.provider]
+        const fieldsBlock = !fields ? '' : `
+            <div class="uak-provider-fields">
+              <p class="uak-hint" style="margin-top:8px">Shown in the IP Lookup modal:</p>
+              <div class="uak-field-grid">
+                ${fields.map(f => `
+                  <label class="uak-field-label">
+                    <input type="checkbox" class="uak-field-checkbox" data-field="${f.key}" data-provider="${p}"
+                      ${(r.enabled_fields ? r.enabled_fields.includes(f.key) : true) ? 'checked' : ''}
+                      onchange="saveProviderFields('${p}')">
+                    ${f.label}
+                  </label>`).join('')}
+              </div>
+              <p class="uak-feedback" id="uak-fields-feedback-${p}"></p>
+            </div>`
+        const freeTierBlock = r.provider !== 'ipapi_is' ? '' : `
+            <label class="uak-freetier-label">
+              <input type="checkbox" id="uak-freetier-${p}" ${isFreeTier ? 'checked' : ''}
+                onchange="saveIpapiIsFreeTier(this.checked)">
+              Use free tier (no key required, ~1,000 lookups/day)
+            </label>`
+        return `
+          <div class="uak-row"${i === rows.length - 1 ? ' style="margin-bottom:0"' : ''}>
+            <label class="uak-label">${escapeHtml(r.label)}</label>
+            ${freeTierBlock}
+            <div class="uak-input-row">
+              <input type="password" id="uak_${p}" placeholder="Not set" autocomplete="off" ${isFreeTier ? 'disabled' : ''}>
+              <button class="uak-btn" id="uak-testbtn-${p}" onclick="testUserApiKey('${p}')" ${isFreeTier ? 'disabled' : ''}>Test</button>
+              <button class="uak-btn uak-btn-primary" id="uak-savebtn-${p}" onclick="saveUserApiKey('${p}')" ${isFreeTier ? 'disabled' : ''}>Save</button>
+            </div>
+            <p class="uak-feedback" id="uak-test-${p}"></p>
+            ${fieldsBlock}
+          </div>`
+      }).join('')
+    }
+    for (const r of rows) setVal('uak_' + r.provider, r.api_key || '')
+  } catch(e) { console.error('loadUserApiKeys failed', e) }
+  try {
+    const who = await (await fetch('/api/whoami')).json()
+    const el = document.getElementById('uak-whoami')
+    if (el) el.textContent = who.username || '?'
+  } catch(e) { console.error('whoami failed', e) }
+}
+
+async function saveUserApiKey(provider) {
+  const res = document.getElementById('uak-test-' + provider)
+  const btn = document.getElementById('uak-savebtn-' + provider)
+  if (res) { res.className = 'uak-feedback'; res.textContent = '' }
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving…' }
+  try {
+    const r = await fetch('/api/user-api-keys/' + provider, {
+      method: 'PUT', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ api_key: getVal('uak_' + provider) })
+    })
+    const result = await r.json()
+    if (res) {
+      res.className = 'uak-feedback ' + (r.ok ? 'ok' : 'err')
+      res.textContent = r.ok ? 'Saved' : (result.error || 'Save failed')
+      if (r.ok) setTimeout(() => { res.textContent = ''; res.className = 'uak-feedback' }, 2000)
+    }
+  } catch(e) { if (res) { res.className = 'uak-feedback err'; res.textContent = e.message } }
+  finally { if (btn) { btn.disabled = false; btn.textContent = 'Save' } }
+}
+
+async function saveProviderFields(provider) {
+  const enabled_fields = Array.from(document.querySelectorAll(`.uak-field-checkbox[data-provider="${provider}"]`))
+    .filter(c => c.checked).map(c => c.dataset.field)
+  const feedback = document.getElementById('uak-fields-feedback-' + provider)
+  try {
+    const r = await fetch('/api/user-api-keys/' + provider + '/fields', {
+      method: 'PUT', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ enabled_fields })
+    })
+    const result = await r.json()
+    if (feedback) {
+      feedback.className = 'uak-feedback ' + (r.ok ? 'ok' : 'err')
+      feedback.textContent = r.ok ? 'Saved' : (result.error || 'Save failed')
+      if (r.ok) setTimeout(() => { feedback.textContent = ''; feedback.className = 'uak-feedback' }, 2000)
+    }
+  } catch(e) {
+    if (feedback) { feedback.className = 'uak-feedback err'; feedback.textContent = e.message }
+  }
+}
+
+async function saveIpapiIsFreeTier(checked) {
+  const input = document.getElementById('uak_ipapi_is')
+  const testBtn = document.getElementById('uak-testbtn-ipapi_is')
+  const saveBtn = document.getElementById('uak-savebtn-ipapi_is')
+  const checkbox = document.getElementById('uak-freetier-ipapi_is')
+  if (input) input.disabled = checked
+  if (testBtn) testBtn.disabled = checked
+  if (saveBtn) saveBtn.disabled = checked
+  try {
+    const r = await fetch('/api/user-api-keys/ipapi_is/free-tier', {
+      method: 'PUT', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ free_tier: checked })
+    })
+    if (!r.ok) throw new Error('Save failed')
+  } catch(e) {
+    // Revert on failure — don't leave the UI showing a state the server rejected.
+    if (checkbox) checkbox.checked = !checked
+    if (input) input.disabled = !checked
+    if (testBtn) testBtn.disabled = !checked
+    if (saveBtn) saveBtn.disabled = !checked
+  }
+}
+
+async function testUserApiKey(provider) {
+  const res = document.getElementById('uak-test-' + provider)
+  const btn = document.getElementById('uak-testbtn-' + provider)
+  res.className = 'uak-feedback'; res.textContent = ''
+  if (btn) { btn.disabled = true; btn.textContent = 'Testing…' }
+  try {
+    const r = await fetch('/api/user-api-keys/' + provider + '/test', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ api_key: getVal('uak_' + provider) })
+    })
+    const result = await r.json()
+    res.className = 'uak-feedback ' + (result.status === 'ok' ? 'ok' : 'err')
+    res.textContent = (result.status === 'ok' ? '✓ ' : '✗ ') + (result.detail || '')
+  } catch(e) { res.className = 'uak-feedback err'; res.textContent = '✗ ' + e.message }
+  finally { if (btn) { btn.disabled = false; btn.textContent = 'Test' } }
 }
 
 // ── SSL ───────────────────────────────────────────────────────────────────────
@@ -1537,7 +1784,7 @@ function renderCertField(id) {
       <textarea id="cert-input-${id}" rows="4" placeholder="MIIDp…"
         style="width:100%;background:#1f2937;border:1px solid #374151;border-radius:8px;padding:8px 12px;color:#f9fafb;font-family:'SF Mono','Fira Code',monospace;font-size:12px;resize:vertical">${escaped}</textarea>
       ${cancelBtn}
-      <p style="font-size:11px;color:#4b5563;margin-top:4px">Paste content or drag &amp; drop a .pem / .crt / .cer file</p>`
+      <p style="font-size:11px;color:#9ca3af;margin-top:4px">Paste content or drag &amp; drop a .pem / .crt / .cer file</p>`
     const ta = document.getElementById('cert-input-' + id)
     if (ta) ta.addEventListener('input', () => { certState[id].value = ta.value })
   }
@@ -1668,7 +1915,7 @@ async function loadBackups() {
       <td>${esc(b.name)}</td>
       <td style="color:#9ca3af;font-size:12px">${b.files.map(esc).join(', ')}</td>
       <td style="color:#9ca3af;font-size:12px">${fmtBytes(b.size_bytes)}</td>
-      <td style="color:#6b7280;font-size:12px">${new Date(b.created_at).toLocaleString()}</td>
+      <td style="color:#9ca3af;font-size:12px">${new Date(b.created_at).toLocaleString()}</td>
     </tr>`).join('')
   } catch(e) {
     loading.textContent = 'Failed to load backups: ' + e.message
@@ -1720,7 +1967,7 @@ function renderUsers() {
       <td style="color:#9ca3af">${esc(u.email || '—')}</td>
       <td><span class="badge badge-${role}">${role}</span></td>
       <td><span class="badge badge-${status}">${status}</span></td>
-      <td style="color:#6b7280;font-size:12px">${lastLogin}</td>
+      <td style="color:#9ca3af;font-size:12px">${lastLogin}</td>
       <td>
         <div style="display:flex;gap:6px;justify-content:flex-end">
           <button class="btn" style="font-size:11px;padding:4px 10px" onclick="openResetModal(${u.id},'${esc(u.username)}')">Reset PW</button>
@@ -1840,6 +2087,10 @@ async function deleteUser(uid, username) {
 
 load()
 
+// Deep-link support, e.g. /settings#storage from the Live Feeds "Saved
+// Captures" empty state pointing users at where to set the storage path.
+if (TABS.includes(location.hash.slice(1))) switchTab(location.hash.slice(1))
+
 // ── Auth: current user + sign-out ─────────────────────────────────────────────
 fetch('/api/auth/current-user').then(r => r.ok ? r.json() : null).then(u => {
   if (!u) return
@@ -1885,9 +2136,9 @@ function suiteReveal() {
 
 function suiteCopy() {
   if (!suiteTokenVal) { loadSuiteToken(); return; }
-  navigator.clipboard.writeText(suiteTokenVal).then(() => {
+  copyToClipboard(suiteTokenVal).then(ok => {
     const btn = document.getElementById('suite-copy-btn');
-    if (btn) { btn.textContent = '✓ Copied'; setTimeout(() => btn.textContent = 'Copy', 2000); }
+    if (btn) { btn.textContent = ok ? '✓ Copied' : 'Copy failed'; setTimeout(() => btn.textContent = 'Copy', 2000); }
   });
 }
 
