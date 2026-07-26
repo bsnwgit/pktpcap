@@ -307,6 +307,8 @@ tshark is the command-line interface to Wireshark. It handles raw packet capture
 tshark -D
 ```
 
+> **Note on the Live Feeds UI's Interface field:** the dropdown suggestions come from `GET /api/net-interfaces`, which returns the **pktPCAP server's own** interfaces (`socket.if_nameindex()`) — useful as-is for the Wireshark GUI method below, since that traffic runs on the pktPCAP host itself. For the tshark/CLI method, the interface has to exist on whatever **remote host** actually runs the `tshark` command, which pktPCAP has no way to introspect in advance — type that host's real interface name (`tshark -D` on the remote host) rather than picking a suggested one.
+
 #### curl
 
 curl handles the HTTP transport to pktPCAP. The `--data-binary @-` flag tells curl to read the POST body from stdin, enabling the pipe.
@@ -573,7 +575,9 @@ The Suite Token (Settings → Security → **Suite Integration**) is what pktHub
 
 | Key | Default | Description |
 |---|---|---|
-| `lucid_api_token` | — | Used for diagram export to Lucidchart |
+| `lucid_api_token` | — | Used for diagram export to Lucidchart (app-wide, shared by all users — the only entry in this app-settings table) |
+
+Everything else on this tab is **per-user**, not app-wide config, so it isn't in the table above: each logged-in user stores their own key for AbuseIPDB, ipinfo.io, ipapi.is, MXToolbox, and IPQualityScore via `GET/PUT /api/user-api-keys` — scoped strictly to that user, no shared/admin key, no cross-user visibility. Those keys power `GET /api/ip-info/<ip>` (see [IP Info](#ip-info) in the API Reference below), which combines ipinfo.io geolocation/ASN/org, ipapi.is geolocation/ASN/company/VPN-proxy-Tor-datacenter-abuser detection, AbuseIPDB's abuse confidence score, and MXToolbox's reverse-DNS/ASN/blacklist check — all called for a public IP, run sequentially (not concurrently — this app is synchronous Flask, no event loop to gather against). Private/loopback/reserved addresses are rejected. IPQualityScore can be saved and tested but isn't consumed by the lookup yet. MXToolbox's remaining commands (email/DNS record checks, active probes) are reachable via `POST /api/mxtoolbox/lookup` — see the API Reference.
 
 ### Capture Ingest
 
@@ -732,6 +736,27 @@ All endpoints are served from the app root (default `http://your-host`).
 |---|---|---|
 | `POST` | `/api/restart` | Graceful server restart |
 | `GET` | `/api/health` | Public health check (used by pktHub) |
+
+### User Keys
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/user-api-keys` | This user's own keys for `abuseipdb`, `ipinfo`, `ipapi_is`, `ipqualityscore`, `mxtoolbox` |
+| `PUT` | `/api/user-api-keys/<provider>` | Set (or clear, with an empty value) this user's key for a provider |
+| `POST` | `/api/user-api-keys/<provider>/test` | Validate a key against the real provider API using a harmless test IP |
+| `GET` | `/api/whoami` | Current session's username — used to label the User Keys tab |
+
+### IP Info
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/ip-info/<ip>` | Combined ipinfo.io + ipapi.is + AbuseIPDB + MXToolbox (ptr/asn/blacklist) lookup for a single public IP, using the caller's own stored keys. Returns 400 for private/loopback/link-local/reserved/multicast addresses. |
+
+### MXToolbox
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/api/mxtoolbox/lookup` | Generic passthrough to any MXToolbox `Lookup` command — body `{"command", "argument", "port"?}`. Covers everything not already auto-wired into `/api/ip-info/<ip>`: email/DNS records (`mx`, `spf`, `dmarc`, `dkim`, `dns`, `txt`, `soa`, `bimi`, `mta-sts`, `tlsrpt`, `a`, `aaaa`) and active probes (`ping`, `trace`, `tcp`, `http`, `https`, `smtp`) that run from MXToolbox's own infrastructure against the target. `dkim` needs `domain:selector`; `tcp` needs `port`. Returns MXToolbox's raw JSON — no response modeling, since nothing in the UI consumes it yet. |
 
 ---
 

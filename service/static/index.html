@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -21,7 +21,7 @@
     font-size: 13px;
   }
 
-  /* ΓöÇΓöÇ SIDEBAR ΓöÇΓöÇ */
+  /* ── SIDEBAR ── */
   .sidebar {
     width: 208px;
     flex-shrink: 0;
@@ -35,7 +35,7 @@
     border-bottom: 1px solid #374151;
   }
 
-  /* ΓöÇΓöÇ APP RIGHT WRAPPER ΓöÇΓöÇ */
+  /* ── APP RIGHT WRAPPER ── */
   .app-right {
     flex: 1;
     display: flex;
@@ -44,7 +44,7 @@
     min-width: 0;
   }
 
-  /* ΓöÇΓöÇ TOP BAR ΓöÇΓöÇ */
+  /* ── TOP BAR ── */
   .top-bar { font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     height: 48px;
     background: #111827;
@@ -67,7 +67,7 @@
   }
   .reset-btn:hover { border-color: #60a5fa; color: #60a5fa; }
 
-  /* ΓöÇΓöÇ MODE TOGGLE ΓöÇΓöÇ */
+  /* ── MODE TOGGLE ── */
   .mode-toggle { display:flex; background:#030712; border:1px solid #374151; border-radius:8px; padding:3px; gap:2px; }
   .mode-btn { flex:1; padding:8px 12px; border-radius:6px; border:none; cursor:pointer; font-family:Inter,-apple-system,sans-serif; font-size:12px; font-weight:600; transition:all 0.2s; background:none; color:#9ca3af; }
   .mode-btn.active { background:#1f2937; color:#f9fafb; }
@@ -77,61 +77,61 @@
   .mode-desc { font-size:11px; color:#9ca3af; text-align:center; padding:4px 0 0; line-height:1.5; font-family:Inter,-apple-system,sans-serif; }
   .mode-desc em { color:#60a5fa; font-style:normal; }
   .mode-desc.triage em { color:#f59e0b; }
-  /* ΓöÇΓöÇ LAYOUT ΓöÇΓöÇ */
+  /* ── LAYOUT ── */
   .main { display:flex; flex:1; overflow:hidden; }
-  /* ΓöÇΓöÇ UPLOAD SCREEN ΓöÇΓöÇ */
+  /* ── UPLOAD SCREEN ── */
   #upload-screen { flex:1; display:flex; overflow-y:auto; }
   .az-page-container { padding:28px 32px; max-width:760px; width:100%; }
   .az-page-hdr { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:20px; }
   .az-page-title { display:flex; align-items:center; gap:8px; font-size:16px; font-weight:700; color:#f9fafb; margin-bottom:4px; font-family:Inter,-apple-system,sans-serif; }
-  .az-page-sub { font-size:13px; color:#6b7280; font-family:Inter,-apple-system,sans-serif; }
+  .az-page-sub { font-size:13px; color:#9ca3af; font-family:Inter,-apple-system,sans-serif; }
   .az-options-card { background:#111827; border:1px solid #1f2937; border-radius:10px; padding:18px; margin-top:14px; }
   .az-container,.az-card,.az-card-header,.az-card-icon,.az-card-title,.az-card-sub { display:none; }
   .upload-zone { border:2px dashed #374151; border-radius:10px; padding:36px 24px; text-align:center; cursor:pointer; transition:all 0.2s; background:#0d1117; margin-bottom:14px; }
   .upload-zone:hover,.upload-zone.drag-over { border-color:#3b82f6; background:#111827; }
   .upload-icon { font-size:36px; margin-bottom:10px; opacity:0.6; }
   .upload-title { font-size:14px; font-weight:600; color:#f9fafb; margin-bottom:4px; font-family:Inter,-apple-system,sans-serif; }
-  .upload-sub { font-size:12px; color:#6b7280; font-family:Inter,-apple-system,sans-serif; }
+  .upload-sub { font-size:12px; color:#9ca3af; font-family:Inter,-apple-system,sans-serif; }
   .upload-sub em { color:#60a5fa; font-style:normal; }
   .file-list { display:flex; flex-direction:column; gap:6px; margin-bottom:14px; }
   .file-item { display:flex; align-items:center; gap:10px; background:#1f2937; border:1px solid #374151; border-radius:8px; padding:8px 12px; }
   .file-item-icon { color:#60a5fa; }
   .file-item-name { flex:1; color:#f9fafb; font-size:13px; font-family:Inter,-apple-system,sans-serif; }
-  .file-item-size { color:#6b7280; font-size:11px; font-family:Inter,-apple-system,sans-serif; }
-  .file-remove { background:none; border:none; color:#4b5563; cursor:pointer; font-size:14px; padding:0 4px; transition:color 0.15s; }
+  .file-item-size { color:#9ca3af; font-size:11px; font-family:Inter,-apple-system,sans-serif; }
+  .file-remove { background:none; border:none; color:#9ca3af; cursor:pointer; font-size:14px; padding:0 4px; transition:color 0.15s; }
   .file-remove:hover { color:#ef4444; }
-  .issue-label { display:block; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:#6b7280; margin-bottom:6px; font-family:Inter,-apple-system,sans-serif; }
+  .issue-label { display:block; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:#9ca3af; margin-bottom:6px; font-family:Inter,-apple-system,sans-serif; }
   .issue-input { width:100%; background:#0d1117; border:1px solid #374151; border-radius:8px; padding:10px 14px; color:#f9fafb; font-family:Inter,-apple-system,sans-serif; font-size:13px; resize:vertical; min-height:72px; transition:border-color 0.2s; margin-bottom:14px; box-sizing:border-box; }
   .issue-input:focus { outline:none; border-color:#3b82f6; }
-  .issue-input::placeholder { color:#4b5563; }
+  .issue-input::placeholder { color:#9ca3af; }
   .analyze-btn { width:100%; background:#2563eb; border:none; color:#fff; border-radius:8px; padding:11px 24px; font-size:13px; font-weight:600; font-family:Inter,-apple-system,sans-serif; cursor:pointer; transition:background 0.2s; }
   .analyze-btn:hover:not(:disabled) { background:#3b82f6; }
   .analyze-btn:disabled { background:#1e3a5f; color:#374151; cursor:not-allowed; }
-  /* ΓöÇΓöÇ LOADING ΓöÇΓöÇ */
+  /* ── LOADING ── */
   #loading-screen { flex:1; display:none; align-items:center; justify-content:center; flex-direction:column; gap:16px; }
   .loading-spinner { width:44px; height:44px; border:3px solid #1f2937; border-top-color:#3b82f6; border-radius:50%; animation:spin 0.8s linear infinite; }
   @keyframes spin { to { transform:rotate(360deg); } }
   .loading-text { font-size:14px; color:#9ca3af; font-family:Inter,-apple-system,sans-serif; }
-  .loading-step { font-size:12px; color:#4b5563; font-family:Inter,-apple-system,sans-serif; }
-  /* ΓöÇΓöÇ ANALYSIS SCREEN ΓöÇΓöÇ */
+  .loading-step { font-size:12px; color:#9ca3af; font-family:Inter,-apple-system,sans-serif; }
+  /* ── ANALYSIS SCREEN ── */
   #analysis-screen { display:none; flex:1; overflow:hidden; }
   .data-panel { width:400px; flex-shrink:0; border-right:1px solid #1f2937; display:flex; flex-direction:column; overflow:hidden; background:#0d1117; }
   .tabs-wrapper { display:flex; align-items:stretch; border-bottom:1px solid #1f2937; background:#111827; flex-shrink:0; position:relative; }
-  .tab-arrow { flex-shrink:0; width:26px; background:#111827; border:none; color:#4b5563; cursor:pointer; font-size:16px; font-family:inherit; transition:color 0.15s; display:flex; align-items:center; justify-content:center; }
+  .tab-arrow { flex-shrink:0; width:26px; background:#111827; border:none; color:#9ca3af; cursor:pointer; font-size:16px; font-family:inherit; transition:color 0.15s; display:flex; align-items:center; justify-content:center; }
   .tab-arrow:hover { color:#9ca3af; background:#1f2937; }
   .tab-arrow:disabled { opacity:0.2; cursor:default; }
   .tabs { display:flex; flex:1; overflow-x:hidden; scrollbar-width:none; }
   .tabs::-webkit-scrollbar { display:none; }
-  .tab { padding:10px 13px; font-size:11px; font-weight:600; color:#6b7280; cursor:pointer; border-bottom:2px solid transparent; white-space:nowrap; transition:all 0.15s; font-family:Inter,-apple-system,sans-serif; background:none; border-top:none; border-left:none; border-right:none; text-transform:uppercase; letter-spacing:0.5px; flex-shrink:0; }
+  .tab { padding:10px 13px; font-size:11px; font-weight:600; color:#9ca3af; cursor:pointer; border-bottom:2px solid transparent; white-space:nowrap; transition:all 0.15s; font-family:Inter,-apple-system,sans-serif; background:none; border-top:none; border-left:none; border-right:none; text-transform:uppercase; letter-spacing:0.5px; flex-shrink:0; }
   .tab:hover { color:#9ca3af; }
   .tab.active { color:#60a5fa; border-bottom-color:#3b82f6; }
   .tab-content { flex:1; overflow-y:auto; padding:14px; display:none; }
   .tab-content.active { display:block; }
   .metric-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px; }
   .metric-card { background:#111827; border:1px solid #1f2937; border-radius:8px; padding:10px 12px; }
-  .metric-label { font-size:10px; color:#6b7280; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; font-family:Inter,-apple-system,sans-serif; }
+  .metric-label { font-size:10px; color:#9ca3af; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; font-family:Inter,-apple-system,sans-serif; }
   .metric-value { font-size:20px; font-weight:700; color:#f9fafb; font-family:Inter,-apple-system,sans-serif; }
-  .metric-sub { font-size:10px; color:#4b5563; margin-top:2px; font-family:Inter,-apple-system,sans-serif; }
+  .metric-sub { font-size:10px; color:#9ca3af; margin-top:2px; font-family:Inter,-apple-system,sans-serif; }
   .bar-row { margin-bottom:8px; }
   .bar-label { display:flex; justify-content:space-between; font-size:12px; margin-bottom:4px; color:#9ca3af; font-family:Inter,-apple-system,sans-serif; }
   .bar-track { background:#1f2937; border-radius:3px; height:4px; overflow:hidden; }
@@ -149,17 +149,17 @@
   .anomaly-detail { font-size:12px; color:#9ca3af; line-height:1.5; font-family:Inter,-apple-system,sans-serif; }
   .expandable-card { cursor:pointer; }
   .expandable-card:hover { filter:brightness(1.08); }
-  .expand-toggle { font-size:10px; color:#4b5563; margin-top:6px; text-align:right; user-select:none; font-family:Inter,-apple-system,sans-serif; }
+  .expand-toggle { font-size:10px; color:#9ca3af; margin-top:6px; text-align:right; user-select:none; font-family:Inter,-apple-system,sans-serif; }
   .expandable-card:hover .expand-toggle { color:#9ca3af; }
   .card-evidence { display:none; margin-top:8px; padding-top:8px; border-top:1px solid #1f2937; }
   .card-evidence.open { display:block; }
   .ev-row { font-size:11px; color:#9ca3af; padding:4px 0; border-bottom:1px solid #1f2937; line-height:1.45; word-break:break-all; font-family:'SF Mono','Fira Code','Consolas',monospace; }
   .ev-row:last-child { border-bottom:none; }
-  .ev-label { color:#4b5563; font-size:9px; text-transform:uppercase; letter-spacing:0.4px; margin-right:4px; }
-  .no-anomalies { text-align:center; padding:28px; color:#4b5563; font-size:13px; font-family:Inter,-apple-system,sans-serif; }
+  .ev-label { color:#9ca3af; font-size:9px; text-transform:uppercase; letter-spacing:0.4px; margin-right:4px; }
+  .no-anomalies { text-align:center; padding:28px; color:#9ca3af; font-size:13px; font-family:Inter,-apple-system,sans-serif; }
   .no-anomalies-icon { font-size:28px; margin-bottom:8px; }
   .data-table { width:100%; border-collapse:collapse; font-size:12px; }
-  .data-table th { background:#111827; color:#6b7280; padding:7px 8px; text-align:left; border-bottom:1px solid #1f2937; font-weight:600; text-transform:uppercase; letter-spacing:0.4px; position:sticky; top:0; font-family:Inter,-apple-system,sans-serif; font-size:10px; }
+  .data-table th { background:#111827; color:#9ca3af; padding:7px 8px; text-align:left; border-bottom:1px solid #1f2937; font-weight:600; text-transform:uppercase; letter-spacing:0.4px; position:sticky; top:0; font-family:Inter,-apple-system,sans-serif; font-size:10px; }
   .data-table td { padding:6px 8px; border-bottom:1px solid #1f2937; color:#d1d5db; word-break:break-all; font-family:'SF Mono','Fira Code','Consolas',monospace; font-size:11px; }
   .data-table tr:hover td { background:#111827; }
   .stat-row { display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid #1f2937; font-size:13px; font-family:Inter,-apple-system,sans-serif; }
@@ -177,10 +177,10 @@
   .source-legend { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:10px; }
   .source-legend-item { display:flex; align-items:center; gap:5px; font-size:11px; color:#9ca3af; font-family:Inter,-apple-system,sans-serif; }
   .source-dot { width:7px; height:7px; border-radius:50%; }
-  .section-header { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.6px; color:#6b7280; margin-bottom:8px; margin-top:16px; padding-bottom:6px; border-bottom:1px solid #1f2937; font-family:Inter,-apple-system,sans-serif; }
+  .section-header { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.6px; color:#9ca3af; margin-bottom:8px; margin-top:16px; padding-bottom:6px; border-bottom:1px solid #1f2937; font-family:Inter,-apple-system,sans-serif; }
   .section-header:first-child { margin-top:0; }
-  .empty-state { text-align:center; padding:24px; color:#4b5563; font-size:13px; font-family:Inter,-apple-system,sans-serif; }
-  /* ΓöÇΓöÇ CHAT PANEL ΓöÇΓöÇ */
+  .empty-state { text-align:center; padding:24px; color:#9ca3af; font-size:13px; font-family:Inter,-apple-system,sans-serif; }
+  /* ── CHAT PANEL ── */
   .chat-panel { flex:1; display:flex; flex-direction:column; overflow:hidden; background:#030712; }
   .chat-header { padding:12px 18px; border-bottom:1px solid #1f2937; background:#111827; font-size:12px; font-weight:600; color:#9ca3af; display:flex; align-items:center; gap:8px; flex-shrink:0; font-family:Inter,-apple-system,sans-serif; }
   .chat-status { width:7px; height:7px; border-radius:50%; background:#3b82f6; }
@@ -188,7 +188,7 @@
   .message { display:flex; flex-direction:column; max-width:88%; }
   .message.user { align-self:flex-end; }
   .message.assistant { align-self:flex-start; }
-  .message-role { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.4px; margin-bottom:4px; color:#4b5563; font-family:Inter,-apple-system,sans-serif; }
+  .message-role { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.4px; margin-bottom:4px; color:#9ca3af; font-family:Inter,-apple-system,sans-serif; }
   .message.user .message-role { text-align:right; color:#3b82f6; }
   .message.assistant .message-role { color:#374151; }
   .message-bubble { padding:10px 13px; border-radius:10px; font-size:13px; line-height:1.6; white-space:pre-wrap; word-break:break-word; font-family:Inter,-apple-system,sans-serif; }
@@ -202,7 +202,7 @@
   .chat-input-area { border-top:1px solid #1f2937; padding:12px 16px; display:flex; gap:8px; background:#111827; flex-shrink:0; align-items:flex-end; }
   .chat-input { flex:1; background:#0d1117; border:1px solid #374151; border-radius:8px; padding:9px 12px; color:#f9fafb; font-family:Inter,-apple-system,sans-serif; font-size:13px; resize:none; min-height:38px; max-height:110px; transition:border-color 0.2s; line-height:1.5; }
   .chat-input:focus { outline:none; border-color:#3b82f6; }
-  .chat-input::placeholder { color:#4b5563; }
+  .chat-input::placeholder { color:#9ca3af; }
   .send-btn { background:#2563eb; border:none; color:#fff; border-radius:8px; padding:9px 14px; font-size:13px; font-weight:600; font-family:Inter,-apple-system,sans-serif; cursor:pointer; transition:background 0.2s; white-space:nowrap; }
   .send-btn:hover:not(:disabled) { background:#3b82f6; }
   .send-btn:disabled { background:#1e3a5f; color:#374151; cursor:not-allowed; }
@@ -215,59 +215,59 @@
   #stream-modal-body tr { transition:background 0.1s; }
   #stream-modal-body tr:hover { background:rgba(59,130,246,.06) !important; }
   #stream-modal-body tr.pkt-selected { background:rgba(59,130,246,.14) !important; outline:1px solid rgba(59,130,246,.3); }
-  .chat-to-btn { background:none; border:none; color:#4b5563; font-size:13px; cursor:pointer; padding:0 2px; line-height:1; transition:color 0.15s; flex-shrink:0; margin-left:auto; }
+  .chat-to-btn { background:none; border:none; color:#9ca3af; font-size:13px; cursor:pointer; padding:0 2px; line-height:1; transition:color 0.15s; flex-shrink:0; margin-left:auto; }
   .chat-to-btn:hover { color:#60a5fa; }
   .src-badge { display:inline-block; font-size:9px; padding:1px 4px; border-radius:3px; background:#1f2937; margin-right:3px; white-space:nowrap; font-family:Inter,-apple-system,sans-serif; }
-  /* ΓöÇΓöÇ LIVE FEEDS PAGE ΓöÇΓöÇ */
+  /* ── LIVE FEEDS PAGE ── */
   #live-feeds-screen { display:none; flex:1; overflow-y:auto; }
   .lf-container { padding:28px 32px; max-width:860px; }
   .lf-page-hdr { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:24px; }
   .lf-page-title { display:flex; align-items:center; gap:8px; font-size:16px; font-weight:700; color:#f9fafb; margin-bottom:4px; font-family:Inter,-apple-system,sans-serif; }
-  .lf-page-sub { font-size:13px; color:#6b7280; font-family:Inter,-apple-system,sans-serif; }
+  .lf-page-sub { font-size:13px; color:#9ca3af; font-family:Inter,-apple-system,sans-serif; }
   .lf-refresh-btn { display:flex; align-items:center; gap:6px; background:#111827; border:1px solid #374151; color:#9ca3af; border-radius:6px; padding:7px 12px; font-size:12px; cursor:pointer; font-family:Inter,-apple-system,sans-serif; flex-shrink:0; transition:all 0.15s; }
   .lf-refresh-btn:hover { border-color:#6b7280; color:#d1d5db; }
-  .lf-section-label { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.6px; color:#6b7280; margin-bottom:8px; font-family:Inter,-apple-system,sans-serif; }
+  .lf-refresh-btn:disabled { cursor:default; opacity:.7; }
+  .lf-refresh-spin svg { animation: lf-spin .6s linear; }
+  @keyframes lf-spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
+  .lf-section-label { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.6px; color:#9ca3af; margin-bottom:8px; font-family:Inter,-apple-system,sans-serif; }
   .lf-feed-list { display:flex; flex-direction:column; gap:6px; }
-  .lf-empty { text-align:center; padding:32px 16px; color:#4b5563; font-size:13px; background:#111827; border:1px solid #1f2937; border-radius:10px; font-family:Inter,-apple-system,sans-serif; }
+  .lf-empty { text-align:center; padding:32px 16px; color:#9ca3af; font-size:13px; background:#111827; border:1px solid #1f2937; border-radius:10px; font-family:Inter,-apple-system,sans-serif; }
   .lf-connect-card { background:#111827; border:1px solid #1f2937; border-radius:10px; padding:20px; margin-top:8px; }
   .lf-builder-row { display:flex; gap:10px; margin-bottom:16px; align-items:flex-end; }
   .lf-field { display:flex; flex-direction:column; gap:5px; flex:1; }
-  .lf-field-label { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.4px; color:#6b7280; font-family:Inter,-apple-system,sans-serif; }
+  .lf-field-label { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.4px; color:#9ca3af; font-family:Inter,-apple-system,sans-serif; }
   .lf-optional { font-weight:400; text-transform:none; letter-spacing:0; }
   .lf-tab-bar { display:flex; margin-bottom:12px; background:#0d1117; border:1px solid #1f2937; border-radius:7px; padding:3px; gap:2px; }
-  .lf-tab { flex:1; display:flex; align-items:center; justify-content:center; gap:6px; padding:7px 10px; border-radius:5px; border:none; background:none; color:#6b7280; font-size:12px; font-weight:600; cursor:pointer; font-family:Inter,-apple-system,sans-serif; transition:all 0.15s; }
+  .lf-tab { flex:1; display:flex; align-items:center; justify-content:center; gap:6px; padding:7px 10px; border-radius:5px; border:none; background:none; color:#9ca3af; font-size:12px; font-weight:600; cursor:pointer; font-family:Inter,-apple-system,sans-serif; transition:all 0.15s; }
   .lf-tab:hover:not(.lf-tab-active) { color:#9ca3af; }
   .lf-tab-active { background:#1f2937; color:#f9fafb; }
   .lf-action-row { display:flex; align-items:center; gap:8px; margin-top:10px; }
   .lf-copy-ok { font-size:12px; color:#4ade80; font-family:Inter,-apple-system,sans-serif; }
-  .lf-token-hint { font-size:12px; color:#4b5563; margin-left:auto; font-family:Inter,-apple-system,sans-serif; }
-  .lf-token-code { color:#6ee7b7; font-size:11px; font-family:'SF Mono','Fira Code','Consolas',monospace; }
   .lf-ws-status-bar { display:flex; align-items:center; gap:10px; margin-bottom:10px; padding:9px 12px; background:#0d1117; border:1px solid #1f2937; border-radius:7px; }
   .lf-ws-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
   .lf-ws-label { font-size:13px; color:#9ca3af; flex:1; font-family:Inter,-apple-system,sans-serif; }
-  .lf-ws-howto { margin-top:12px; padding:12px 14px; background:#0d1117; border:1px solid #1f2937; border-radius:7px; font-size:12px; color:#6b7280; line-height:1.6; font-family:Inter,-apple-system,sans-serif; }
+  .lf-ws-howto { margin-top:12px; padding:12px 14px; background:#0d1117; border:1px solid #1f2937; border-radius:7px; font-size:12px; color:#9ca3af; line-height:1.6; font-family:Inter,-apple-system,sans-serif; }
   .lf-ws-howto-title { color:#9ca3af; font-weight:600; }
   .lf-code-accent { color:#fbbf24; font-family:'SF Mono','Fira Code','Consolas',monospace; font-size:11px; }
   .lf-code-green { color:#6ee7b7; font-family:'SF Mono','Fira Code','Consolas',monospace; font-size:11px; }
-  /* ΓöÇΓöÇ FEED CARDS ΓöÇΓöÇ */
+  /* ── FEED CARDS ── */
   .feed-card { background:#111827; border:1px solid #1f2937; border-radius:10px; padding:14px 16px; display:flex; align-items:center; gap:12px; transition:border-color 0.2s; }
   .feed-card.connected { border-color:#1e3a5f; background:#0f172a; }
   .feed-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; background:#374151; }
   .feed-dot.live { background:#22c55e; box-shadow:0 0 6px rgba(34,197,94,.5); }
   .feed-info { flex:1; min-width:0; }
   .feed-name { font-size:13px; font-weight:600; color:#f9fafb; font-family:Inter,-apple-system,sans-serif; }
-  .feed-meta { font-size:11px; color:#4b5563; margin-top:2px; font-family:Inter,-apple-system,sans-serif; }
+  .feed-meta { font-size:11px; color:#9ca3af; margin-top:2px; font-family:Inter,-apple-system,sans-serif; }
   .feed-actions { display:flex; gap:6px; flex-shrink:0; }
   .feed-btn { background:rgba(59,130,246,.12); border:1px solid rgba(96,165,250,.25); color:#60a5fa; border-radius:6px; padding:5px 12px; font-size:12px; font-weight:600; cursor:pointer; font-family:Inter,-apple-system,sans-serif; text-decoration:none; display:inline-flex; align-items:center; transition:all 0.15s; }
   .feed-btn:hover { background:rgba(59,130,246,.25); }
   .feed-btn.secondary { background:#1f2937; border-color:#374151; color:#9ca3af; }
   .feed-btn.secondary:hover { border-color:#6b7280; color:#d1d5db; }
-  .feed-btn.danger { background:none; border-color:#374151; color:#4b5563; }
+  .feed-btn.danger { background:none; border-color:#374151; color:#9ca3af; }
   .feed-btn.danger:hover { border-color:#ef4444; color:#ef4444; }
   .feed-cmd-box { background:#0d1117; border-radius:6px; padding:12px 14px; font-family:'SF Mono','Fira Code','Consolas',monospace; font-size:11px; color:#6ee7b7; white-space:pre; overflow-x:auto; line-height:1.7; border:1px solid #1f2937; }
   .feed-setup-input { background:#1f2937; border:1px solid #374151; border-radius:6px; padding:7px 10px; color:#f9fafb; font-family:Inter,-apple-system,sans-serif; font-size:12px; outline:none; width:100%; transition:border-color 0.15s; box-sizing:border-box; }
   .feed-setup-input:focus { border-color:#3b82f6; }
-  .feed-setup-select { background:#1f2937; border:1px solid #374151; border-radius:6px; padding:7px 10px; color:#f9fafb; font-size:12px; font-family:Inter,-apple-system,sans-serif; outline:none; cursor:pointer; }
   .upload-outer { display:none; }
 
 </style>
@@ -285,9 +285,9 @@
       <div id="nav-user-avatar" style="width:28px;height:28px;border-radius:50%;background:#2563eb;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0;font-family:Inter,sans-serif">A</div>
       <div style="flex:1;min-width:0;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
         <div id="nav-user-name" style="font-size:12px;font-weight:500;color:#ffffff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
-        <div id="nav-user-role" style="font-size:11px;color:#6b7280">—</div>
+        <div id="nav-user-role" style="font-size:11px;color:#9ca3af">—</div>
       </div>
-      <a href="#" title="Sign out" onclick="doSignOut();return false;" style="color:#6b7280;flex-shrink:0;display:flex;align-items:center" onmouseover="this.style.color='#9ca3af'" onmouseout="this.style.color='#6b7280'">
+      <a href="#" title="Sign out" onclick="doSignOut();return false;" style="color:#9ca3af;flex-shrink:0;display:flex;align-items:center" onmouseover="this.style.color='#d1d5db'" onmouseout="this.style.color='#9ca3af'">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </a>
     </div>
@@ -301,18 +301,18 @@
     <span class="top-bar-title">pktPCAP</span>
     <div class="header-files" id="header-files" style="display:none">
       <span id="header-file-badges"></span>
-      <button class="reset-btn" onclick="resetApp()">Γå⌐ New Analysis</button>
+      <button class="reset-btn" onclick="resetApp()">↩ New Analysis</button>
     </div>
   </div>
 
 <div class="main">
 
-  <!-- ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ DASHBOARD SCREEN -->
+  <!-- ═══════════════════════════════════════ DASHBOARD SCREEN -->
   <div id="dashboard-screen" style="flex:1;display:flex;align-items:center;justify-content:center;padding:40px;width:100%">
     <div style="text-align:center">
       <img src="data:image/png;base64,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" alt="pktsuite" style="height:128px;width:auto;margin-bottom:28px;display:block;margin-left:auto;margin-right:auto">
       <div style="font-size:22px;font-weight:700;color:#f9fafb;margin-bottom:8px">pktPCAP</div>
-      <div style="font-size:13px;color:#6b7280;margin-bottom:32px">Upload captures and describe what you want analyzed</div>
+      <div style="font-size:13px;color:#9ca3af;margin-bottom:32px">Upload captures and describe what you want analyzed</div>
       <div style="display:flex;gap:12px;justify-content:center">
         <button onclick="showAnalyzer()" style="background:rgba(96,165,250,.12);border:1px solid rgba(96,165,250,.3);color:#60a5fa;border-radius:8px;padding:12px 28px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-2px;margin-right:6px"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Open Analyzer
@@ -321,7 +321,7 @@
     </div>
   </div>
 
-  <!-- ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ LIVE FEEDS SCREEN -->
+  <!-- ═══════════════════════════════════════ LIVE FEEDS SCREEN -->
   <div id="live-feeds-screen">
     <div class="lf-container">
 
@@ -334,7 +334,7 @@
           </div>
           <div class="lf-page-sub">Receive live packet captures streamed from remote hosts via tshark or Wireshark</div>
         </div>
-        <button onclick="loadFeeds()" class="lf-refresh-btn">
+        <button onclick="manualRefreshFeeds(this)" class="lf-refresh-btn" id="lf-refresh-btn">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
           Refresh
         </button>
@@ -344,6 +344,12 @@
       <div class="lf-section-label">Active Sessions</div>
       <div id="feeds-list" class="lf-feed-list">
         <div class="lf-empty">Loading feeds…</div>
+      </div>
+
+      <!-- Saved captures -->
+      <div class="lf-section-label" style="margin-top:28px">Saved Captures</div>
+      <div id="captures-list" class="lf-feed-list">
+        <div class="lf-empty">Loading…</div>
       </div>
 
       <!-- Connect section -->
@@ -357,12 +363,11 @@
             <input id="feed-name-inp" class="feed-setup-input" placeholder="e.g. alice-laptop"
               oninput="updateFeedCommand()" value="my-capture">
           </div>
-          <div class="lf-field" style="flex:0 0 auto;min-width:110px">
+          <div class="lf-field" style="flex:0 0 auto;min-width:130px">
             <label class="lf-field-label">Interface</label>
-            <select id="feed-iface-inp" class="feed-setup-select" onchange="updateFeedCommand()">
-              <option>eth0</option><option>eth1</option><option>wlan0</option>
-              <option>en0</option><option>en1</option><option>ens3</option><option>any</option>
-            </select>
+            <input id="feed-iface-inp" class="feed-setup-input" list="feed-iface-list"
+              placeholder="e.g. eth0" oninput="updateFeedCommand()" value="any">
+            <datalist id="feed-iface-list"></datalist>
           </div>
           <div class="lf-field" style="flex:2">
             <label class="lf-field-label">BPF Filter <span class="lf-optional">(optional)</span></label>
@@ -385,11 +390,15 @@
 
         <!-- tshark tab -->
         <div id="feed-tab-tshark">
+          <div class="lf-ws-status-bar">
+            <span id="ts-status-dot" class="lf-ws-dot" style="background:#4b5563"></span>
+            <span id="ts-status-label" class="lf-ws-label">Loading…</span>
+            <button id="ts-toggle-btn" onclick="toggleTsharkCapture()" class="feed-btn">Enable</button>
+          </div>
           <div class="feed-cmd-box" id="feed-cmd-box">Loading…</div>
           <div class="lf-action-row">
             <button onclick="copyFeedCmd()" class="feed-btn">Copy Command</button>
-            <span id="feed-copy-ok" class="lf-copy-ok" style="display:none">Γ£ô Copied</span>
-            <span class="lf-token-hint">Token: <code id="feed-token-display" class="lf-token-code">loading…</code></span>
+            <span id="feed-copy-ok" class="lf-copy-ok" style="display:none">✓ Copied</span>
           </div>
         </div>
 
@@ -400,10 +409,10 @@
             <span id="ws-status-label" class="lf-ws-label">Disabled — Wireshark remote capture is off</span>
             <button id="ws-toggle-btn" onclick="toggleWsCapture()" class="feed-btn">Enable</button>
           </div>
-          <div class="feed-cmd-box" id="ws-config-box" style="line-height:1.8;white-space:pre;color:#6b7280">Loading…</div>
+          <div class="feed-cmd-box" id="ws-config-box" style="line-height:1.8;white-space:pre;color:#9ca3af">Loading…</div>
           <div class="lf-action-row">
             <button onclick="copyWsConfig()" class="feed-btn">Copy Settings</button>
-            <span id="ws-copy-ok" class="lf-copy-ok" style="display:none">Γ£ô Copied</span>
+            <span id="ws-copy-ok" class="lf-copy-ok" style="display:none">✓ Copied</span>
           </div>
           <div class="lf-ws-howto">
             <span class="lf-ws-howto-title">How it works: </span>
@@ -411,7 +420,7 @@
             instead of dumpcap. The wrapper tees the stream — Wireshark gets its live view, and the capture is
             simultaneously recorded in pktPCAP. The feed appears above as
             <code class="lf-code-green">ws-&lt;your-ip&gt;-&lt;time&gt;</code>.
-            In Wireshark: Capture ΓåÆ Options ΓåÆ SSH Remote Capture, set the fields above, then start.
+            In Wireshark: Capture → Options → SSH Remote Capture, set the fields above, then start.
           </div>
         </div>
 
@@ -419,7 +428,7 @@
     </div>
   </div>
 
-  <!-- ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ UPLOAD SCREEN -->
+  <!-- ═══════════════════════════════════════ UPLOAD SCREEN -->
   <div id="upload-screen" style="display:none">
     <div class="az-page-container">
 
@@ -459,14 +468,14 @@
     </div>
   </div><!-- /upload-screen -->
 
-  <!-- ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ LOADING SCREEN -->
+  <!-- ═══════════════════════════════════════ LOADING SCREEN -->
   <div id="loading-screen">
     <div class="loading-spinner"></div>
     <div class="loading-text">Parsing captures…</div>
     <div class="loading-step" id="loading-step">Reading file headers</div>
   </div>
 
-  <!-- ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ ANALYSIS SCREEN -->
+  <!-- ═══════════════════════════════════════ ANALYSIS SCREEN -->
   <div id="analysis-screen">
 
     <!-- Data panel -->
@@ -550,7 +559,7 @@
       <div class="chat-header">
         <div class="chat-status"></div>
         AI Analysis
-        <span style="font-size:10px;color:#4b5563;margin-left:4px;font-weight:400;text-transform:none;letter-spacing:0">Claude</span>
+        <span style="font-size:10px;color:#9ca3af;margin-left:4px;font-weight:400;text-transform:none;letter-spacing:0">Claude</span>
         <button onclick="clearChat()" style="margin-left:auto;background:none;border:1px solid #374151;color:#9ca3af;font-size:11px;padding:2px 8px;border-radius:4px;cursor:pointer;font-family:inherit" title="Clear conversation">Clear</button>
       </div>
       <div class="chat-messages" id="chat-messages"></div>
@@ -565,14 +574,14 @@
 
   </div><!-- /analysis-screen -->
 
-  <!-- ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ LOGS SCREEN -->
+  <!-- ═══════════════════════════════════════ LOGS SCREEN -->
   <div id="logs-screen" style="display:none;flex:1;overflow-y:auto;padding:28px 32px;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
 
     <!-- Header -->
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px">
       <div>
         <div style="font-size:16px;font-weight:700;color:#f9fafb;margin-bottom:4px">Application Logs</div>
-        <div id="logs-subtitle" style="font-size:13px;color:#6b7280">Loading…</div>
+        <div id="logs-subtitle" style="font-size:13px;color:#9ca3af">Loading…</div>
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <button id="logs-live-btn" onclick="toggleLogsLive()" style="display:flex;align-items:center;gap:6px;font-size:12px;padding:5px 12px;background:#1f2937;border:1px solid #374151;color:#d1d5db;border-radius:8px;cursor:pointer;font-family:inherit">
@@ -599,7 +608,7 @@
       <input id="logs-search" type="text" placeholder="Search messages…" onkeydown="if(event.key==='Enter')_loadLogsResetPage()"
         style="font-size:12px;background:#1f2937;border:1px solid #374151;color:#f9fafb;border-radius:8px;padding:4px 12px;width:200px;font-family:inherit;outline:none">
       <!-- Capture level (admin) -->
-      <div id="logs-capture-level-wrap" style="margin-left:auto;display:flex;align-items:center;gap:8px;font-size:12px;color:#6b7280;display:none">
+      <div id="logs-capture-level-wrap" style="margin-left:auto;display:flex;align-items:center;gap:8px;font-size:12px;color:#9ca3af;display:none">
         <span>Capture level:</span>
         <select id="logs-capture-level-select" onchange="setLogCaptureLevel(this.value)"
           style="background:#1f2937;border:1px solid #374151;color:#f9fafb;border-radius:8px;padding:4px 8px;font-family:inherit;font-size:12px">
@@ -620,15 +629,15 @@
 
     <!-- Table -->
     <div style="background:#111827;border:1px solid #1f2937;border-radius:12px;overflow:hidden">
-      <div id="logs-loading" style="display:flex;align-items:center;justify-content:center;height:160px;color:#6b7280;font-size:13px">Loading…</div>
-      <div id="logs-empty" style="display:none;flex-direction:column;align-items:center;justify-content:center;height:160px;color:#6b7280;font-size:13px;gap:8px">
+      <div id="logs-loading" style="display:flex;align-items:center;justify-content:center;height:160px;color:#9ca3af;font-size:13px">Loading…</div>
+      <div id="logs-empty" style="display:none;flex-direction:column;align-items:center;justify-content:center;height:160px;color:#9ca3af;font-size:13px;gap:8px">
         <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" opacity=".4"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
         <span>No log records match your filters</span>
       </div>
       <div id="logs-table-wrap" style="display:none;overflow-x:auto">
         <table style="width:100%;font-size:12px;font-family:'SF Mono','Fira Code','Consolas',monospace;border-collapse:collapse">
           <thead>
-            <tr style="border-bottom:1px solid #1f2937;color:#6b7280;text-align:left">
+            <tr style="border-bottom:1px solid #1f2937;color:#9ca3af;text-align:left">
               <th style="padding:8px 16px;font-weight:500;width:172px">Timestamp</th>
               <th style="padding:8px 12px;font-weight:500;width:96px">Level</th>
               <th style="padding:8px 12px;font-weight:500;width:140px">Logger</th>
@@ -638,7 +647,7 @@
           <tbody id="logs-tbody"></tbody>
         </table>
       </div>
-      <div id="logs-footer" style="display:none;padding:8px 16px;border-top:1px solid #1f2937;display:flex;align-items:center;justify-content:space-between;font-size:12px;color:#6b7280">
+      <div id="logs-footer" style="display:none;padding:8px 16px;border-top:1px solid #1f2937;display:flex;align-items:center;justify-content:space-between;font-size:12px;color:#9ca3af">
         <span id="logs-footer-count"></span>
         <span id="logs-footer-live" style="display:none;align-items:center;gap:6px;color:#60a5fa">
           <span style="width:6px;height:6px;border-radius:50%;background:#60a5fa;display:inline-block;animation:pulse 1.5s ease-in-out infinite"></span>
@@ -725,8 +734,10 @@ function showLiveFeeds() {
   document.getElementById('header-files').style.display = 'none';
   loadFeedToken();
   loadFeeds();
+  loadCaptures();
+  loadNetInterfaces();
   _stopFeedPoll();
-  window._feedPollTimer = setInterval(loadFeeds, 2500);
+  window._feedPollTimer = setInterval(() => { loadFeeds(); loadCaptures(); }, 2500);
 }
 
 function showLogs() {
@@ -790,7 +801,7 @@ function _renderPagination(containerId, page, totalPages, onChange) {
   const dots = () => {
     const s = document.createElement('span');
     s.textContent = '..';
-    s.style.cssText = 'padding:0 4px;color:#6b7280;font-size:11px';
+    s.style.cssText = 'padding:0 4px;color:#9ca3af;font-size:11px';
     return s;
   };
   el.appendChild(mkBtn('← Prev', Math.max(1, page - 1), { disabled: page === 1 }));
@@ -884,7 +895,7 @@ function _renderLogs(res, stats) {
   // Subtitle
   const sub = document.getElementById('logs-subtitle');
   sub.textContent = (stats.total || 0).toLocaleString() + ' records stored'
-    + (stats.latest_ts ? ' ┬╖ last entry ' + _fmtLogTs(stats.latest_ts) : '');
+    + (stats.latest_ts ? ' · last entry ' + _fmtLogTs(stats.latest_ts) : '');
 
   // Stats chips
   const row = document.getElementById('logs-stats-row');
@@ -944,13 +955,13 @@ function _renderLogs(res, stats) {
     const dot = `<span style="width:4px;height:4px;border-radius:50%;background:${_LOG_DOT_COLORS[r.level]||'#9ca3af'};display:inline-block;flex-shrink:0"></span>`;
     const badge = `<span style="display:inline-flex;align-items:center;gap:4px;padding:1px 6px;border-radius:4px;font-size:11px;${_LOG_LEVEL_STYLES[r.level]||''}">${dot}${r.level}</span>`;
     tr.innerHTML = `
-      <td style="padding:5px 16px;color:#6b7280;white-space:nowrap">${_fmtLogTs(r.ts)}</td>
+      <td style="padding:5px 16px;color:#9ca3af;white-space:nowrap">${_fmtLogTs(r.ts)}</td>
       <td style="padding:5px 12px">${badge}</td>
       <td style="padding:5px 12px;color:#9ca3af;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.logger}">${_shortLogger(r.logger)}</td>
       <td style="padding:5px 12px;color:#f3f4f6;max-width:0">
         <div style="display:flex;align-items:center;gap:8px;overflow:hidden">
           <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${r.message.replace(/</g,'&lt;')}</span>
-          ${r.exc_info ? '<span style="flex-shrink:0;color:#f87171;opacity:.6;font-size:11px">Γû╝</span>' : ''}
+          ${r.exc_info ? '<span style="flex-shrink:0;color:#f87171;opacity:.6;font-size:11px">▼</span>' : ''}
         </div>
       </td>`;
     tr.id = 'log-row-' + r.id;
@@ -1194,13 +1205,13 @@ function parsePCAPNG(buffer, filename) {
     const bLen  = dv.getUint32(offset + 4, le);
     if (bLen < 12 || offset + bLen > buffer.byteLength) break;
 
-    // ΓöÇΓöÇ Section Header Block (0x0A0D0D0A) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // ── Section Header Block (0x0A0D0D0A) ──────────────────────
     // Just re-read byte order; interfaces reset per section
     if (bType === 0x0a0d0d0a) {
       // nothing extra needed — interfaces already reset if this is a second SHB
     }
 
-    // ΓöÇΓöÇ Interface Description Block (0x00000001) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // ── Interface Description Block (0x00000001) ───────────────
     else if (bType === 0x00000001) {
       const linkType = dv.getUint16(offset + 8, le);
       let tsResol = 1e6; // default: microseconds (1e6 units per second)
@@ -1221,7 +1232,7 @@ function parsePCAPNG(buffer, filename) {
       ifaces.push({ linkType, tsResol });
     }
 
-    // ΓöÇΓöÇ Enhanced Packet Block (0x00000006) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // ── Enhanced Packet Block (0x00000006) ─────────────────────
     else if (bType === 0x00000006 && bLen >= 28) {
       const ifaceId = dv.getUint32(offset + 8,  le);
       const tsHi    = dv.getUint32(offset + 12, le);
@@ -1239,7 +1250,7 @@ function parsePCAPNG(buffer, filename) {
       }
     }
 
-    // ΓöÇΓöÇ Obsolete Packet Block (0x00000002) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // ── Obsolete Packet Block (0x00000002) ─────────────────────
     else if (bType === 0x00000002 && bLen >= 28) {
       const ifaceId = dv.getUint16(offset + 8, le);
       const tsHi    = dv.getUint32(offset + 12, le);
@@ -1257,7 +1268,7 @@ function parsePCAPNG(buffer, filename) {
       }
     }
 
-    // ΓöÇΓöÇ Simple Packet Block (0x00000003) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+    // ── Simple Packet Block (0x00000003) ───────────────────────
     else if (bType === 0x00000003 && bLen >= 16) {
       const origLen = dv.getUint32(offset + 8, le);
       const capLen  = Math.min(origLen, bLen - 16);
@@ -1308,14 +1319,14 @@ function analyzePackets(pkts) {
     if (p.srcIP && p.dstIP) {
       const normKey=[p.srcIP+(p.srcPort||''), p.dstIP+(p.dstPort||'')].sort().join('|')+'|'+p.protocol;
       const display=p.srcPort&&p.dstPort
-        ?`${p.srcIP}:${p.srcPort} Γåö ${p.dstIP}:${p.dstPort} [${p.protocol}]`
-        :`${p.srcIP} Γåö ${p.dstIP} [${p.protocol}]`;
+        ?`${p.srcIP}:${p.srcPort} ↔ ${p.dstIP}:${p.dstPort} [${p.protocol}]`
+        :`${p.srcIP} ↔ ${p.dstIP} [${p.protocol}]`;
       if (!convMap[normKey]) convMap[normKey]={display,normKey,pkts:0,bytes:0,first:p.timestamp,last:p.timestamp,srcs:new Set()};
       const c=convMap[normKey]; c.pkts++; c.bytes+=p.capturedLen; c.last=p.timestamp; c.srcs.add(p.source);
     }
 
     if (p.protocol==='TCP' && p.srcIP && p.flags) {
-      const nk=[p.srcIP+':'+(p.srcPort||'?'), p.dstIP+':'+(p.dstPort||'?')].sort().join(' Γåö ');
+      const nk=[p.srcIP+':'+(p.srcPort||'?'), p.dstIP+':'+(p.dstPort||'?')].sort().join(' ↔ ');
       if (!tcpStreams[nk]) tcpStreams[nk]={syns:0,synAcks:0,rsts:0,fins:0,zeroWin:0,retrans:0,pkts:0,bytes:0,seqs:{}};
       const s=tcpStreams[nk];
       s.pkts++; s.bytes+=p.capturedLen;
@@ -1339,7 +1350,7 @@ function analyzePackets(pkts) {
     }
 
     if (p.protocol==='UDP' && p.srcIP && p.dstIP && p.srcPort && p.dstPort) {
-      const nk=[p.srcIP+':'+p.srcPort, p.dstIP+':'+p.dstPort].sort().join(' Γåö ');
+      const nk=[p.srcIP+':'+p.srcPort, p.dstIP+':'+p.dstPort].sort().join(' ↔ ');
       if (!udpFlows[nk]) udpFlows[nk]={key:nk,pkts:0,bytes:0,largeCount:0,dirs:new Set()};
       const f=udpFlows[nk];
       f.pkts++; f.bytes+=p.capturedLen;
@@ -1403,11 +1414,11 @@ function analyzePackets(pkts) {
     evidence:dnsUnanswered.slice(0,10).map(d=>`Query: ${d.qname} (at ${safeIso(d.ts)})`)});
   if (dnsErrors.length>0) anomalies.push({severity:'medium',type:'DNS Resolution Errors',
     detail:`${dnsErrors.length} DNS error responses (NXDOMAIN, SERVFAIL, REFUSED, etc.)`,
-    evidence:dnsErrors.slice(0,10).map(d=>`${d.qname} ΓåÆ ${DNS_RCODES[d.rcode]||'rcode:'+d.rcode}`)});
+    evidence:dnsErrors.slice(0,10).map(d=>`${d.qname} → ${DNS_RCODES[d.rcode]||'rcode:'+d.rcode}`)});
   const icmpErrs=pkts.filter(p=>p.protocol==='ICMP'&&p.icmpType!==0&&p.icmpType!==8);
   if (icmpErrs.length>0) anomalies.push({severity:'medium',type:'ICMP Error Messages',
     detail:`${icmpErrs.length} ICMP errors (Unreachable, Time Exceeded, etc.)`,
-    evidence:icmpErrs.slice(0,10).map(p=>`${p.srcIP} ΓåÆ ${p.dstIP}: ${ICMP_TYPE_NAMES[p.icmpType]||'type '+p.icmpType} (${safeIso(p.timestamp)})`)});
+    evidence:icmpErrs.slice(0,10).map(p=>`${p.srcIP} → ${p.dstIP}: ${ICMP_TYPE_NAMES[p.icmpType]||'type '+p.icmpType} (${safeIso(p.timestamp)})`)});
 
   const captures=[...new Set(pkts.map(p=>p.source))];
   const convs=Object.entries(convMap).sort((a,b)=>b[1].pkts-a[1].pkts).slice(0,60)
@@ -1471,7 +1482,7 @@ function securityScan(pkts){
       if (svcPort) {
         cleartext[svcPort]=(cleartext[svcPort]||0)+1;
         if (!cleartextIPs[svcPort]) cleartextIPs[svcPort]=new Set();
-        cleartextIPs[svcPort].add(p.srcIP+' ΓåÆ '+p.dstIP);
+        cleartextIPs[svcPort].add(p.srcIP+' → '+p.dstIP);
       }
     }
 
@@ -1485,11 +1496,11 @@ function securityScan(pkts){
 
     // Large outbound to external
     if (sPriv&&!dPriv){
-      const k=p.srcIP+'ΓåÆ'+p.dstIP;
+      const k=p.srcIP+'→'+p.dstIP;
       extTransfers[k]=(extTransfers[k]||0)+p.capturedLen;
     }
 
-    // Lateral movement: internalΓåÆinternal on admin ports
+    // Lateral movement: internal→internal on admin ports
     if (sPriv&&dPriv&&p.protocol==='TCP'&&p.dstPort&&ADMIN_PORTS.has(p.dstPort)){
       const k=p.srcIP+'|'+p.dstPort;
       if (!lateralMap[k]) lateralMap[k]={srcIP:p.srcIP,port:p.dstPort,targets:new Set()};
@@ -1549,7 +1560,7 @@ function securityScan(pkts){
   const extSorted=Object.entries(extTransfers).sort((a,b)=>b[1]-a[1]).slice(0,5);
   for (const [flow,bytes] of extSorted){
     if (bytes>1048576){
-      const [src,dst]=flow.split('ΓåÆ');
+      const [src,dst]=flow.split('→');
       threats.push({severity:bytes>10485760?'high':'medium',category:'Data Transfer',type:'Large Outbound Transfer',
         detail:`${flow} — ${fmtBytes(bytes)} sent to external host — possible exfiltration or bulk upload`,
         evidence:[`Source (internal): ${src}`,`Destination (external): ${dst}`,`Volume transferred: ${fmtBytes(bytes)}`,
@@ -1605,10 +1616,10 @@ function removeFile(n)  { uploadedFiles=uploadedFiles.filter(f=>f.name!==n); ren
 function renderFileList(){
   document.getElementById('file-list').innerHTML=uploadedFiles.map(f=>`
     <div class="file-item">
-      <span class="file-item-icon">≡ƒôä</span>
+      <span class="file-item-icon">📄</span>
       <span class="file-item-name">${esc(f.name)}</span>
       <span class="file-item-size">${fmtBytes(f.size)}</span>
-      <button class="file-remove" onclick="removeFile('${esc(f.name)}')">Γ£ò</button>
+      <button class="file-remove" onclick="removeFile('${esc(f.name)}')">✕</button>
     </div>`).join('');
   document.getElementById('analyze-btn').disabled=!uploadedFiles.length;
 }
@@ -1716,7 +1727,7 @@ function renderUI(){
   else if(sec.summary.medium>0) threatTabBtn.style.color='#f59e0b';
 
   document.getElementById('threats-summary').innerHTML=sec.summary.total===0
-    ?`<div class="no-anomalies"><div class="no-anomalies-icon">≡ƒ¢í∩╕Å</div>No threat indicators detected</div>`
+    ?`<div class="no-anomalies"><div class="no-anomalies-icon">🛡️</div>No threat indicators detected</div>`
     :`<div class="metric-grid">
         ${mc('Total Findings',sec.summary.total,'')}
         ${mc('HIGH',sec.summary.high,'')}
@@ -1734,7 +1745,7 @@ function renderUI(){
   // Anomalies
   const tabBtn=document.getElementById('tab-btn-anomalies');
   if(!R.anomalies.length){
-    document.getElementById('anomalies-list').innerHTML=`<div class="no-anomalies"><div class="no-anomalies-icon">Γ£à</div>No anomalies detected</div>`;
+    document.getElementById('anomalies-list').innerHTML=`<div class="no-anomalies"><div class="no-anomalies-icon">✅</div>No anomalies detected</div>`;
     tabBtn.textContent='Anomalies';
   } else {
     tabBtn.textContent=`Anomalies (${R.anomalies.length})`;
@@ -1751,13 +1762,13 @@ function renderUI(){
   }
   window._flowChatItems=R.conversations.map(c=>({type:'Flow',display:c.display,pkts:c.pkts,bytes:c.bytes,key:c.key||c.display}));
   document.getElementById('flows-tbody').innerHTML=R.conversations.map((c,ci)=>{
-    const badges=c.srcs.map(s=>{const i=caps.indexOf(s);return`<span class="src-badge" style="color:${SOURCE_COLORS[i%4]}">Γùå${esc(s)}</span>`;}).join('');
+    const badges=c.srcs.map(s=>{const i=caps.indexOf(s);return`<span class="src-badge" style="color:${SOURCE_COLORS[i%4]}">◆${esc(s)}</span>`;}).join('');
     return`<tr>
       <td>${esc(c.display)}<br>${badges}</td>
       <td>${c.pkts}</td>
       <td>${fmtBytes(c.bytes)}</td>
       <td style="display:flex;gap:4px;align-items:center">
-        <button class="stream-btn" onclick="openStream(${ci})">Γû╢ Stream</button>
+        <button class="stream-btn" onclick="openStream(${ci})">▶ Stream</button>
         <button class="chat-to-btn" style="margin-left:2px" onclick="sendFlowToAssistant(window._flowChatItems[${ci}])" title="Send to Diagnostic Assistant">\u{1F4AC}</button>
       </td>
     </tr>`;
@@ -1791,7 +1802,7 @@ function renderUI(){
           <div class="bar-track" style="margin-top:4px"><div class="bar-fill" style="width:${(s.pkts/maxTcpPkts*100).toFixed(0)}%;background:#60a5fa"></div></div>
         </div>
         <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0;margin-top:2px">
-          <button class="stream-btn" onclick="openStreamByTcpKey(window._tcpIssueKeys[${i}])">Γû╢ Stream</button>
+          <button class="stream-btn" onclick="openStreamByTcpKey(window._tcpIssueKeys[${i}])">▶ Stream</button>
           <button class="chat-to-btn" style="margin:0" onclick="sendFlowToAssistant(window._tcpIssueItems[${i}])" title="Send to Diagnostic Assistant">\u{1F4AC}</button>
         </div>
       </div>`).join('')
@@ -1829,7 +1840,7 @@ function renderUI(){
           <div class="bar-track" style="margin-top:4px"><div class="bar-fill" style="width:${(f.pkts/maxUdpPkts*100).toFixed(0)}%;background:#bc8cff"></div></div>
         </div>
         <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0;margin-top:2px">
-          <button class="stream-btn" onclick="openStreamByUdpKey(window._udpTopKeys[${i}])">Γû╢ Stream</button>
+          <button class="stream-btn" onclick="openStreamByUdpKey(window._udpTopKeys[${i}])">▶ Stream</button>
           <button class="chat-to-btn" style="margin:0" onclick="sendFlowToAssistant(window._udpTopItems[${i}])" title="Send to Diagnostic Assistant">\u{1F4AC}</button>
         </div>
       </div>`).join('')
@@ -1852,7 +1863,7 @@ function renderUI(){
           </div>
         </div>
         <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0;margin-top:2px">
-          <button class="stream-btn" onclick="openStreamByUdpKey(window._udpNotableKeys[${i}])">Γû╢ Stream</button>
+          <button class="stream-btn" onclick="openStreamByUdpKey(window._udpNotableKeys[${i}])">▶ Stream</button>
           <button class="chat-to-btn" style="margin:0" onclick="sendFlowToAssistant(window._udpNotableItems[${i}])" title="Send to Diagnostic Assistant">\u{1F4AC}</button>
         </div>
       </div>`).join('')
@@ -1884,7 +1895,7 @@ function renderCard(item, extraBadges=''){
   if(!window._cardStreamKeyMap) window._cardStreamKeyMap={};
   if(!window._cardItemMap) window._cardItemMap={};
   const rowKeys=hasEv ? ev.map(e=>{
-    const m=String(e).match(/^Stream:\s+(.+? Γåö .+?) —/);
+    const m=String(e).match(/^Stream:\s+(.+? ↔ .+?) —/);
     return m ? m[1].trim() : null;
   }) : [];
   const anyKeys=rowKeys.some(k=>k!==null);
@@ -1898,13 +1909,13 @@ function renderCard(item, extraBadges=''){
       <button class="chat-to-btn" onclick="event.stopPropagation();sendCardToAssistant('${uid}')" title="Send to Diagnostic Assistant">\u{1F4AC}</button>
     </div>
     <div class="anomaly-detail">${esc(item.detail)}</div>
-    ${hasEv?`<div class="expand-toggle">Γû╝ Show evidence (${ev.length} item${ev.length!==1?'s':''})</div>
+    ${hasEv?`<div class="expand-toggle">▼ Show evidence (${ev.length} item${ev.length!==1?'s':''})</div>
     <div class="card-evidence" id="${uid}" data-ev-count="${ev.length}">
       ${ev.map((e,i)=>{
         const key=rowKeys[i];
         return`<div class="ev-row" style="display:flex;align-items:center;gap:6px">
           <span style="flex:1;word-break:break-all">${esc(String(e))}</span>
-          ${key?`<button onclick="event.stopPropagation();openStreamByTcpKey(window._cardStreamKeyMap['${uid}'][${i}])" title="View stream" style="flex-shrink:0;background:none;border:none;color:#58a6ff;cursor:pointer;font-size:14px;padding:0 2px;line-height:1">Γû╢</button>`:''}
+          ${key?`<button onclick="event.stopPropagation();openStreamByTcpKey(window._cardStreamKeyMap['${uid}'][${i}])" title="View stream" style="flex-shrink:0;background:none;border:none;color:#58a6ff;cursor:pointer;font-size:14px;padding:0 2px;line-height:1">▶</button>`:''}
         </div>`;
       }).join('')}
     </div>`:''}
@@ -1942,7 +1953,7 @@ function toggleEvidence(card,ev){
   if(!panel) return;
   const open=panel.classList.toggle('open');
   const cnt=parseInt(panel.dataset.evCount||panel.querySelectorAll('.ev-row').length)||0;
-  toggle.textContent=open?'Γû▓ Hide evidence':'Γû╝ Show evidence ('+cnt+' item'+(cnt!==1?'s':'')+')';
+  toggle.textContent=open?'▲ Hide evidence':'▼ Show evidence ('+cnt+' item'+(cnt!==1?'s':'')+')';
 }
 
 function switchTab(e,name){
@@ -2065,7 +2076,7 @@ function removeTyping(){ const e=document.getElementById('typing-indicator'); if
 function onChatKey(e){ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); sendMessage(); } }
 function autoResize(el){ el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,110)+'px'; }
 
-// ΓöÇΓöÇ SEND ITEM TO ASSISTANT ΓöÇΓöÇ
+// ── SEND ITEM TO ASSISTANT ──
 function sendCardToAssistant(uid){
   const item=window._cardItemMap&&window._cardItemMap[uid];
   if(!item) return;
@@ -2215,7 +2226,7 @@ function renderStreamModal(title, flowPkts){
   closePacketDetail();
   const rows=shown.map((p,i)=>{
     const dir=(p.srcIP+':'+(p.srcPort||''))===sideA;
-    const dirArrow=dir?'ΓåÆ':'ΓåÉ';
+    const dirArrow=dir?'→':'←';
     const dirColor=dir?'#58a6ff':'#e3b341';
     const relT=((p.timestamp-t0)*1000).toFixed(1)+'ms';
     const flags=flagStr(p.flags)||'';
@@ -2231,7 +2242,7 @@ function renderStreamModal(title, flowPkts){
       <td style="color:#e6edf3;white-space:nowrap">${relT}</td>
       <td style="color:${dirColor};font-weight:700;text-align:center">${dirArrow}</td>
       <td style="color:#e6edf3;white-space:nowrap">${esc(p.srcIP)}:${p.srcPort||'?'}</td>
-      <td style="color:#e6edf3">ΓåÆ</td>
+      <td style="color:#e6edf3">→</td>
       <td style="color:#e6edf3;white-space:nowrap">${esc(p.dstIP)}:${p.dstPort||'?'}</td>
       <td>${fs}${retransBadge}</td>
       <td style="color:#e6edf3;text-align:right">${p.capturedLen}</td>
@@ -2241,14 +2252,14 @@ function renderStreamModal(title, flowPkts){
   const truncNote=flowPkts.length>MAX?`<div style="text-align:center;padding:8px;color:#e3b341;font-size:11px">Showing first ${MAX} of ${flowPkts.length} packets</div>`:'';
   document.getElementById('stream-modal-title').textContent=title;
   document.getElementById('stream-modal-meta').innerHTML=
-    `<span>${flowPkts.length} packets</span><span style="margin:0 10px">┬╖</span>`+
-    `<span>${fmtBytes(totalBytes)}</span><span style="margin:0 10px">┬╖</span>`+
+    `<span>${flowPkts.length} packets</span><span style="margin:0 10px">·</span>`+
+    `<span>${fmtBytes(totalBytes)}</span><span style="margin:0 10px">·</span>`+
     `<span>Duration: ${((flowPkts[flowPkts.length-1].timestamp-t0)*1000).toFixed(1)}ms</span>`+
-    (detectedProto?`<span style="margin:0 10px">┬╖</span><span style="color:#2ea043">${detectedProto}</span>`:'');
+    (detectedProto?`<span style="margin:0 10px">·</span><span style="color:#2ea043">${detectedProto}</span>`:'');
   document.getElementById('stream-modal-body').innerHTML=
     `<table class="data-table" style="min-width:600px;width:100%">
       <thead><tr>
-        <th style="position:sticky;top:0;z-index:2">╬öt</th>
+        <th style="position:sticky;top:0;z-index:2">Δt</th>
         <th style="position:sticky;top:0;z-index:2">Dir</th>
         <th style="position:sticky;top:0;z-index:2">Src</th>
         <th style="position:sticky;top:0;z-index:2"></th>
@@ -2279,8 +2290,8 @@ function openStreamByTcpKey(tcpKey){ openStreamByProtoKey(tcpKey,'TCP'); }
 function openStreamByUdpKey(udpKey){ openStreamByProtoKey(udpKey,'UDP'); }
 
 function openStreamByProtoKey(key, proto){
-  // key format: "ip:port Γåö ip:port"
-  const parts=key.split(' Γåö ');
+  // key format: "ip:port ↔ ip:port"
+  const parts=key.split(' ↔ ');
   if(parts.length!==2) return;
   const parseEP=ep=>{ const ci=ep.lastIndexOf(':'); return{ip:ep.slice(0,ci),port:parseInt(ep.slice(ci+1))||0}; };
   const a=parseEP(parts[0].trim()), b=parseEP(parts[1].trim());
@@ -2380,10 +2391,10 @@ function showPacketDetail(i){
   detailTd.style.cssText='padding:0;border-top:2px solid #58a6ff;vertical-align:top;background:#0d1117';
   detailTd.innerHTML=`
     <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 14px;background:#161b22;border-bottom:1px solid #21262d;position:sticky;top:0;z-index:2">
-      <span style="font-size:11px;font-weight:700;color:#58a6ff">Packet #${i+1} — ${esc(p.srcIP||'?')}:${p.srcPort||'?'} ΓåÆ ${esc(p.dstIP||'?')}:${p.dstPort||'?'}</span>
+      <span style="font-size:11px;font-weight:700;color:#58a6ff">Packet #${i+1} — ${esc(p.srcIP||'?')}:${p.srcPort||'?'} → ${esc(p.dstIP||'?')}:${p.dstPort||'?'}</span>
       <div style="display:flex;gap:8px;align-items:center">
         <button onclick="sendPacketToAssistant()" title="Send to Diagnostic Assistant" style="background:none;border:none;color:#e6edf3;font-size:13px;cursor:pointer;padding:0;line-height:1;transition:color 0.15s" onmouseover="this.style.color='#58a6ff'" onmouseout="this.style.color='#c9d1d9'">\u{1F4AC}</button>
-        <button onclick="closePacketDetail()" title="Close" style="background:none;border:none;color:#e6edf3;font-size:15px;cursor:pointer;padding:0;line-height:1">Γ£ò</button>
+        <button onclick="closePacketDetail()" title="Close" style="background:none;border:none;color:#e6edf3;font-size:15px;cursor:pointer;padding:0;line-height:1">✕</button>
       </div>
     </div>
     <div style="padding:10px 14px;overflow-y:auto" id="inline-detail-content">${detailContent}</div>`;
@@ -2425,7 +2436,7 @@ function sendPacketToAssistant(){
     payloadAscii:p.payload?payloadToAscii(p.payload).slice(0,200):null,
     detectedAppProtocol:detectProtocol(p.payload)||null
   };
-  sendToAssistant(`Packet #${i+1} (${p.srcIP}:${p.srcPort} ΓåÆ ${p.dstIP}:${p.dstPort})`, data);
+  sendToAssistant(`Packet #${i+1} (${p.srcIP}:${p.srcPort} → ${p.dstIP}:${p.dstPort})`, data);
 }
 
 // ================================================================
@@ -2442,24 +2453,113 @@ async function loadFeedToken() {
     window._serverPort   = cfg.port        || 80;
     window._sslEnabled   = !!cfg.ssl_enabled;
     window._wsEnabled    = !!cfg.wireshark_capture_enabled;
+    window._tsEnabled    = cfg.tshark_capture_enabled !== false;
     _updateWsToggleUI();
-    const el = document.getElementById('feed-token-display');
-    if (el) el.textContent = window._feedToken
-      ? window._feedToken.slice(0,8) + '…'
-      : '(none)';
+    _updateTsToggleUI();
     updateFeedCommand();
   } catch(e) { /* ignore */ }
+}
+
+async function loadNetInterfaces() {
+  const list = document.getElementById('feed-iface-list');
+  if (!list) return;
+  try {
+    const resp  = await fetch('/api/net-interfaces');
+    const data  = await resp.json();
+    const ifaces = data.interfaces || [];
+    list.innerHTML = ['any'].concat(ifaces).map(n => `<option value="${_esc(n)}"></option>`).join('');
+  } catch(e) { /* ignore -- keep manual entry available */ }
 }
 
 async function loadFeeds() {
   try {
     const resp  = await fetch('/api/feeds');
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
     const feeds = await resp.json();
     renderFeeds(feeds);
   } catch(e) {
     const list = document.getElementById('feeds-list');
     if (list) list.innerHTML = '<div style="text-align:center;padding:24px;color:#ef4444;font-size:12px">Could not reach server</div>';
   }
+}
+
+async function manualRefreshFeeds(btn) {
+  if (!btn || btn.disabled) return;
+  btn.disabled = true;
+  btn.classList.add('lf-refresh-spin');
+  await Promise.all([loadFeeds(), loadCaptures()]);
+  setTimeout(() => {
+    btn.disabled = false;
+    btn.classList.remove('lf-refresh-spin');
+  }, 300);
+}
+
+function _fmtWhen(epochSeconds) {
+  const d = new Date(epochSeconds * 1000);
+  return d.toLocaleString();
+}
+
+async function loadCaptures() {
+  const list = document.getElementById('captures-list');
+  if (!list) return;
+  try {
+    const resp = await fetch('/api/captures');
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    renderCaptures(data);
+  } catch(e) {
+    list.innerHTML = '<div style="text-align:center;padding:24px;color:#ef4444;font-size:12px">Could not reach server</div>';
+  }
+}
+
+function renderCaptures(data) {
+  const list = document.getElementById('captures-list');
+  if (!list) return;
+  if (!data.storage_path_configured) {
+    list.innerHTML = '<div class="lf-empty">No storage path configured — captures stay in memory only and are lost when a session is cleared or the server restarts. '
+      + '<a href="/settings#storage" style="color:#60a5fa">Set a Storage path in Settings → Captures</a> to save finished captures to disk automatically.</div>';
+    return;
+  }
+  const captures = data.captures || [];
+  if (!captures.length) {
+    list.innerHTML = '<div class="lf-empty">No saved captures yet — captures are written here automatically when an active session disconnects.</div>';
+    return;
+  }
+  list.innerHTML = captures.map(c => `
+    <div class="feed-card">
+      <div class="feed-dot" style="background:#374151"></div>
+      <div class="feed-info">
+        <div class="feed-name">${_esc(c.name)}</div>
+        <div class="feed-meta">${_fmtBytes(c.size)} · saved ${_fmtWhen(c.modified)}</div>
+      </div>
+      <div class="feed-actions">
+        <button onclick="analyzeCapture('${_esc(c.name)}')" class="feed-btn">▶ Analyze</button>
+        <a href="/api/captures/${encodeURIComponent(c.name)}/download" download="${_esc(c.name)}" class="feed-btn secondary">↓ Save</a>
+        <button onclick="deleteCapture('${_esc(c.name)}')" class="feed-btn danger" title="Delete file">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+async function analyzeCapture(name) {
+  try {
+    const resp = await fetch('/api/captures/' + encodeURIComponent(name) + '/download');
+    if (!resp.ok) throw new Error('Download failed');
+    const blob = await resp.blob();
+    const file = new File([blob], name, {type: 'application/octet-stream'});
+    _stopFeedPoll();
+    uploadedFiles = [];
+    addFiles([file]);
+    showAnalyzer();
+    setTimeout(() => startAnalysis(), 100);
+  } catch(e) {
+    alert('Could not load capture: ' + e.message);
+  }
+}
+
+async function deleteCapture(name) {
+  if (!confirm('Delete this saved capture file? This cannot be undone.')) return;
+  await fetch('/api/captures/' + encodeURIComponent(name), {method: 'DELETE'});
+  loadCaptures();
 }
 
 function _esc(s) {
@@ -2483,7 +2583,7 @@ function renderFeeds(feeds) {
   const list = document.getElementById('feeds-list');
   if (!list) return;
   if (!feeds.length) {
-    list.innerHTML = '<div style="text-align:center;padding:32px;color:#4b5563;font-size:12px">No active or recent feeds — run the command below on a remote host to start streaming.</div>';
+    list.innerHTML = '<div style="text-align:center;padding:32px;color:#9ca3af;font-size:12px">No active or recent feeds — run the command below on a remote host to start streaming.</div>';
     return;
   }
   list.innerHTML = feeds.map(f => {
@@ -2495,22 +2595,22 @@ function renderFeeds(feeds) {
       ? '<span style="color:#4ade80">live</span>'
       : 'disconnected ' + _fmtDur(Date.now()/1000 - f.last_seen) + ' ago';
     const truncWarning = f.truncated
-      ? ' ┬╖ <span style="color:#f59e0b" title="Buffer full — oldest data was dropped">ΓÜá buffer full</span>' : '';
+      ? ' · <span style="color:#f59e0b" title="Buffer full — oldest data was dropped">⚠ buffer full</span>' : '';
     return `
     <div class="feed-card ${borderClass}">
       <div class="feed-dot ${f.connected?'live':''}" style="background:${statusColor};${statusGlow}"></div>
       <div class="feed-info">
         <div class="feed-name">${_esc(f.name)}</div>
         <div class="feed-meta">
-          ${_esc(f.remote_addr)} ┬╖ ${_fmtBytes(f.bytes_buffered)} buffered
-          (${_fmtBytes(f.bytes_received)} received) ┬╖ ${_fmtDur(f.duration)}
-          ┬╖ ${statusText}${truncWarning}
+          ${_esc(f.remote_addr)} · ${_fmtBytes(f.bytes_buffered)} buffered
+          (${_fmtBytes(f.bytes_received)} received) · ${_fmtDur(f.duration)}
+          · ${statusText}${truncWarning}
         </div>
       </div>
       <div class="feed-actions">
-        ${hasData ? `<button onclick="analyzeFeed('${_esc(f.name)}')" class="feed-btn">Γû╢ Analyze</button>` : ''}
-        ${hasData ? `<a href="/api/feeds/${encodeURIComponent(f.name)}/download" download="${_esc(f.name)}.pcapng" class="feed-btn secondary">Γåô Save</a>` : ''}
-        <button onclick="deleteFeed('${_esc(f.name)}')" class="feed-btn danger" title="Remove session">Γ£ò</button>
+        ${hasData ? `<button onclick="analyzeFeed('${_esc(f.name)}')" class="feed-btn">▶ Analyze</button>` : ''}
+        ${hasData ? `<a href="/api/feeds/${encodeURIComponent(f.name)}/download" download="${_esc(f.name)}.pcapng" class="feed-btn secondary">↓ Save</a>` : ''}
+        <button onclick="deleteFeed('${_esc(f.name)}')" class="feed-btn danger" title="Remove session">✕</button>
       </div>
     </div>`;
   }).join('');
@@ -2597,14 +2697,72 @@ async function toggleWsCapture() {
   if (btn) btn.disabled = false;
 }
 
+function _updateTsToggleUI() {
+  const enabled = window._tsEnabled !== false;
+  const dot   = document.getElementById('ts-status-dot');
+  const label = document.getElementById('ts-status-label');
+  const btn   = document.getElementById('ts-toggle-btn');
+  if (dot)   { dot.style.background = enabled ? '#22c55e' : '#4b5563'; dot.style.boxShadow = enabled ? '0 0 6px #22c55e55' : 'none'; }
+  if (label) label.textContent = enabled ? 'Active — tshark/CLI captures are allowed to connect' : 'Disabled — enable to allow tshark/CLI to connect';
+  if (btn)   { btn.textContent = enabled ? 'Disable' : 'Enable'; btn.style.background = enabled ? 'rgba(239,68,68,.15)' : ''; btn.style.color = enabled ? '#f87171' : ''; btn.style.borderColor = enabled ? 'rgba(239,68,68,.3)' : ''; }
+}
+
+async function toggleTsharkCapture() {
+  const btn = document.getElementById('ts-toggle-btn');
+  if (btn) btn.disabled = true;
+  try {
+    const resp = await fetch('/api/settings', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({tshark_capture_enabled: !(window._tsEnabled !== false)})
+    });
+    if (resp.ok) {
+      window._tsEnabled = !(window._tsEnabled !== false);
+      _updateTsToggleUI();
+    }
+  } catch(e) { /* ignore */ }
+  if (btn) btn.disabled = false;
+}
+
+// navigator.clipboard requires a secure context (HTTPS or localhost) -- these
+// apps default to plain http://SERVER-IP, so the Clipboard API is undefined
+// there and .writeText throws immediately, silently no-opping the button.
+// Fall back to the hidden-textarea + execCommand('copy') trick, which works
+// regardless of secure context.
+async function copyToClipboard(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (e) { /* fall through to legacy path */ }
+  }
+  try {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    textarea.style.left = '-9999px';
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    const success = document.execCommand('copy');
+    document.body.removeChild(textarea);
+    return success;
+  } catch (e) {
+    return false;
+  }
+}
+
 function copyWsConfig() {
   const box = document.getElementById('ws-config-box');
   if (!box) return;
-  navigator.clipboard.writeText(box.textContent).then(() => {
-    const ok = document.getElementById('ws-copy-ok');
-    if (!ok) return;
-    ok.style.display = 'inline';
-    setTimeout(() => { ok.style.display = 'none'; }, 2000);
+  copyToClipboard(box.textContent).then(ok => {
+    const el = document.getElementById('ws-copy-ok');
+    if (!el) return;
+    el.textContent = ok ? '✓ Copied' : 'Copy failed — select and copy manually';
+    el.style.color = ok ? '' : '#f87171';
+    el.style.display = 'inline';
+    setTimeout(() => { el.style.display = 'none'; }, 2000);
   });
 }
 
@@ -2633,11 +2791,13 @@ function updateFeedCommand() {
 function copyFeedCmd() {
   const box = document.getElementById('feed-cmd-box');
   if (!box) return;
-  navigator.clipboard.writeText(box.textContent).then(() => {
-    const ok = document.getElementById('feed-copy-ok');
-    if (!ok) return;
-    ok.style.display = 'inline';
-    setTimeout(() => { ok.style.display = 'none'; }, 2000);
+  copyToClipboard(box.textContent).then(ok => {
+    const el = document.getElementById('feed-copy-ok');
+    if (!el) return;
+    el.textContent = ok ? '✓ Copied' : 'Copy failed — select and copy manually';
+    el.style.color = ok ? '' : '#f87171';
+    el.style.display = 'inline';
+    setTimeout(() => { el.style.display = 'none'; }, 2000);
   });
 }
 
@@ -2663,7 +2823,7 @@ async function localAsk(prompt, dataArr){
     <!-- locked title bar -->
     <div style="background:#0d1117;border-bottom:1px solid #30363d;padding:12px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0">
       <span style="font-size:13px;font-weight:700;color:#58a6ff;flex:1;word-break:break-all" id="stream-modal-title"></span>
-      <button onclick="closeStream()" style="background:none;border:1px solid #30363d;color:#e6edf3;border-radius:6px;padding:3px 10px;cursor:pointer;font-family:inherit;font-size:12px">Γ£ò Close</button>
+      <button onclick="closeStream()" style="background:none;border:1px solid #30363d;color:#e6edf3;border-radius:6px;padding:3px 10px;cursor:pointer;font-family:inherit;font-size:12px">✕ Close</button>
     </div>
     <!-- locked meta bar -->
     <div style="padding:8px 16px;background:#0d1117;border-bottom:1px solid #21262d;font-size:11px;color:#e6edf3;display:flex;flex-wrap:wrap;gap:4px;flex-shrink:0" id="stream-modal-meta"></div>
@@ -2672,21 +2832,21 @@ async function localAsk(prompt, dataArr){
   </div>
 </div>
 
-<!-- ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ FLOATING AI ASSISTANT (pktFlow-style) -->
+<!-- ═══════════════════════════════════ FLOATING AI ASSISTANT (pktFlow-style) -->
 <button id="ai-fab" onclick="toggleAI()" title="AI Assistant"
   style="position:fixed;bottom:24px;right:24px;z-index:9999;width:48px;height:48px;border-radius:50%;background:#2563eb;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 25px rgba(0,0,0,.5);color:white;font-size:20px;transition:background .2s;font-family:inherit">
-  Γ£ª
+  ✦
 </button>
 
 <div id="ai-panel" style="display:none;position:fixed;bottom:88px;right:24px;z-index:9999;width:384px;max-width:calc(100vw - 3rem);height:448px;background:#111827;border:1px solid #374151;border-radius:16px;box-shadow:0 25px 50px rgba(0,0,0,.8);flex-direction:column;overflow:hidden">
   <!-- Header -->
   <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #1f2937;flex-shrink:0">
     <div style="display:flex;align-items:center;gap:8px">
-      <span style="color:#3b82f6;font-size:14px">Γ£ª</span>
+      <span style="color:#3b82f6;font-size:14px">✦</span>
       <span style="font-size:13px;font-weight:600;color:#f9fafb">AI Assistant</span>
-      <span style="font-size:11px;color:#6b7280">Claude</span>
+      <span style="font-size:11px;color:#9ca3af">Claude</span>
     </div>
-    <button id="ai-clear-btn" onclick="clearAIChat()" style="display:none;background:none;border:none;color:#6b7280;cursor:pointer;font-size:12px;font-family:inherit;padding:2px 6px;border-radius:4px">Clear</button>
+    <button id="ai-clear-btn" onclick="clearAIChat()" style="display:none;background:none;border:none;color:#9ca3af;cursor:pointer;font-size:12px;font-family:inherit;padding:2px 6px;border-radius:4px">Clear</button>
   </div>
 
   <!-- Messages -->
@@ -2707,7 +2867,7 @@ async function localAsk(prompt, dataArr){
       style="flex:1;background:#1f2937;border:1px solid #374151;border-radius:8px;color:#f9fafb;padding:8px 10px;font-family:inherit;font-size:12px;resize:none;outline:none;min-height:36px;max-height:96px;overflow-y:auto;line-height:1.5"
       onkeydown="onAIFabKey(event)" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,96)+'px'"></textarea>
     <button onclick="sendAIFab()" id="ai-send-fab"
-      style="background:#2563eb;border:none;color:#fff;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;align-self:flex-end;height:36px">ΓåÆ</button>
+      style="background:#2563eb;border:none;color:#fff;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;align-self:flex-end;height:36px">→</button>
   </div>
 </div>
 
@@ -2722,7 +2882,7 @@ async function localAsk(prompt, dataArr){
     var fab   = document.getElementById('ai-fab');
     panel.style.display = _aiOpen ? 'flex' : 'none';
     fab.style.background = _aiOpen ? '#374151' : '#2563eb';
-    fab.textContent = _aiOpen ? 'Γ£ò' : 'Γ£ª';
+    fab.textContent = _aiOpen ? '✕' : '✦';
     if (_aiOpen) setTimeout(function(){ document.getElementById('ai-input-fab').focus(); }, 50);
   };
 
