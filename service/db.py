@@ -25,6 +25,9 @@ DEFAULT_SETTINGS = {
     "ssl_enabled": False,
     "ssl_cert": "",
     "ssl_key": "",
+    # Live Feeds
+    "tshark_capture_enabled": True,
+    "wireshark_capture_enabled": False,
     # Storage
     "storage_path": "",
     "max_upload_mb": 500,
@@ -176,12 +179,30 @@ class Database:
                     updated_at        TEXT    NOT NULL DEFAULT (datetime('now'))
                 );
                 CREATE INDEX IF NOT EXISTS idx_integrations_app_name ON integrations(app_name);
+                CREATE TABLE IF NOT EXISTS user_api_keys (
+                    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username    TEXT NOT NULL,
+                    provider    TEXT NOT NULL,
+                    api_key     TEXT NOT NULL DEFAULT '',
+                    updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+                    UNIQUE (username, provider)
+                );
             """)
             c.commit()
             # Migration: add is_default_admin to existing databases that predate this column
             user_cols = {row[1] for row in c.execute("PRAGMA table_info(users)").fetchall()}
             if "is_default_admin" not in user_cols:
                 c.execute("ALTER TABLE users ADD COLUMN is_default_admin INTEGER NOT NULL DEFAULT 0")
+                c.commit()
+            # Migration: per-user ipinfo.io section display preference (geolocation/
+            # asn/company/privacy/abuse/domains), JSON array, NULL = all enabled.
+            uak_cols = {row[1] for row in c.execute("PRAGMA table_info(user_api_keys)").fetchall()}
+            if "enabled_fields" not in uak_cols:
+                c.execute("ALTER TABLE user_api_keys ADD COLUMN enabled_fields TEXT DEFAULT NULL")
+                c.commit()
+            # Migration: per-user "use ipapi.is's free tier (no key)" preference.
+            if "free_tier" not in uak_cols:
+                c.execute("ALTER TABLE user_api_keys ADD COLUMN free_tier INTEGER NOT NULL DEFAULT 0")
                 c.commit()
 
     # ── Settings ──────────────────────────────────────────────────────────────
@@ -224,6 +245,145 @@ class Database:
                     (k, json.dumps(v)),
                 )
             c.commit()
+
+    # ── Per-user API keys ────────────────────────────────────────────────────────
+
+    def get_user_api_keys(self, username: str) -> dict:
+        rows = self._conn().execute(
+            "SELECT provider, api_key, updated_at, enabled_fields, free_tier FROM user_api_keys WHERE username = ?",
+            (username,),
+        ).fetchall()
+        return {
+            row["provider"]: {
+                "api_key": row["api_key"],
+                "updated_at": row["updated_at"],
+                "enabled_fields": json.loads(row["enabled_fields"]) if row["enabled_fields"] else None,
+                "free_tier": bool(row["free_tier"]),
+            }
+            for row in rows
+        }
+
+    def set_ipapi_is_free_tier(self, username: str, free_tier: bool) -> dict:
+        """Per-user preference to use ipapi.is's keyless free tier instead of
+        a stored personal key — independent of the api_key column."""
+        with self._write_lock:
+            c = self._conn()
+            c.execute(
+                """
+                INSERT INTO user_api_keys (username, provider, free_tier, updated_at)
+                VALUES (?, 'ipapi_is', ?, datetime('now'))
+                ON CONFLICT(username, provider)
+                DO UPDATE SET free_tier = excluded.free_tier, updated_at = excluded.updated_at
+                """,
+                (username, int(free_tier)),
+            )
+            c.commit()
+            row = c.execute(
+                "SELECT api_key, updated_at, enabled_fields, free_tier FROM user_api_keys WHERE username = ? AND provider = 'ipapi_is'",
+                (username,),
+            ).fetchone()
+        return {
+            "api_key": row["api_key"],
+            "updated_at": row["updated_at"],
+            "enabled_fields": json.loads(row["enabled_fields"]) if row["enabled_fields"] else None,
+            "free_tier": bool(row["free_tier"]),
+        }
+
+    def set_user_api_key(self, username: str, provider: str, api_key: str):
+        with self._write_lock:
+            c = self._conn()
+            if api_key:
+                c.execute(
+                    """
+                    INSERT INTO user_api_keys (username, provider, api_key, updated_at)
+                    VALUES (?, ?, ?, datetime('now'))
+                    ON CONFLICT(username, provider)
+                    DO UPDATE SET api_key = excluded.api_key, updated_at = excluded.updated_at
+                    """,
+                    (username, provider, api_key),
+                )
+            else:
+                c.execute(
+                    "DELETE FROM user_api_keys WHERE username = ? AND provider = ?",
+                    (username, provider),
+                )
+            c.commit()
+
+    def set_ipinfo_fields(self, username: str, enabled_fields: list) -> dict:
+        """Per-user display preference for which ipinfo.io response sections
+        render in the IP Lookup modal — independent of the api_key column."""
+        with self._write_lock:
+            c = self._conn()
+            c.execute(
+                """
+                INSERT INTO user_api_keys (username, provider, enabled_fields, updated_at)
+                VALUES (?, 'ipinfo', ?, datetime('now'))
+                ON CONFLICT(username, provider)
+                DO UPDATE SET enabled_fields = excluded.enabled_fields, updated_at = excluded.updated_at
+                """,
+                (username, json.dumps(enabled_fields)),
+            )
+            c.commit()
+            row = c.execute(
+                "SELECT api_key, updated_at, enabled_fields FROM user_api_keys WHERE username = ? AND provider = 'ipinfo'",
+                (username,),
+            ).fetchone()
+        return {
+            "api_key": row["api_key"],
+            "updated_at": row["updated_at"],
+            "enabled_fields": json.loads(row["enabled_fields"]) if row["enabled_fields"] else None,
+        }
+
+    def set_mxtoolbox_fields(self, username: str, enabled_fields: list) -> dict:
+        """Per-user display preference for which MXToolbox sub-results
+        (ptr/asn/blacklist) render in the IP Lookup modal — independent of
+        the api_key column."""
+        with self._write_lock:
+            c = self._conn()
+            c.execute(
+                """
+                INSERT INTO user_api_keys (username, provider, enabled_fields, updated_at)
+                VALUES (?, 'mxtoolbox', ?, datetime('now'))
+                ON CONFLICT(username, provider)
+                DO UPDATE SET enabled_fields = excluded.enabled_fields, updated_at = excluded.updated_at
+                """,
+                (username, json.dumps(enabled_fields)),
+            )
+            c.commit()
+            row = c.execute(
+                "SELECT api_key, updated_at, enabled_fields FROM user_api_keys WHERE username = ? AND provider = 'mxtoolbox'",
+                (username,),
+            ).fetchone()
+        return {
+            "api_key": row["api_key"],
+            "updated_at": row["updated_at"],
+            "enabled_fields": json.loads(row["enabled_fields"]) if row["enabled_fields"] else None,
+        }
+
+    def set_ipapi_is_fields(self, username: str, enabled_fields: list) -> dict:
+        """Per-user display preference for which ipapi.is response sections
+        render in the IP Lookup modal — independent of the api_key column."""
+        with self._write_lock:
+            c = self._conn()
+            c.execute(
+                """
+                INSERT INTO user_api_keys (username, provider, enabled_fields, updated_at)
+                VALUES (?, 'ipapi_is', ?, datetime('now'))
+                ON CONFLICT(username, provider)
+                DO UPDATE SET enabled_fields = excluded.enabled_fields, updated_at = excluded.updated_at
+                """,
+                (username, json.dumps(enabled_fields)),
+            )
+            c.commit()
+            row = c.execute(
+                "SELECT api_key, updated_at, enabled_fields FROM user_api_keys WHERE username = ? AND provider = 'ipapi_is'",
+                (username,),
+            ).fetchone()
+        return {
+            "api_key": row["api_key"],
+            "updated_at": row["updated_at"],
+            "enabled_fields": json.loads(row["enabled_fields"]) if row["enabled_fields"] else None,
+        }
 
     # ── Users ─────────────────────────────────────────────────────────────────
 
