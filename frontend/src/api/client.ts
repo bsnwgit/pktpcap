@@ -219,12 +219,15 @@ export const api = {
     request<UserApiKey>('/user-api-keys/ipapi_is/free-tier', { method: 'PUT', body: JSON.stringify({ free_tier }) }),
   setMxtoolboxFields: (enabled_fields: string[]) =>
     request<UserApiKey>('/user-api-keys/mxtoolbox/fields', { method: 'PUT', body: JSON.stringify({ enabled_fields }) }),
+  setProviderEnabled: (provider: string, enabled: boolean) =>
+    request<UserApiKey>(`/user-api-keys/${provider}/enabled`, { method: 'PUT', body: JSON.stringify({ enabled }) }),
   getIpInfo: (ip: string) => request<IpInfoResult>(`/ip-info/${ip}`),
+  getInternalIpInfo: (ip: string) => request<InternalIpInfoResult>(`/ip-info/internal/${ip}`),
   mxtoolboxLookup: (command: string, argument: string, port?: number) =>
     request<Record<string, unknown>>('/mxtoolbox/lookup', { method: 'POST', body: JSON.stringify({ command, argument, port }) }),
 
   // ── Capture domain (feeds / captures) — Stage 4 consumes these ──────────
-  getWrapperConfig: () => request<{ wireshark_capture_enabled: boolean; tshark_capture_enabled: boolean; feed_token: string }>('/capture/wrapper-config'),
+  getWrapperConfig: () => request<{ wireshark_capture_enabled: boolean; tshark_capture_enabled: boolean; feed_token: string; default_capture_duration_seconds: number }>('/capture/wrapper-config'),
   getFeeds: () => request<FeedSession[]>('/feeds'),
   deleteFeed: (name: string) => request(`/feeds/${name}`, { method: 'DELETE' }),
   // Download endpoints need the Bearer token — a plain <a href> won't send
@@ -343,6 +346,7 @@ export interface UserApiKey {
   updated_at: string | null
   enabled_fields: string[] | null // ipinfo/ipapi_is/mxtoolbox only; null = not customized (all shown)
   free_tier: boolean // ipapi_is only — use its keyless free tier instead of api_key
+  enabled: boolean // show this provider's section in the IP Lookup modal at all
 }
 
 export interface IpInfoResult {
@@ -362,6 +366,18 @@ export interface IpInfoResult {
   mxtoolbox_error: string | null
   mxtoolbox_enabled_fields: string[] | null
   mxtoolbox_enabled: boolean
+}
+
+export interface InternalIpInfoResult {
+  ip: string
+  configured: boolean
+  found: boolean
+  error: string | null
+  subnet: { cidr: string; vlan_id: number | null; site: string | null; description: string | null; gateway: string | null } | null
+  ip_address: { status: string; mac_address: string | null; hostname: string | null; description: string | null; owner: string | null; tags: string[] } | null
+  dhcp_leases: { mac_address: string | null; hostname: string | null; state: string; starts_at: string | null; ends_at: string | null; last_seen: string }[]
+  dns_records: { zone: string; name: string; record_type: string; ttl: number | null; last_seen: string }[]
+  arp_entries: { device_label: string | null; mac_address: string | null; interface: string | null; vlan_tag: number | null; last_seen: string }[]
 }
 
 // -- Capture domain types (backend built in Stage 2; UI consumes in Stage 4) ------
