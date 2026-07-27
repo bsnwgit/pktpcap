@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
 import HelpButton from '../components/HelpButton'
+import IpLink, { linkifyIps } from '../components/IpLink'
 import { parsePCAP, analyzePackets, fmtBytes, safeIso, type AnalysisResult } from '../lib/pcap'
 
 type LocationState =
@@ -161,7 +162,7 @@ export default function Analyzer() {
             <div className="px-6 py-4 space-y-2">
               {result.topTalkers.map(([ip, bytes]) => (
                 <div key={ip} className="flex items-center gap-3">
-                  <span className="w-32 text-xs font-mono text-gray-300 truncate">{ip}</span>
+                  <span className="w-32 text-xs font-mono text-gray-300 truncate"><IpLink ip={ip} /></span>
                   <div className="flex-1 bg-gray-800 rounded-full h-2 overflow-hidden">
                     <div className="bg-emerald-600 h-2 rounded-full" style={{ width: `${(bytes / maxTalkerBytes) * 100}%` }} />
                   </div>
@@ -187,7 +188,7 @@ export default function Analyzer() {
               <p className="text-sm text-gray-300 mb-2">{a.detail}</p>
               {a.evidence.length > 0 && (
                 <ul className="text-xs text-gray-500 space-y-0.5 font-mono">
-                  {a.evidence.map((e, j) => <li key={j}>• {e}</li>)}
+                  {a.evidence.map((e, j) => <li key={j}>• {linkifyIps(e)}</li>)}
                 </ul>
               )}
             </div>
@@ -209,7 +210,7 @@ export default function Analyzer() {
                 <tbody className="divide-y divide-gray-800/60">
                   {result.conversations.map(c => (
                     <tr key={c.normKey} className="hover:bg-gray-800/30">
-                      <td className="px-6 py-2 text-white font-mono text-xs">{c.display}</td>
+                      <td className="px-6 py-2 text-white font-mono text-xs">{linkifyIps(c.display)}</td>
                       <td className="px-3 py-2 text-gray-300">{c.pkts.toLocaleString()}</td>
                       <td className="px-3 py-2 text-gray-300">{fmtBytes(c.bytes)}</td>
                     </tr>
@@ -273,7 +274,7 @@ export default function Analyzer() {
                   <tbody className="divide-y divide-gray-800/60">
                     {result.tcpStats.issueStreams.map(s => (
                       <tr key={s.key} className="hover:bg-gray-800/30">
-                        <td className="px-6 py-2 text-white font-mono text-xs">{s.key}</td>
+                        <td className="px-6 py-2 text-white font-mono text-xs">{linkifyIps(s.key)}</td>
                         <td className="px-3 py-2 text-gray-300">{s.rsts}</td>
                         <td className="px-3 py-2 text-gray-300">{s.retrans}</td>
                         <td className="px-3 py-2 text-gray-300">{s.zeroWin}</td>
@@ -312,7 +313,7 @@ export default function Analyzer() {
                 <tbody className="divide-y divide-gray-800/60">
                   {result.udpStats.flows.map(f => (
                     <tr key={f.key} className="hover:bg-gray-800/30">
-                      <td className="px-6 py-2 text-white font-mono text-xs">{f.key}</td>
+                      <td className="px-6 py-2 text-white font-mono text-xs">{linkifyIps(f.key)}</td>
                       <td className="px-3 py-2 text-gray-300">{f.pkts.toLocaleString()}</td>
                       <td className="px-3 py-2 text-gray-300">{fmtBytes(f.bytes)}</td>
                       <td className="px-3 py-2">{f.oneSided ? <span className="text-yellow-400">yes</span> : <span className="text-gray-500">no</span>}</td>
@@ -390,7 +391,7 @@ export default function Analyzer() {
               <p className="text-sm text-gray-300 mb-2">{t.detail}</p>
               {t.evidence.length > 0 && (
                 <ul className="text-xs text-gray-500 space-y-0.5 font-mono">
-                  {t.evidence.map((e, j) => <li key={j}>• {e}</li>)}
+                  {t.evidence.map((e, j) => <li key={j}>• {linkifyIps(e)}</li>)}
                 </ul>
               )}
             </div>
