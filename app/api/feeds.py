@@ -58,6 +58,7 @@ async def wrapper_config():
         "wireshark_capture_enabled": bool(await _get_setting("wireshark_capture_enabled", False)),
         "tshark_capture_enabled": bool(await _get_setting("tshark_capture_enabled", True)),
         "feed_token": await _get_setting("feed_token", "") or "",
+        "default_capture_duration_seconds": await _get_setting("default_capture_duration_seconds", 0) or 0,
     }
 
 
@@ -90,7 +91,12 @@ async def receive_feed(name: str, request: Request):
                 await session.append(chunk)
     finally:
         session.connected = False
-        await save_feed_to_disk(session)
+        saved_filename = await save_feed_to_disk(session)
+        if saved_filename:
+            # Once it's a real file tracked in the captures table, the
+            # in-memory session is redundant — drop it so a finished push
+            # doesn't linger in "Active Feed Sessions" forever.
+            await manager.delete(name)
 
     return {"ok": True, "bytes_received": session.bytes_received}
 

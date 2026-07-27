@@ -576,6 +576,11 @@ function SiblingIntegrations() {
 }
 
 // -- User Keys tab (personal, per-user external API keys) -------------------------
+// Providers with their own section in the IP Lookup modal (IpLink.tsx) —
+// these get a "show in IP Lookup modal" checkbox. ipqualityscore has no
+// modal section (its key exists only for other consumers), so it's excluded.
+const MODAL_PROVIDERS = ['ipinfo', 'ipapi_is', 'abuseipdb', 'mxtoolbox']
+
 function ApiKeysTab({ lucidToken, onLucidChange, lucidSave }: {
   lucidToken: string
   onLucidChange: (v: string) => void
@@ -628,6 +633,20 @@ function ApiKeysTab({ lucidToken, onLucidChange, lucidSave }: {
     }
   }
 
+  async function handleToggleEnabled(provider: string, checked: boolean) {
+    try {
+      const updated = await api.setProviderEnabled(provider, checked)
+      setKeys(prev => prev.map(k => k.provider === provider ? updated : k))
+    } catch {}
+  }
+
+  async function handleToggleFreeTier(checked: boolean) {
+    try {
+      const updated = await api.setIpapiIsFreeTier(checked)
+      setKeys(prev => prev.map(k => k.provider === 'ipapi_is' ? updated : k))
+    } catch {}
+  }
+
   const inp = 'w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-sky-500 font-mono'
 
   return (
@@ -650,6 +669,28 @@ function ApiKeysTab({ lucidToken, onLucidChange, lucidSave }: {
           {keys.map(k => (
             <div key={k.provider}>
               <label className="block text-xs text-white mb-1">{k.label}</label>
+              {MODAL_PROVIDERS.includes(k.provider) && (
+                <label className="flex items-center gap-2 text-xs text-white cursor-pointer mb-1.5">
+                  <input
+                    type="checkbox"
+                    checked={k.enabled}
+                    onChange={e => handleToggleEnabled(k.provider, e.target.checked)}
+                    className="accent-sky-600"
+                  />
+                  Show this provider in the IP Lookup modal
+                </label>
+              )}
+              {k.provider === 'ipapi_is' && (
+                <label className="flex items-center gap-2 text-xs text-white cursor-pointer mb-1.5">
+                  <input
+                    type="checkbox"
+                    checked={k.free_tier}
+                    onChange={e => handleToggleFreeTier(e.target.checked)}
+                    className="accent-sky-600"
+                  />
+                  Use free tier (1,000 req/day, no key required)
+                </label>
+              )}
               <div className="flex items-center gap-2">
                 <input
                   type="password"
@@ -1321,6 +1362,7 @@ function CaptureIngestTab({ settings, set, save, port }: {
   const feedToken = (settings['feed_token'] as string) || ''
   const tsharkEnabled = (settings['tshark_capture_enabled'] as boolean) ?? true
   const wiresharkEnabled = (settings['wireshark_capture_enabled'] as boolean) ?? false
+  const defaultDuration = (settings['default_capture_duration_seconds'] as number) ?? 0
   const host = window.location.hostname || 'SERVER-IP'
   const masked = feedToken ? feedToken.slice(0, 4) + '•'.repeat(20) : ''
 
@@ -1332,7 +1374,8 @@ function CaptureIngestTab({ settings, set, save, port }: {
     setRevealed(true)
   }
 
-  const tsharkCmd = `tshark -i eth0 -w - | curl -s -X POST \\\n  -H "Authorization: Bearer ${feedToken || 'YOUR_TOKEN'}" \\\n  -H "Content-Type: application/octet-stream" \\\n  --data-binary @- \\\n  "http://${host}:${port}/api/feed/my-capture"`
+  const durationArg = defaultDuration > 0 ? ` -a duration:${defaultDuration}` : ''
+  const tsharkCmd = `tshark -i eth0${durationArg} -w - | curl -sS -X POST \\\n  -H "Authorization: Bearer ${feedToken || 'YOUR_TOKEN'}" \\\n  -H "Content-Type: application/octet-stream" \\\n  --data-binary @- \\\n  "http://${host}:${port}/api/feed/my-capture"`
 
   const wsCmd = `SSH Host:  ${host}\nSSH User:  <ssh-user>\nAuth:      Key file (<your-ssh-key.pem>)\nCommand:   <install_dir>/pktpcap   (default: /opt/pktpcap/pktpcap)\nInterface: eth0`
 
@@ -1370,6 +1413,12 @@ function CaptureIngestTab({ settings, set, save, port }: {
       </Field>
       <Field label="Allow Wireshark SSH Remote Capture" hint="Accept pushes from Wireshark's SSH Remote Capture wrapper on this host">
         <Toggle value={wiresharkEnabled} onChange={v => set('wireshark_capture_enabled', v)} />
+      </Field>
+      <Field label="Default capture duration" hint="Auto-stops a tshark push after N seconds instead of relying on Ctrl+C, which can kill curl mid-upload and truncate the capture. 0 = no limit (manual Ctrl+C, same as before).">
+        <div className="flex items-center gap-3">
+          <NumberInput value={defaultDuration} onChange={v => set('default_capture_duration_seconds', v)} min={0} max={86400} />
+          <span className="text-sm text-white">seconds</span>
+        </div>
       </Field>
 
       <Field label="tshark / curl command" hint="Run this on any host with tshark installed">
@@ -1560,7 +1609,7 @@ export default function Settings() {
   const aiAssistantSave = useSave(['provider', 'anthropic_key', 'anthropic_model', 'openai_key', 'openai_model'], settings, load)
   const lucidSave = useSave(['lucid_api_token'], settings, load)
   const capturesSave = useSave(['storage_path', 'max_upload_mb', 'storage_quota_gb', 'retention_days', 'auto_purge'], settings, load)
-  const ingestSave = useSave(['feed_token', 'tshark_capture_enabled', 'wireshark_capture_enabled'], settings, load)
+  const ingestSave = useSave(['feed_token', 'tshark_capture_enabled', 'wireshark_capture_enabled', 'default_capture_duration_seconds'], settings, load)
   const notifySave = useSave([
     'notify_slack_enabled', 'notify_slack_webhook_url', 'notify_slack_channel',
     'notify_email_enabled', 'notify_email_smtp_host', 'notify_email_smtp_port',

@@ -49,7 +49,7 @@ function PushCommands() {
   const { user } = useAuth()
   const isAdmin = user?.role === 'admin'
   const [tab, setTab] = useState<'tshark' | 'wireshark'>('tshark')
-  const [config, setConfig] = useState<{ wireshark_capture_enabled: boolean; tshark_capture_enabled: boolean; feed_token: string } | null>(null)
+  const [config, setConfig] = useState<{ wireshark_capture_enabled: boolean; tshark_capture_enabled: boolean; feed_token: string; default_capture_duration_seconds: number } | null>(null)
   const [copied, setCopied] = useState(false)
   const [ownInterfaces, setOwnInterfaces] = useState<string[]>([])
   const [togglingTshark, setTogglingTshark] = useState(false)
@@ -57,13 +57,23 @@ function PushCommands() {
   const [sessionName, setSessionName] = useState('my-capture')
   const [ifaceName, setIfaceName] = useState('any')
   const [bpfFilter, setBpfFilter] = useState('')
+  const [duration, setDuration] = useState<number | ''>('')
+  const [durationTouched, setDurationTouched] = useState(false)
 
   const loadConfig = () =>
-    api.getWrapperConfig().then(setConfig).catch(() => setConfig({ wireshark_capture_enabled: false, tshark_capture_enabled: true, feed_token: '' }))
+    api.getWrapperConfig().then(cfg => {
+      setConfig(cfg)
+      // Prefill from the admin-configured default the first time it loads —
+      // don't stomp on a value the user already typed in this session.
+      if (!durationTouched && cfg.default_capture_duration_seconds > 0) {
+        setDuration(cfg.default_capture_duration_seconds)
+      }
+    }).catch(() => setConfig({ wireshark_capture_enabled: false, tshark_capture_enabled: true, feed_token: '', default_capture_duration_seconds: 0 }))
 
   useEffect(() => {
     loadConfig()
     api.getNetInterfaces().then(r => setOwnInterfaces(r.interfaces)).catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const toggleTshark = async () => {
@@ -95,11 +105,14 @@ function PushCommands() {
   const iface = ifaceName.trim() || 'any'
   const filter = bpfFilter.trim()
   const filterArg = filter ? ` -f "${filter}"` : ''
+  const durationArg = typeof duration === 'number' && duration > 0 ? ` -a duration:${duration}` : ''
 
   // The command must show the real, working token — it's the whole point of
   // this box (copy-paste-and-run). Masking belongs on a passive display of
   // the token by itself, not on a command that has to actually execute.
-  const tsharkCmd = `tshark -i ${iface}${filterArg} -w - | curl -s -X POST \\\n  -H "Authorization: Bearer ${token || 'YOUR_TOKEN_HERE'}" \\\n  -H "Content-Type: application/octet-stream" \\\n  --data-binary @- \\\n  "http://${host}:${port}/api/feed/${name}"`
+  // -a duration:N (when set) lets tshark stop itself instead of relying on
+  // Ctrl+C, which kills curl mid-upload and truncates the capture.
+  const tsharkCmd = `tshark -i ${iface}${filterArg}${durationArg} -w - | curl -sS -X POST \\\n  -H "Authorization: Bearer ${token || 'YOUR_TOKEN_HERE'}" \\\n  -H "Content-Type: application/octet-stream" \\\n  --data-binary @- \\\n  "http://${host}:${port}/api/feed/${name}"`
 
   const wsCmd = `SSH Host:   ${host}\nSSH Port:   22\nSSH User:   <your-ssh-user>\nAuth:       SSH Key file (<your-key.pem>)\nCommand:    <install_dir>/pktpcap   (default: /opt/pktpcap/pktpcap)\nInterface:  ${iface}\nFilter:     ${filter || '(none)'}`
 
@@ -116,6 +129,7 @@ function PushCommands() {
           <p><span className="text-gray-300 font-medium">tshark / curl</span> works from any host with tshark installed — the interface name is whatever <code className="text-gray-400">tshark -D</code> lists on THAT remote host, which pktPCAP has no way to see in advance, so it stays a free-text field you fill in yourself.</p>
           <p><span className="text-gray-300 font-medium">Wireshark SSH Remote Capture</span> is different: Wireshark SSHes INTO this pktPCAP server and runs the capture here, so the interface list below (this server's own NICs) is the relevant one for that tab only.</p>
           <p>The generated commands include your real feed token — anyone who can push a capture already needs to see it. Treat it like a password: don't paste these commands somewhere untrusted.</p>
+          <p><span className="text-gray-300 font-medium">Don't stop a running capture with Ctrl+C</span> — it kills <code className="text-gray-400">curl</code> along with <code className="text-gray-400">tshark</code> in the same keystroke, which usually truncates whatever hadn't uploaded yet (you'll see 0 bytes received even though tshark captured real packets). Set a <span className="text-gray-300 font-medium">Duration</span> below instead, so the capture stops itself and the upload has time to finish.</p>
         </HelpButton>
       </div>
       <div className="px-6 py-4 space-y-4">
@@ -125,7 +139,7 @@ function PushCommands() {
             <input value={sessionName} onChange={e => setSessionName(e.target.value)} placeholder="e.g. alice-laptop"
               className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-sky-500" />
           </div>
-          <div className="w-40">
+          <div className="w-36">
             <label className="block text-xs text-gray-400 mb-1">Interface</label>
             <input value={ifaceName} onChange={e => setIfaceName(e.target.value)} placeholder="e.g. eth0" list="pktpcap-iface-suggestions"
               className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-sky-500" />
@@ -134,12 +148,22 @@ function PushCommands() {
               {ownInterfaces.map(i => <option key={i} value={i} />)}
             </datalist>
           </div>
+          <div className="w-32">
+            <label className="block text-xs text-gray-400 mb-1">Duration (s)</label>
+            <input type="number" min={0} value={duration}
+              onChange={e => { setDurationTouched(true); const v = e.target.value; setDuration(v === '' ? '' : Number(v)) }}
+              placeholder="unlimited"
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-sky-500" />
+          </div>
           <div className="flex-[2] min-w-[12rem]">
             <label className="block text-xs text-gray-400 mb-1">BPF Filter <span className="text-gray-600">(optional)</span></label>
             <input value={bpfFilter} onChange={e => setBpfFilter(e.target.value)} placeholder="e.g. not port 22"
               className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-sky-500" />
           </div>
         </div>
+        {!duration && (
+          <p className="text-xs text-yellow-400 -mt-2">No duration set — you'll need to stop this with Ctrl+C, which can truncate the upload. Set a duration above to avoid that.</p>
+        )}
 
         <div className="flex items-center gap-1 bg-gray-800 border border-gray-700 rounded-lg p-1 w-fit">
           <button onClick={() => setTab('tshark')}
@@ -248,7 +272,11 @@ export default function LiveFeeds() {
   }
 
   return (
-    <div className="space-y-4">
+    // pb-20: clearance for the floating AI-assistant button (fixed
+    // bottom-6 right-6 in Layout.tsx), which otherwise sits directly over
+    // the last row's action links (Delete, etc.) in the Persisted Captures
+    // table below.
+    <div className="space-y-4 pb-20">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h1 className="text-xl font-semibold text-white">Live Feeds</h1>
