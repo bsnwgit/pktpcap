@@ -5,20 +5,22 @@
 </p>
 
 <p align="center">
-  A standalone Python/Flask web service for analyzing PCAP files in the browser, with AI-powered triage and a live NetFlow feed.
+  A standalone FastAPI/React web app for analyzing PCAP files in the browser, with an AI chat assistant and a live NetFlow-style capture feed.
 </p>
 
 ---
 
 ## Overview
 
-pktPCAP is a locally-hosted packet capture analyzer. Drop a `.pcap` or `.pcapng` file onto the UI and get instant, rule-based analysis of TCP health, DNS, threats, and traffic flows — no cloud upload required. Optional AI analysis (Anthropic or OpenAI) layers natural-language findings on top of the parsed data.
+pktPCAP is a locally-hosted packet capture analyzer. Drop a `.pcap` or `.pcapng` file onto the UI and get instant, rule-based analysis of TCP health, DNS, threats, and traffic flows — no cloud upload required. An optional AI assistant (Anthropic or OpenAI) is available as a floating chat panel on every page, and can answer questions about whatever capture you're currently viewing.
 
 **Key traits:**
 - Runs entirely on your infrastructure — captures never leave your environment
 - Works without an API key (rule-based analysis only)
-- Three analysis modes: Specific Issue, Auto-Triage, Security Review
-- In-app log viewer, user management, Okta SAML SSO, SSL support, and a live pcapng feed endpoint (generic tshark/curl **or** native Wireshark GUI remote capture)
+- React 18 / Vite single-page app, FastAPI backend — same stack as the rest of the `pkt*` suite
+- Client-side packet parsing (TypeScript) — a `.pcap`/`.pcapng` file never touches the server unless you explicitly choose "Analyze & Save"
+- In-app log viewer, user management, Okta SAML SSO, SSL/TLS, and a live pcapng feed endpoint (generic tshark/curl **or** native Wireshark GUI remote capture)
+- IP Lookup on every IP shown in the analyzer (ipinfo.io / ipapi.is / AbuseIPDB / MXToolbox for public IPs, pktIPAM inventory lookup for private IPs)
 - Multi-channel alert notifications (Slack, Email, PagerDuty, generic webhook, Tracecat) and scheduled/on-demand backups
 - Deploys as a systemd service on Ubuntu Server bare metal — no container runtime required
 
@@ -26,12 +28,12 @@ pktPCAP is a locally-hosted packet capture analyzer. Drop a `.pcap` or `.pcapng`
 
 ## Recent Changes (2026-07)
 
-- **Docker removed.** The Dockerfile, `docker-compose.yml`, entrypoint script, CI workflow, and `.env.example` are gone. Deployment is now native: `install.sh` sets up a Python venv and a systemd unit directly on Ubuntu Server 22.04/24.04 bare metal — no container runtime needed.
-- **Install script rebuilt.** `install.sh` is now fully interactive — it prompts for the install directory and port (with defaults), generates a random admin password and prints it once, and installs + starts the systemd service automatically, including opening the firewall port via `ufw` if present.
-- **Default port changed from `80` to `8765`.** No more binding to a privileged port by default; the systemd unit only grants `CAP_NET_BIND_SERVICE` in case an admin explicitly sets a port below 1024.
-- **Remote-capture script renamed** from the old `pkt-capture` name to `pktpcap` (installed at `<install_dir>/pktpcap`). It's the wrapper Wireshark's SSH Remote Capture feature invokes on the server; see [Wireshark GUI remote capture](#wireshark-gui-remote-capture-ssh).
-- **Infra leakage sanitized.** Personal deploy scripts, hardcoded server IPs/SSH key paths/usernames, and a committed `PROJECT_CONTEXT.md` were removed from the repo; the remaining helper scripts take host/path values as CLI args or env vars.
-- **Login form now submits on Enter** in either the username or password field — no need to click into the button.
+- **Rebuilt as FastAPI + React.** pktPCAP was the first app in the `pkt*` suite, originally a synchronous Flask app with server-rendered Jinja templates, cookie-session auth, and sha256 password hashing. It's now a FastAPI backend (`app/`) + React 18/Vite SPA (`frontend/`) with JWT/bcrypt auth, matching every sibling app's stack. The old Flask app is left in place under `service/` for reference but is **not used** by `install.sh` or the systemd unit anymore — see [Project Structure](#project-structure).
+- **New `captures` database table.** Persisted `.pcapng` files (from an upload or a finished live feed) now have a real DB row (`saving`/`saved`/`failed`/`missing`) instead of being tracked purely by directory listing — a crash mid-write is now visible instead of silently absent.
+- **IP Lookup wired into the Analyzer.** Every IP shown in Top Talkers, Flows, TCP streams, UDP flows, and Threat evidence is now a clickable lookup (`IpLink` component) — external providers for public IPs, a pktIPAM inventory lookup for private/RFC1918 IPs (if a pktIPAM Suite Integration is configured).
+- **tshark ingest can now be toggled off independently of Wireshark remote capture**, and a default capture duration can be set so a `curl`-piped tshark session can self-terminate cleanly instead of relying on Ctrl+C (which truncates the upload).
+- **AI is now a persistent chat assistant** (floating button, bottom-right, on every page) rather than three preset "analysis mode" buttons — ask a free-form question and it uses whatever capture/analysis context is currently on screen.
+- Config split into two layers: `config.yaml` (startup/infrastructure — port, JWT secret, CORS, install dir) and the SQLite `settings` table (everything else, managed from the Settings UI) — see [Configuration](#configuration).
 
 ---
 
@@ -52,14 +54,23 @@ bash install.sh
 1. Prompt for the **install directory** (default `/opt/pktpcap`)
 2. Prompt for the **port** (default `8765`)
 3. Install system packages, create a Python venv, and install dependencies
-4. Copy the application into the install directory
-5. Initialize the SQLite database and create the `admin` account with a **random password**, printed once to the terminal — save it, it is never shown again
-6. Install, enable, and start the `pktpcap` systemd service
-7. Open the port in `ufw` automatically, if `ufw` is installed (otherwise it prints a reminder to open it manually)
+4. Copy `app/`, `migrations/`, and the capture wrapper script into the install directory
+5. Generate `config.yaml` from `config.example.yaml` (random JWT secret, port filled in)
+6. Apply database migrations and create the `admin` account with a **random password**, printed once to the terminal — save it, it is never shown again
+7. Build the React frontend with `npm` (if Node.js/npm is available — see the note below if it isn't)
+8. Install, enable, and start the `pktpcap` systemd service
+9. Open the port in `ufw` automatically, if `ufw` is installed (otherwise it prints a reminder to open it manually)
 
 At the end it prints a boxed summary with the URL and admin credentials (on a fresh install only — an existing database is left untouched and the box says so instead).
 
 Open `http://<server-ip>:<port>` (default port `8765`) and log in with the `admin` username and the generated password from the install output.
+
+**Node.js requirement:** the installer builds the frontend with `npm run build` if `npm` is on `PATH`. If it isn't, the service still installs and starts, but the web UI returns `{"detail":"Not Found"}` until you build it manually:
+```bash
+cd <repo-checkout>/frontend && npm install && npm run build
+mkdir -p <install_dir>/frontend && cp -r dist <install_dir>/frontend/dist
+sudo systemctl restart pktpcap
+```
 
 **Non-interactive / scripted installs** — set env vars to skip every prompt:
 
@@ -75,18 +86,18 @@ bash install.sh
 
 | Variable | Default | Description |
 |---|---|---|
-| `PKTPCAP_INSTALL_DIR` | `/opt/pktpcap` | Where the app is installed |
-| `PKTPCAP_PORT` | `8765` | Listening port; also written into the `pktpcap` remote-capture wrapper and opened in `ufw` |
-| `PKTPCAP_LOG_DIR` | `$PKTPCAP_INSTALL_DIR/logs` | systemd journal file location |
+| `PKTPCAP_INSTALL_DIR` | `/opt/pktpcap` | Where the app is installed — becomes `install_dir` in `config.yaml`, which every other on-disk path (db, logs, ssl, captures) defaults under |
+| `PKTPCAP_PORT` | `8765` | Listening port; written into `config.yaml`, the `pktpcap` remote-capture wrapper, and opened in `ufw` |
+| `PKTPCAP_LOG_DIR` | `$PKTPCAP_INSTALL_DIR/logs` | systemd stdout/stderr log file location |
 | `PKTPCAP_SERVICE_USER` | current user | User the systemd service runs as |
 | `PKTPCAP_SERVICE_GROUP` | same as service user | Group the systemd service runs as |
-| `PKTPCAP_ADMIN_PASSWORD` | (not read by `install.sh`) | `install.sh` always generates its own random password and ignores this variable if set. It's only honored by a **manual** `init_db()` call (see [Installation](#installation) step 6) — useful if you're bootstrapping the database yourself outside the installer |
+| `PKTPCAP_ADMIN_PASSWORD` | (not read by `install.sh`) | `install.sh` always generates its own random password for the initial admin account. This variable is only honored if you run `app.database.seed_admin()` yourself outside the installer (e.g. bootstrapping a database by hand) |
 
 ---
 
 ## Installation
 
-`install.sh` (see [Quick Start](#quick-start)) automates every step below, including opening the firewall (if `ufw` is present). This section is the full manual walkthrough — useful to customize the install, run steps individually, or understand what the script does.
+`install.sh` (see [Quick Start](#quick-start)) automates every step below. This section is the full manual walkthrough — useful to customize the install, run steps individually, or understand what the script does.
 
 ### 1. Clone the repository
 
@@ -95,58 +106,80 @@ git clone https://github.com/bsnwgit/pktpcap.git
 cd pktpcap
 ```
 
-All commands below assume you're in the repo root unless otherwise noted.
-
-### 2. Create the install directory
-
-```bash
-INSTALL_DIR=/opt/pktpcap
-sudo mkdir -p "$INSTALL_DIR" "$INSTALL_DIR/logs"
-sudo chown "$(whoami):$(whoami)" "$INSTALL_DIR" "$INSTALL_DIR/logs"
-```
-
-`/opt` is root-owned by default, so this needs `sudo`. Steps 3–5 below run as your regular user against this now-owned directory; step 6 re-owns everything to whichever user/group the systemd service runs as.
-
-### 3. System packages
+### 2. System packages
 
 ```bash
 sudo apt-get update
 sudo apt-get install -y --no-install-recommends \
     python3 python3-venv python3-pip \
-    libxml2-dev libxmlsec1-dev libxmlsec1-openssl pkg-config gcc
+    libxml2-dev libxmlsec1-dev libxmlsec1-openssl pkg-config gcc \
+    curl ca-certificates
 ```
 
 `libxml2-dev`, `libxmlsec1-dev`, `libxmlsec1-openssl`, `pkg-config`, and `gcc` are required to build `python3-saml`'s xmlsec native bindings (used for Okta SAML SSO).
 
-### 4. Install Python dependencies
+### 3. Install Python dependencies
 
 ```bash
 python3 -m venv /opt/pktpcap/venv
-/opt/pktpcap/venv/bin/pip install -r service/requirements.txt
+/opt/pktpcap/venv/bin/pip install -r requirements.txt
 ```
 
-### 5. Copy application files
+### 4. Copy application files
 
 ```bash
-cp -r service/* /opt/pktpcap/
-mkdir -p /opt/pktpcap/ssl
+cp -r app migrations /opt/pktpcap/
+cp scripts/pktpcap /opt/pktpcap/pktpcap
+sed -i "s#__PORT__#8765#g" /opt/pktpcap/pktpcap
+chmod +x /opt/pktpcap/pktpcap
+mkdir -p /opt/pktpcap/ssl /opt/pktpcap/captures
 ```
 
-The `ssl/` directory is where you place `server.crt` + `server.key` if you want HTTPS (see [SSL / TLS](#ssl--tls) below) — pktPCAP auto-detects them at startup.
+The `ssl/` directory is where you place `server.crt` + `server.key` for HTTPS certs (see [SSL / TLS](#ssl--tls)); `captures/` is the default location persisted `.pcapng` files are written to.
 
-### 6. Configure
+### 5. Configure
 
-Nothing is required — settings live in a SQLite database (`pktpcap.db`) that's created automatically on first start, seeded with sensible defaults (including a default port of `8765`) and an `admin` account. To pre-initialize it (so you can confirm it worked before starting the service) with a real password instead of the `admin`/`admin` fallback:
+```bash
+cp config.example.yaml /opt/pktpcap/config.yaml
+# Generate a real JWT secret:
+sed -i "s/CHANGE_ME_generate_with_openssl_rand_hex_32/$(openssl rand -hex 32)/" /opt/pktpcap/config.yaml
+echo 'install_dir: "/opt/pktpcap"' >> /opt/pktpcap/config.yaml
+```
+
+`config.yaml` only covers startup/infrastructure settings (host, port, JWT secret, CORS, install dir). Everything else — capture storage/retention, notification channels, AI keys, SAML config, suite integrations, per-user lookup API keys — lives in the SQLite `settings` table, created automatically on first start and managed entirely through the **Settings** UI once you've logged in.
+
+### 6. Apply migrations and create the admin user
 
 ```bash
 cd /opt/pktpcap
+PKTPCAP_CONFIG=/opt/pktpcap/config.yaml \
+PKTPCAP_INSTALL_DIR=/opt/pktpcap \
 PKTPCAP_ADMIN_PASSWORD="$(openssl rand -base64 12 | tr -d '/+=' | head -c 16)" \
-/opt/pktpcap/venv/bin/python3 -c "from db import init_db; init_db()"
+venv/bin/python3 -c "
+import asyncio
+from app.database import init_db, seed_admin
+async def setup():
+    await init_db()
+    await seed_admin()
+asyncio.run(setup())
+"
 ```
 
-All configuration afterward (API keys, port, storage, SSL, SSO, etc.) is done through the **Settings** UI once you've logged in — see [Application Settings](#configuration).
+If `PKTPCAP_ADMIN_PASSWORD` is unset and the `users` table is empty, `seed_admin()` refuses to start with a clear error rather than silently creating an account with no password — there is no `admin`/`admin` fallback in this rebuild.
 
-### 7. Install the systemd service
+### 7. Build the frontend
+
+```bash
+cd frontend
+npm install
+npm run build
+mkdir -p /opt/pktpcap/frontend
+cp -r dist /opt/pktpcap/frontend/dist
+```
+
+FastAPI serves the built SPA directly from `frontend/dist` relative to the install dir (see `app/main.py`) — there's no separate web server needed in front of it.
+
+### 8. Install the systemd service
 
 `pktpcap.service` is a template — substitute the placeholders before installing it, or just run `install.sh` which does this for you:
 
@@ -162,21 +195,23 @@ sudo systemctl enable --now pktpcap
 sudo systemctl status pktpcap
 ```
 
-The unit grants `CAP_NET_BIND_SERVICE` in case you set Port below 1024 in Settings — the default (`8765`) doesn't need it.
+The unit's `ExecStart` runs `venv/bin/python -m app.server`, which reads `host`/`port` from `config.yaml` at each start — changing the port only needs `config.yaml` rewritten + a restart, not a unit file edit. It grants `CAP_NET_BIND_SERVICE` in case you set a port below 1024 — the default (`8765`) doesn't need it.
 
-### 8. Open the firewall
+**Workers must stay at 1.** Live capture feed sessions (`app/capture/feed_sessions.py`) are held in the single worker process's memory — a multi-worker deployment would silently split feed ingest/list/download across processes and lose in-progress captures. Don't add `--workers` flags without redesigning feed storage to be shared (disk/Redis).
+
+### 9. Open the firewall
 
 ```bash
 sudo ufw allow 8765/tcp
 ```
 
-### 9. Verify
+### 10. Verify
 
 ```bash
-curl -s http://localhost/api/health
+curl -s http://localhost:8765/api/health
 ```
 
-Log in at `http://<server-ip>:8765` with `admin` and either the password you set in step 6's `PKTPCAP_ADMIN_PASSWORD`, or `admin` if you skipped it (the `admin`/`admin` fallback only applies to this manual path — `install.sh` never leaves it in place, it always generates a random password). Change the password immediately in **Settings → Security → Users** if you used the fallback.
+Log in at `http://<server-ip>:8765` with `admin` and the password printed by step 6.
 
 ---
 
@@ -196,34 +231,33 @@ The simplest path. You already have a capture file.
 │                                                                  │
 │  [.pcap / .pcapng file]                                          │
 │         │                                                        │
-│         ▼ drag-and-drop / file picker                            │
-│  [Browser — index.html]                                          │
+│         ▼ drag-and-drop / file picker (Upload page)              │
+│  [Browser — React SPA]                                           │
 │         │                                                        │
-│         ├─ parsePcap() ──► JS packet parser (pure client-side)   │
+│         ├─ parsePCAP() ──► TS packet parser (pure client-side)   │
 │         │                  builds flows, TCP stats, DNS, threats  │
 │         │                                                        │
-│         ├─ Rule engine ──► anomaly detection (no server needed)  │
+│         ├─ Rule engine ──► anomaly/threat detection (no server)  │
 │         │                                                        │
-│         └─ POST /api/ai ─► [pktPCAP Flask server]                │
+│         └─ POST /api/ai/chat ─► [pktPCAP FastAPI server]         │
 │                                  │                               │
 │                                  ▼                               │
 │                     [Anthropic / OpenAI API]  (optional)         │
 │                                  │                               │
 │                                  ▼                               │
-│                         AI findings panel                        │
+│                     AI Assistant chat panel                      │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
 **What happens step by step:**
 
-1. User drops a `.pcap` or `.pcapng` file on the browser UI.
-2. The browser reads the file entirely client-side — bytes never leave the machine via the network.
-3. `parsePcap()` in `index.html` walks every packet record and builds in-memory data structures: flow tuples, TCP flag counters, DNS query tables, and threat indicators.
-4. Rule-based analysis runs immediately in the browser — no server round-trip needed.
-5. If an AI key is configured, the browser POSTs the parsed summary to `/api/ai`. The Flask server proxies the request to Anthropic or OpenAI and returns the model's response.
-6. Results are rendered across seven analysis tabs.
+1. On the **Upload** page, the user drops a `.pcap` or `.pcapng` file, or clicks to browse — multiple files can be queued.
+2. **Analyze (local)** reads the file entirely client-side and never sends it anywhere; **Analyze & Save** also `POST`s it to `/api/captures/upload` so it's persisted and shows up later in Live Feeds → Persisted Captures.
+3. `parsePCAP()` (`frontend/src/lib/pcap/parser.ts`) walks every packet record and builds in-memory data structures: flow tuples, TCP flag counters, DNS query tables, and threat indicators (`analyze.ts`).
+4. Rule-based analysis runs immediately in the browser — no server round-trip needed. Results render across seven tabs on the **Analyzer** page.
+5. If an AI key is configured, the floating **AI Assistant** panel (available on every page) can answer free-form questions about the current capture — it POSTs the question plus whatever analysis context is on screen to `/api/ai/chat`, which the server forwards to Anthropic or OpenAI.
 
-**Server role in local mode:** the Flask server is only involved for the AI proxy (`/api/ai`) and serving static files. Packet parsing is entirely client-side.
+**Server role in local mode:** the FastAPI server is only involved for `/api/captures/upload` (if you choose to save) and the AI chat proxy. Packet parsing and rule-based analysis are entirely client-side.
 
 ---
 
@@ -254,27 +288,32 @@ Use this when you want to capture traffic on a remote host and analyze it withou
 │         ├─ Bearer token validated against feed_token in DB                   │
 │         │                                                                    │
 │         ├─ FeedSession.append() ─► in-memory ring buffer (200 MB cap)        │
-│         │   (thread-safe, chunked 64 KB reads from request.stream)           │
+│         │   (chunked reads from request.stream, one worker process only)     │
 │         │                                                                    │
 │         └─ Session stays "connected" until curl closes the connection        │
 │                                                                              │
-│  GET /api/feeds                 ─► list active sessions + bytes buffered     │
-│  GET /api/feeds/<name>/download ─► download buffered pcapng as a file        │
-│  DELETE /api/feeds/<name>       ─► clear and remove session                  │
+│  On disconnect ─► if a Captures storage path is configured, the buffered     │
+│                    bytes are saved to disk and tracked as a `captures` row   │
 │                                                                              │
-│  [User loads buffered capture in UI] ──► same parse/analysis path as Mode 1 │
+│  GET /api/feeds                     ─► list active sessions + bytes buffered │
+│  GET /api/captures                  ─► list persisted captures (DB-backed)   │
+│  GET /api/feeds/<name>/download     ─► download a still-active session      │
+│  GET /api/captures/<fname>/download ─► download a persisted capture         │
+│  DELETE /api/feeds/<name> / /api/captures/<fname>                            │
+│                                                                              │
+│  [User clicks Analyze] ──► same client-side parse/analysis path as Mode 1   │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
 **What happens step by step:**
 
-1. User retrieves the feed token from **Settings → Live Feed Token**.
-2. On the remote capture host, `tshark` captures packets on the chosen interface and writes raw pcapng to stdout.
-3. The output is piped to `curl`, which streams it as an HTTP POST to the pktPCAP feed endpoint.
-4. pktPCAP validates the Bearer token and appends incoming chunks to a named `FeedSession` buffer (up to 200 MB; bytes beyond the cap are silently dropped and `truncated` is flagged).
-5. While the feed is active, `GET /api/feeds` shows session status and byte count.
-6. When capture is complete (or at any point), the user clicks **Load from Feed** in the UI, which fetches the buffered bytes and runs the same client-side parse/analysis as Mode 1.
-7. The session can be cleared with `DELETE /api/feeds/<name>` to free memory.
+1. On the **Live Feeds** page, the user fills in a session name, interface, optional BPF filter, and optional duration — the page builds the exact `tshark | curl` command (including the real feed token) to copy-paste onto the remote host.
+2. On the remote capture host, `tshark` captures packets on the chosen interface and writes raw pcapng to stdout; the output is piped to `curl`, which streams it as an HTTP POST to `/api/feed/<name>`.
+3. pktPCAP validates the Bearer token and appends incoming chunks to a named `FeedSession` buffer (up to 200 MB; bytes beyond the cap are silently dropped and `truncated` is flagged).
+4. While the feed is active, **Active Feed Sessions** on the Live Feeds page auto-refreshes (every 5s) showing status, remote address, bytes, and duration.
+5. When the capture ends (curl disconnects), pktPCAP saves the buffered bytes to the configured capture storage path (if any) and records it in the `captures` table with status `saved` — the in-memory session is then dropped so a finished push doesn't linger in the "active" list.
+6. Clicking **Analyze** on either an active session or a persisted capture pulls the buffered/saved bytes into the same client-side parse/analysis flow as Mode 1.
+7. A session or capture can be deleted at any point via the trash-can/Delete action.
 
 ---
 
@@ -283,8 +322,6 @@ Use this when you want to capture traffic on a remote host and analyze it withou
 The remote capture host needs only two tools: **tshark** and **curl**. Both are available on Linux, macOS, and Windows.
 
 #### tshark
-
-tshark is the command-line interface to Wireshark. It handles raw packet capture, decoding, and pcapng output.
 
 | Package | Install |
 |---|---|
@@ -300,63 +337,31 @@ tshark is the command-line interface to Wireshark. It handles raw packet capture
 | `-i <interface>` | Network interface to capture on (e.g., `eth0`, `en0`) |
 | `-w -` | Write pcapng output to stdout instead of a file |
 | `-f "<filter>"` | BPF capture filter — limits what gets captured |
-| `-s <bytes>` | Snap length — truncates packets to N bytes (reduce bandwidth) |
+| `-a duration:<seconds>` | Auto-stop after N seconds — lets tshark end itself cleanly instead of relying on Ctrl+C |
 
-**Listing available interfaces:**
-```bash
-tshark -D
-```
+**Listing available interfaces:** `tshark -D` on the **remote** host actually running the capture.
 
-> **Note on the Live Feeds UI's Interface field:** the dropdown suggestions come from `GET /api/net-interfaces`, which returns the **pktPCAP server's own** interfaces (`socket.if_nameindex()`) — useful as-is for the Wireshark GUI method below, since that traffic runs on the pktPCAP host itself. For the tshark/CLI method, the interface has to exist on whatever **remote host** actually runs the `tshark` command, which pktPCAP has no way to introspect in advance — type that host's real interface name (`tshark -D` on the remote host) rather than picking a suggested one.
+> **Note on the Live Feeds page's Interface field:** it's a free-text field with datalist suggestions drawn from `GET /api/system/net-interfaces`, which returns **pktPCAP server's own** interfaces (`socket.if_nameindex()`). Those suggestions are only meaningful for the Wireshark GUI method below, since that traffic runs on the pktPCAP host itself. For the tshark/CLI method, type the **remote host's** real interface name (from `tshark -D` run on that host) — pktPCAP has no way to introspect an arbitrary remote box in advance, so the suggested list doesn't apply there. This UX gap is described in the field's help text but not otherwise resolved.
 
 #### curl
 
-curl handles the HTTP transport to pktPCAP. The `--data-binary @-` flag tells curl to read the POST body from stdin, enabling the pipe.
+curl handles the HTTP transport. `--data-binary @-` reads the POST body from stdin, enabling the pipe.
 
-#### Feed command (generic template)
+#### Feed command (generated by the Live Feeds page)
 
 ```bash
-tshark -i <interface> -w - | curl -s \
+tshark -i <interface> [-f "<filter>"] [-a duration:<seconds>] -w - | curl -sS -X POST \
   -H "Authorization: Bearer <feed-token>" \
   -H "Content-Type: application/octet-stream" \
   --data-binary @- \
-  "http://<pktpcap-host>/api/feed/<session-name>"
+  "http://<pktpcap-host>:<port>/api/feed/<session-name>"
 ```
 
-Replace:
-- `<interface>` — capture interface name (see `tshark -D`)
-- `<feed-token>` — token from **Settings → Capture Ingest** (see [Wireshark GUI remote capture](#wireshark-gui-remote-capture-ssh) below for where this lives in the UI)
-- `<pktpcap-host>` — hostname or IP of the machine running pktPCAP
-- `<session-name>` — alphanumeric label for this capture session
+The Live Feeds page fills in every placeholder for you (session name, interface, filter, duration, token, host/port) and gives you a **Copy Command** button. Don't stop a running capture with Ctrl+C — it kills `curl` along with `tshark` in the same keystroke, which usually truncates the upload; set a **Duration** in the builder instead so the capture stops itself with time to finish uploading.
 
-**With a BPF filter (capture only HTTP and DNS):**
-```bash
-tshark -i <interface> -f "port 80 or port 443 or port 53" -w - | curl -s \
-  -H "Authorization: Bearer <feed-token>" \
-  -H "Content-Type: application/octet-stream" \
-  --data-binary @- \
-  "http://<pktpcap-host>/api/feed/<session-name>"
-```
+**HTTPS (if pktPCAP has SSL enabled):** use `https://` and add `-k` to skip cert verification for self-signed certs (or `--cacert <cert.pem>` for proper validation).
 
-**With snap length (first 256 bytes of each packet — reduces bandwidth):**
-```bash
-tshark -i <interface> -s 256 -w - | curl -s \
-  -H "Authorization: Bearer <feed-token>" \
-  -H "Content-Type: application/octet-stream" \
-  --data-binary @- \
-  "http://<pktpcap-host>/api/feed/<session-name>"
-```
-
-**HTTPS (if pktPCAP has SSL enabled):**
-```bash
-tshark -i <interface> -w - | curl -s -k \
-  -H "Authorization: Bearer <feed-token>" \
-  -H "Content-Type: application/octet-stream" \
-  --data-binary @- \
-  "https://<pktpcap-host>/api/feed/<session-name>"
-```
-
-(`-k` skips cert verification for self-signed certs; use `--cacert <cert.pem>` for proper validation.)
+**Allow/deny toggle:** an admin can disable tshark/CLI ingest independently of the Wireshark method via the **Allow tshark / CLI captures** toggle on the Live Feeds page (`tshark_capture_enabled` setting) — pushes to `/api/feed/<name>` from a non-Wireshark session name are rejected with 403 while it's off.
 
 #### Running as a background service (Linux systemd)
 
@@ -399,9 +404,9 @@ sudo systemctl status pktpcap-feed
 
 Besides the generic tshark/curl pipe above, pktPCAP also supports feeding a **live Wireshark GUI session** directly, using Wireshark's built-in **SSH Remote Capture** interface type — no separate script to babysit, and you get a live packet view in Wireshark itself while pktPCAP simultaneously buffers the same stream.
 
-This is powered by a small wrapper script, **`pktpcap`** (renamed from the old `pkt-capture`), installed at `<install_dir>/pktpcap` by `install.sh`. Wireshark SSHs into the pktPCAP host and runs this wrapper instead of `dumpcap` directly; the wrapper tees the capture — one copy goes to Wireshark over the SSH pipe, the other is POSTed to pktPCAP's own `/api/feed/<name>` endpoint, using the same buffered-session mechanism as the tshark method.
+This is powered by a small wrapper script, **`pktpcap`** (`scripts/pktpcap` in the repo, installed at `<install_dir>/pktpcap`). Wireshark SSHes into the pktPCAP host and runs this wrapper instead of `dumpcap` directly; the wrapper tees the capture — one copy goes to Wireshark over the SSH pipe, the other is POSTed to pktPCAP's own `/api/feed/<name>` endpoint using the same buffered-session mechanism as the tshark method.
 
-**Enable it:** Settings → **Capture Ingest** → toggle **Wireshark remote capture** on. Enabling it reveals the feed endpoint URL, the bearer token, and a pre-filled `pktpcap` command — copy these into Wireshark's capture options.
+**Enable it:** Live Feeds page → **Wireshark SSH Remote Capture** tab → toggle **Allow Wireshark SSH Remote Capture** on (admin only; non-admins see "Ask an admin to change this"). Feed tokens and endpoint config are read from a small unauthenticated endpoint (`GET /api/capture/wrapper-config`) built specifically for this wrapper script, since the general `/api/settings` now requires a real login under the FastAPI rebuild.
 
 **In Wireshark:** Capture → Options → **+ (Manage Interfaces)** → **Remote Interfaces**, or the SSH remote capture interface type, then set:
 
@@ -413,11 +418,11 @@ This is powered by a small wrapper script, **`pktpcap`** (renamed from the old `
 | Remote Capture Command | `<install_dir>/pktpcap` (default `/opt/pktpcap/pktpcap`) |
 | Interface | the interface name on the pktPCAP host, e.g. `eth0` |
 
-The wrapper itself checks whether Wireshark remote capture is enabled in Settings before running (`GET /api/settings` → `wireshark_capture_enabled`) and exits with an error if it's off, so leaving Wireshark configured but the toggle disabled fails safely rather than silently.
+The wrapper checks `wireshark_capture_enabled` before running and exits with an error if it's off, so leaving Wireshark configured but the toggle disabled fails safely rather than silently.
 
-> **Note:** on the pktPCAP host, running `dumpcap` over SSH still needs either `root` or a user in the `wireshark` group with `dumpcap` setuid permissions — same requirement as the generic tshark method above (`sudo usermod -aG wireshark <ssh-user>`, then log out/in).
+> **Note:** on the pktPCAP host, running `dumpcap` over SSH still needs either `root` or a user in the `wireshark` group with `dumpcap` setuid permissions — same requirement as the generic tshark method above.
 
-Once a live Wireshark session is running, its captured bytes are also visible from the pktPCAP UI as a normal Live Feed session (see [Live feed (remote capture)](#live-feed-remote-capture) below) — click **Load from Feed** to pull them in for the same rule-based/AI analysis as an uploaded file.
+Once a live Wireshark session is running, its captured bytes are also visible from the pktPCAP UI as a normal entry in **Active Feed Sessions** — click **Analyze** to pull them in for the same rule-based/AI analysis as an uploaded file.
 
 ---
 
@@ -426,14 +431,17 @@ Once a live Wireshark session is running, its captured bytes are also visible fr
 ```
 tshark starts → POST /api/feed/<name> opens → session.connected = True
                                                     │
-                               data flows in chunks (64 KB reads)
+                               data flows in chunks
                                                     │
 tshark stops → curl closes connection → session.connected = False
                                                     │
-                               buffer persists in memory until:
-                               - user loads it in the UI
-                               - DELETE /api/feeds/<name>
-                               - server restart
+                    if a Captures storage path is configured:
+                        bytes are written to disk, a `captures` row is
+                        created (status=saved), the in-memory session is
+                        dropped from the "active" list
+                    else:
+                        buffer persists in memory until the user downloads/
+                        analyzes it, DELETE /api/feeds/<name>, or a restart
 ```
 
 Buffer limit is **200 MB per named session**. If the stream exceeds this, the session's `truncated` flag is set and additional bytes are discarded. Monitor usage via `GET /api/feeds`.
@@ -444,147 +452,100 @@ Buffer limit is **200 MB per named session**. If the stream exceeds this, the se
 
 | Feature | Description |
 |---|---|
-| File analysis | Parse `.pcap` / `.pcapng` / `.cap` up to 500 MB (configurable); drop multiple files to merge & correlate |
+| File analysis | Parse `.pcap` / `.pcapng` / `.cap`; drop multiple files to queue, analyze locally or save to server storage |
 | Seven analysis tabs | Summary, Anomalies, Flows, TCP, UDP, DNS, Threats |
-| AI assistant | Anthropic Claude or OpenAI GPT — proxied through the local server |
-| Three analysis modes | Specific Issue · Auto-Triage · Security Review |
-| Live feed — tshark/curl | Any remote host with `tshark` streams pcapng directly to the server over HTTP |
+| AI Assistant | Floating chat panel (any page) — Anthropic Claude or OpenAI GPT, proxied through the local server, using the current view's capture context |
+| IP Lookup | Every IP in the Analyzer is clickable: ipinfo.io / ipapi.is / AbuseIPDB / MXToolbox for public IPs (per-user API keys), pktIPAM inventory lookup for private IPs (via Suite Integration) |
+| Live feed — tshark/curl | Any remote host with `tshark` streams pcapng directly to the server over HTTP; independently toggleable on/off |
 | Live feed — Wireshark GUI | Native Wireshark SSH Remote Capture support via the bundled `pktpcap` wrapper script — see [Wireshark GUI remote capture](#wireshark-gui-remote-capture-ssh) |
-| In-app log viewer | SQLite ring-buffer of app logs, queryable from the Logs page; live log-level change from the UI |
+| Persisted captures | Uploaded or feed-saved `.pcapng` files tracked in a `captures` DB table (status: saving/saved/failed/missing) — not just a directory listing |
+| In-app log viewer | SQLite-backed app logs, queryable from the Logs page with pagination; live log-level change from the UI |
 | User management | Create/edit/delete local users with password reset; designate a default admin |
-| Role-based access | `admin`, `analyst`, `viewer` — Settings and log clear require admin |
-| SAML SSO | Okta integration via `python3-saml`, with auto-provisioning and role-sync from Okta attributes on login |
+| Role-based access | `admin`, `analyst`, `viewer` — Settings, log clearing, and admin-only routes enforced server-side |
+| SAML SSO | Okta integration via `python3-saml`, with auto-provisioning and role-sync from IdP attributes on login |
+| Auto-login fallback | If both local auth and SAML are disabled, the Login page calls `/api/auth/auto-login` and signs in as the default admin automatically instead of showing a dead-end form |
 | Alert notifications | Slack, Email (SMTP), PagerDuty, generic Webhook, and Tracecat — each independently enabled with a built-in test-send button |
-| Scheduled + on-demand backups | Snapshots the SQLite DB, `config.json`, and optionally capture storage on an interval, with rotation; "Run Backup Now" and a snapshot browser in Settings |
-| SSL/HTTPS | Auto-detected from `ssl/` directory; custom cert path configurable in Settings |
-| Settings UI | Web UI at `/settings` — no config file editing needed |
+| Scheduled + on-demand backups | Snapshots the SQLite DB and `config.json`/config on an interval, with rotation; "Run Backup Now" in Settings. Restore directly from any listed snapshot (no download/upload needed) or from an uploaded bundle, either restoring everything or just the files you pick |
+| SSL/HTTPS | Upload a PEM cert+key or a PFX/PKCS#12 bundle from the Settings UI; status/expiry shown, no manual file placement required |
+| Settings UI | Web UI at `/settings` — no config file editing needed for anything except startup/infra values |
+| Suite Integration (outbound) | Named connections to sibling `pkt*` apps (currently used for the pktIPAM internal-IP lookup) |
+| Suite Integration (inbound) | Accepts an `X-Suite-Token` header from pktHub (or another suite app) for proxied auth — no separate login flow needed when embedded |
 | Deployment | systemd service on Ubuntu Server 22.04/24.04 LTS (bare metal); no container runtime required |
-| pktHub / Suite integration | Suite-token header auth for embedding in the pktHub dashboard suite; token lives in Settings → Security → Suite Integration |
 
 ---
 
 ## Requirements
 
 - Python 3.10+
-- pip packages: see `service/requirements.txt`
+- Node.js/npm (to build the frontend — see the [Quick Start](#quick-start) note if it's unavailable at install time)
+- pip packages: see `requirements.txt` (repo root)
 - System packages (for SAML): `libxml2-dev`, `libxmlsec1-dev`, `libxmlsec1-openssl`, `pkg-config`, `gcc` (installed by `install.sh`)
 
 ---
 
 ## Configuration
 
-All settings are stored in a SQLite database (`pktpcap.db`). A minimal `config.json` in `service/` tells the server which database to use — it is never committed.
+Configuration is split into two layers:
 
-**`config.json` schema:**
-
-```json
-{
-  "db_type": "sqlite",
-  "db_path": "pktpcap.db"
-}
-```
-
-All settings below live in the SQLite `settings` table and are managed entirely through the web UI at `/settings` — organized into tabs that match the sections below. There is no settings file to hand-edit.
+- **`config.yaml`** — startup/infrastructure settings that must be known before the database connects: `host`, `port`, `workers` (must stay `1`), `install_dir`, `secret_key` (JWT signing), `cors_origins`, `log_level`/`log_file`, `ssl_dir`, `storage_path`. Copy `config.example.yaml` to `<install_dir>/config.yaml` (or point `PKTPCAP_CONFIG` at it) and restart to change any of these. Every path defaults to somewhere under `install_dir`, so nothing needs to be set explicitly unless you want it somewhere else.
+- **SQLite `settings` table** — everything else (capture retention, notification channels, AI provider keys, SAML config, suite integrations, per-user lookup API keys). Managed entirely through the **Settings** UI, organized into tabs: General, Security (Users, Auth, Suite Integration, AI Assistant, SSL/TLS), Data (Storage, Backups), Notifications, User Keys, Captures, Capture Ingest.
 
 ### General
 
-| Key | Default | Description |
-|---|---|---|
-| `app_name` | `pktPCAP` | Displayed in the browser tab and header |
-| `port` | `8765` | Listening port — **restart required** after changing (Settings → General → **Restart Service**) |
-| `timezone` | `UTC` | Affects display of timestamps in the UI |
+| Setting | Description |
+|---|---|
+| App name / branding | Displayed in the browser tab and header |
+| Timezone | Affects display of timestamps in the UI |
 
-### Captures (Data → Storage)
+Port lives in `config.yaml`, not this tab — see [Security → Port](#security--auth) below.
 
-| Key | Default | Description |
-|---|---|---|
-| `storage_path` | — | Directory where capture files are stored |
-| `max_upload_mb` | `500` | Maximum size per uploaded capture file |
-| `storage_quota_gb` | `50` | Total disk quota for all captures |
-| `retention_days` | `90` | Delete captures older than this |
-| `auto_purge` | `false` | Automatically enforce the retention period |
+### Captures (admin only)
 
-### Database (Data → Storage)
+| Setting | Description |
+|---|---|
+| Storage path | Directory where persisted capture files are written — required before feed sessions or uploads can be saved to disk |
+| Retention / quota | Retention window and disk quota for stored captures |
 
-| Key | Default | Description |
-|---|---|---|
-| `db_path` | `pktpcap.db` | SQLite file path — **Test** validates it opens, **Apply** switches to it (restart required) |
+### Capture Ingest (admin only)
 
-### Backups (Data → Backups)
-
-| Key | Default | Description |
-|---|---|---|
-| `auto_backup` | `false` | Enable the scheduled background backup thread |
-| `backup_path` | — | Directory snapshots are written to (falls back to `service/backups/` if unset) |
-| `backup_interval_hours` | `24` | How often the scheduler runs while `auto_backup` is on |
-| `backup_rotation` | `7` | Number of snapshot directories to keep before pruning the oldest |
-| `backup_include_captures` | `false` | Also copy `storage_path` into each snapshot (can be large) |
-
-Each snapshot is a `backup_<timestamp>/` directory containing `pktpcap.db`, `config.json`, and (if enabled) a `captures/` copy. **Run Backup Now** in Settings triggers one immediately; the **Snapshots** table below it lists existing backups with size and file contents. This is the *in-app* backup feature (`service/backup_job.py`) — distinct from the standalone `backup.py` at the repo root, which is a 2-rotation checkout snapshotter for developers (see [Project Structure](#project-structure)).
+| Setting | Description |
+|---|---|
+| `tshark_capture_enabled` | Allow generic tshark/curl pushes to `/api/feed/<name>` |
+| `wireshark_capture_enabled` | Allow the Wireshark SSH Remote Capture wrapper to push |
+| `feed_token` | Bearer token required on every `POST /api/feed/<name>` request |
+| `default_capture_duration_seconds` | Pre-fills the Duration field in the Live Feeds command builder |
 
 ### Notifications
 
-Each channel below has its own enable toggle and a **Test** button (`POST /api/notifications/test`) that sends a real test message using the saved settings.
-
-| Key | Default | Description |
-|---|---|---|
-| `notify_slack_enabled` / `notify_slack_webhook_url` / `notify_slack_channel` | `false` / — / — | Slack incoming webhook |
-| `notify_email_enabled` / `notify_email_smtp_host` / `notify_email_smtp_port` / `notify_smtp_tls` / `notify_email_username` / `notify_email_password` / `notify_email_from` / `notify_email_default_to` | `false` / — / `587` / `true` / — / — / — / — | SMTP email (supports STARTTLS + auth) |
-| `notify_pagerduty_enabled` / `notify_pagerduty_integration_key` | `false` / — | PagerDuty Events API v2 |
-| `notify_webhook_enabled` / `notify_webhook_url` / `notify_webhook_method` / `notify_webhook_payload_template` | `false` / — / `POST` / `{"text":"{{message}}"}` | Generic JSON webhook; template supports `{{message}}`, `{{alert_name}}`, `{{severity}}`, `{{fired_at}}` |
-| `notify_tracecat_enabled` / `notify_tracecat_webhook_url` / `notify_tracecat_api_token` | `false` / — / — | Tracecat webhook integration |
+Each channel has its own enable toggle and a **Test** button (`POST /api/settings/test-notification`) that sends a real test message using the saved settings: **Slack** (incoming webhook), **Email** (SMTP, with STARTTLS + auth), **PagerDuty** (Events API v2), **Webhook** (generic JSON, Jinja2-templated body with `{{message}}`/`{{alert_name}}`/`{{severity}}`/`{{fired_at}}`), **Tracecat**.
 
 ### Security → Users / Auth
 
-| Key | Default | Description |
-|---|---|---|
-| `local_auth_enabled` | `true` | Username/password login using local accounts; disabling hides local login fields (SSO-only) |
-| `session_timeout_minutes` | `480` | Session idle timeout |
-| `okta_saml_enabled` | `false` | Enable Okta SAML 2.0 SSO |
-| `okta_metadata_xml` | — | Paste Okta's IdP metadata XML here — auto-fills entity ID, SSO URL, and cert below |
-| `okta_entity_id` / `okta_sso_url` / `okta_cert` | — | IdP Entity ID, SSO URL, and X.509 cert (auto-filled from metadata XML, or set individually) |
-| `okta_sp_entity_id` | (auto) | Optional custom SP Entity ID; the ACS URL and SP metadata (`/api/auth/saml/metadata`) are read-only/generated |
-| `okta_sp_cert` / `okta_sp_key` | — | Optional SP certificate/key, for signed authentication requests |
-
-SAML users are **auto-provisioned** on first login (Okta access is treated as trusted) and their role is **synced from Okta attributes** (`role`, `Role`, `userRole`, `pktpcap_role`, or `appRole`) on every subsequent login if Okta sends one — otherwise the role set at provisioning time is left alone.
+Local username/password login (JWT access token + httponly refresh-token cookie), Okta SAML 2.0 SSO (auto-provisioned users, role synced from IdP attributes on every login), and a **Change Password** flow for the current user. If both local auth and SAML are disabled, the app signs in automatically as the default admin (`/api/auth/auto-login`) rather than showing a login form with no way in.
 
 ### Security → Suite Integration
 
-The Suite Token (Settings → Security → **Suite Integration**) is what pktHub (or another suite app) uses to authenticate as a forwarded user via the `X-Suite-Token` / `X-Suite-User` / `X-Suite-Role` headers — no separate login flow needed when embedded. Reveal/copy it from Settings and paste it into pktHub's App Registration; **Regen** invalidates the old token immediately (re-register in pktHub afterward).
+Two directions:
+- **Inbound** (`/api/suite/token`, `/api/suite/register`, `/api/suite/regenerate`) — the token pktHub or another suite app uses to authenticate as a forwarded user via `X-Suite-Token`/`X-Suite-User`/`X-Suite-Role` headers.
+- **Outbound** (`/api/integrations/*`) — named connections *to* sibling apps, e.g. a pktIPAM instance used for the internal-IP lookup in [IP Lookup](#ip-lookup-1) below. Multiple named instances per `app_name` are supported.
 
 ### Security → AI Assistant
 
-| Key | Default | Description |
-|---|---|---|
-| `provider` | `anthropic` | AI provider (`anthropic` or `openai`) |
-| `anthropic_key` | — | Anthropic API key — **Test** sends a "Say PONG" round-trip |
-| `anthropic_model` | `claude-opus-4-8` | Also selectable: `claude-sonnet-5`, `claude-haiku-4-5-20251001` |
-| `openai_key` | — | OpenAI API key — **Test** sends a "Say PONG" round-trip |
-| `openai_model` | `gpt-4o` | Also selectable: `gpt-4o-mini`, `o1`, or any model name typed manually |
+| Setting | Description |
+|---|---|
+| Provider | `anthropic` or `openai` |
+| `anthropic_key` / `anthropic_model` | API key + model (default `claude-opus-4-8`; also selectable: `claude-sonnet-5`, `claude-haiku-4-5-20251001`) |
+| `openai_key` / `openai_model` | API key + model (default `gpt-4o`; also selectable: `gpt-4o-mini`, `o1`, or any model name typed manually) |
+
+Both a "Say PONG" key test (`POST /api/ai/test`) and the live chat panel are available.
 
 ### Security → SSL/TLS
 
-| Key | Default | Description |
-|---|---|---|
-| `ssl_enabled` | `false` | Enable HTTPS — **file presence in `ssl/` is authoritative for auto-detection regardless of this flag** (see [SSL / TLS](#ssl--tls)) |
-| `ssl_cert` / `ssl_key` | — | Cert/key paths (overridden by `ssl/server.crt` + `ssl/server.key` if present) |
-| `pfx_mode` / `pfx_path` / `pfx_passphrase` | — | Optional PFX/PKCS#12 cert upload path, converted server-side |
-| `pem_cert_path` / `pem_key_path` | — | Optional PEM cert/key path pair as an alternative to the `ssl/` directory |
+Upload a PEM cert + key pair, or a PFX/PKCS#12 bundle + passphrase (converted server-side with `openssl`) — no manual file placement required. Status (installed/not, expiry, subject/issuer) is shown live. See [SSL / TLS](#ssl--tls) below.
 
 ### User Keys
 
-| Key | Default | Description |
-|---|---|---|
-| `lucid_api_token` | — | Used for diagram export to Lucidchart (app-wide, shared by all users — the only entry in this app-settings table) |
-
-Everything else on this tab is **per-user**, not app-wide config, so it isn't in the table above: each logged-in user stores their own key for AbuseIPDB, ipinfo.io, ipapi.is, MXToolbox, and IPQualityScore via `GET/PUT /api/user-api-keys` — scoped strictly to that user, no shared/admin key, no cross-user visibility. Those keys power `GET /api/ip-info/<ip>` (see [IP Info](#ip-info) in the API Reference below), which combines ipinfo.io geolocation/ASN/org, ipapi.is geolocation/ASN/company/VPN-proxy-Tor-datacenter-abuser detection, AbuseIPDB's abuse confidence score, and MXToolbox's reverse-DNS/ASN/blacklist check — all called for a public IP, run sequentially (not concurrently — this app is synchronous Flask, no event loop to gather against). Private/loopback/reserved addresses are rejected. IPQualityScore can be saved and tested but isn't consumed by the lookup yet. MXToolbox's remaining commands (email/DNS record checks, active probes) are reachable via `POST /api/mxtoolbox/lookup` — see the API Reference.
-
-### Capture Ingest
-
-| Key | Default | Description |
-|---|---|---|
-| `wireshark_capture_enabled` | `false` | Accept live feeds from the `pktpcap` remote-capture wrapper / Wireshark SSH Remote Capture — see [Wireshark GUI remote capture](#wireshark-gui-remote-capture-ssh) |
-| `feed_token` | (auto-generated) | Bearer token required on every `POST /api/feed/<name>` request — shown (with Copy/Rotate) in this tab once Wireshark capture is enabled; also usable with the generic tshark/curl method |
+Per-user API keys for **AbuseIPDB**, **IPQualityScore**, **ipinfo.io**, **ipapi.is**, and **MXToolbox** — scoped strictly to the logged-in user via `GET/PUT /api/user-api-keys/<provider>`, no shared/admin key, no cross-user visibility. Each provider can be individually enabled/disabled for the IP Lookup modal, and ipinfo.io/ipapi.is/MXToolbox further support per-field show/hide (e.g. hide "Company" but keep "Geolocation"). ipapi.is also supports a keyless free-tier toggle.
 
 ---
 
@@ -592,171 +553,170 @@ Everything else on this tab is **per-user**, not app-wide config, so it isn't in
 
 ### Analyzing a capture file
 
-1. Open the app in your browser and log in (the login form submits on Enter from either field, no need to click Sign In)
-2. Drag-and-drop a `.pcap`, `.pcapng`, or `.cap` file onto the upload zone, or click to browse — drop multiple files to merge & correlate them
-3. Choose an analysis mode:
-   - **Specific Issue** — describe a known problem; AI focuses on it
-   - **Auto-Triage** — AI scans for anything suspicious
-   - **Security Review** — security-focused analysis
-4. Click **Run Auto-Triage** (or **Analyze Captures** for specific issue mode)
-5. Results appear across seven tabs — scroll with the `‹` / `›` arrows if not all are visible
+1. Open the app and log in.
+2. Go to **Upload**, drag-and-drop (or browse for) a `.pcap`, `.pcapng`, or `.cap` file.
+3. Click **Analyze (local)** to parse it entirely in the browser without touching the server, or **Analyze & Save** to also persist it to server storage first.
+4. Results appear across seven tabs on the **Analyzer** page.
+5. Optionally, click the floating **✦** button (bottom-right, any page) to ask the AI Assistant a question about the capture currently on screen.
 
 ### Analysis tabs
 
 | Tab | Contents |
 |---|---|
-| **Summary** | Packet count, duration, data size, protocol breakdown, top talkers |
-| **Anomalies** | HIGH-severity rule-based findings (RST rate, retransmissions, etc.) |
-| **Flows** | All conversation flows with packet/byte counts and stream viewer |
-| **TCP** | Health counters — RSTs, retransmissions, zero-window events, problem streams |
-| **UDP** | Large datagrams, one-sided flows, high-rate flows |
-| **DNS** | Query summary — names, record types, response codes |
-| **Threats** | Security findings — port scans, cleartext HTTP, credential risk, and more |
+| **Summary** | Packet count, duration, rate, total size, capture window, protocol breakdown, top talkers (IP-linked) |
+| **Anomalies** | Severity-tagged rule-based findings (RST rate, retransmissions, etc.) |
+| **Flows** | All conversation flows and ports, with packet/byte counts |
+| **TCP** | Health counters — RSTs, failed handshakes, retransmissions, zero-window events, problem streams |
+| **UDP** | Total packets/bytes, per-flow packet/byte counts, one-sided-flow flagging |
+| **DNS** | Query/answer/error counts, per-query answered status and RTT |
+| **Threats** | Severity-tagged security findings with evidence lines (IP-linked) |
+
+### IP Lookup
+
+Click any underlined IP address anywhere in the Analyzer (top talkers, flows, TCP/UDP streams, threat evidence) to open a lookup modal:
+- **Public IPs** — combined ipinfo.io geolocation/ASN/company/privacy-detection/abuse-contact/hosted-domains, ipapi.is geolocation/ASN/company/VPN-Tor-datacenter-abuser detection, AbuseIPDB abuse confidence score, and MXToolbox reverse-DNS/ASN/blacklist checks — using the logged-in user's own stored keys.
+- **Private/RFC1918 IPs** — a pktIPAM inventory lookup (subnet, DHCP lease, DNS records, ARP sightings) over a configured Suite Integration, if one exists.
 
 ### Live feed (remote capture)
 
-pktPCAP can receive a live pcapng stream from a remote host running `tshark` or Wireshark. The server buffers up to 200 MB per named session. The **Live Feeds** page has two tabs matching the two collection methods:
-
-- **tshark** — generic curl-piped stream, works from any host with `tshark` + `curl` (see [Remote Collector — Software & Configuration](#remote-collector--software--configuration))
-- **Wireshark GUI** — native SSH Remote Capture using the bundled `pktpcap` wrapper, giving you a live view in Wireshark itself while pktPCAP buffers the same stream (see [Wireshark GUI remote capture](#wireshark-gui-remote-capture-ssh))
-
-**On the remote host (tshark method):**
-
-```bash
-tshark -i <interface> -w - | curl -s \
-  -H "Authorization: Bearer <feed-token>" \
-  -H "Content-Type: application/octet-stream" \
-  --data-binary @- \
-  "http://<pktpcap-host>/api/feed/<session-name>"
-```
-
-Retrieve the feed token and endpoint from **Settings → Capture Ingest**, then click **Load from Feed** in the Live Feeds page to pull the buffered capture into the normal analysis view.
+pktPCAP can receive a live pcapng stream from a remote host running `tshark` or Wireshark. The **Live Feeds** page has a command builder (session name, interface, BPF filter, duration) with tabs for the two collection methods — see [Data Flow — Mode 2](#mode-2--remote-live-capture-live-feed) above for the full walkthrough.
 
 ---
 
 ## API Reference
 
-All endpoints are served from the app root (default `http://your-host`).
+All endpoints are served from the app root; interactive OpenAPI docs are available at `/api/docs` (Swagger) and `/api/redoc`.
 
-### Settings
-
-| Method | Path | Description |
-|---|---|---|
-| `GET` | `/api/settings` | Return current settings (API keys masked after first 8 chars) |
-| `POST` | `/api/settings` | Save settings; masked key values (containing `•`) are not overwritten |
-
-### AI
+### Auth (`/api/auth`)
 
 | Method | Path | Description |
 |---|---|---|
-| `POST` | `/api/ai` | Proxy a prompt + data array to the configured AI provider |
-| `POST` | `/api/ai/test` | Test the active API key ("Say PONG") |
+| `POST` | `/login` | Local username/password login — returns a JWT access token, sets an httponly refresh-token cookie |
+| `POST` | `/refresh` | Exchange the refresh-token cookie for a new access token |
+| `POST` | `/logout` | Clear the refresh-token cookie |
+| `GET` | `/config` | Which auth methods are available (no auth required — drives the Login page) |
+| `POST` | `/auto-login` | Issue a session for the default admin when both local auth and SAML are disabled |
+| `GET` | `/saml/metadata` | SP metadata XML (register this with the IdP) |
+| `GET` | `/saml/login` | Redirect to the SAML IdP |
+| `POST` | `/saml/callback` | SAML ACS callback — auto-provisions/role-syncs the user |
 
-**`POST /api/ai` body:**
-
-```json
-{
-  "prompt": "Analyze these flows for signs of lateral movement",
-  "data": [{ "type": "text", "text": "..." }]
-}
-```
-
-### Auth
+### Users (`/api/users`)
 
 | Method | Path | Description |
 |---|---|---|
-| `POST` | `/api/login` | Local username/password login |
-| `POST` | `/api/logout` | End session |
-| `GET` | `/api/auth/current-user` | Return current user info and role |
-| `GET` | `/api/auth/saml/login` | Redirect to SAML IdP (if configured) |
-| `POST` | `/api/auth/saml/callback` | SAML Assertion Consumer Service (ACS) callback — auto-provisions/role-syncs the user |
-| `GET` | `/api/auth/saml/metadata` | SP metadata XML (register this with the IdP) |
+| `GET` | `/me` | Current user's own profile |
+| `POST` | `/me/change-password` | Change the current user's own password |
+| `GET` | `` | List all users (admin) |
+| `POST` | `` | Create a user (admin) |
+| `PATCH` | `/{id}` | Update a user (admin) |
+| `PATCH` | `/{id}/reset-password` | Reset a user's password (admin) |
+| `PATCH` | `/{id}/set-default-admin` | Mark a user as the fallback admin for auto-login (admin) |
+| `DELETE` | `/{id}` | Delete a user (admin) |
 
-### Users
-
-| Method | Path | Description |
-|---|---|---|
-| `GET` | `/api/users` | List all users |
-| `POST` | `/api/users` | Create a user |
-| `PUT` | `/api/users/<id>` | Update a user |
-| `DELETE` | `/api/users/<id>` | Delete a user |
-| `POST` | `/api/users/<id>/reset-password` | Reset a user's password |
-| `PATCH` | `/api/users/<id>/set-default-admin` | Mark a user as the default/fallback admin account |
-
-### Notifications
+### Settings (`/api/settings`)
 
 | Method | Path | Description |
 |---|---|---|
-| `POST` | `/api/notifications/test` | Send a real test message on one channel (`slack`, `email`, `pagerduty`, `webhook`, `tracecat`) using saved settings — returns `sent` / `skipped` (channel disabled or unconfigured) / `failed` |
+| `GET` | `` | Return current settings (secret keys hidden from non-admin callers) |
+| `PUT` | `` | Save settings (admin) |
+| `POST` | `/test-notification` | Send a real test message on one channel (admin) |
 
-### Database
-
-| Method | Path | Description |
-|---|---|---|
-| `GET` | `/api/db-config` | Return the current `config.json` (`db_type` / `db_path`) |
-| `POST` | `/api/db-config/test` | Open a candidate SQLite path and run `SELECT 1` without switching to it |
-| `POST` | `/api/db-config` | Switch the active database path |
-
-### Backups
+### System (`/api/system`)
 
 | Method | Path | Description |
 |---|---|---|
-| `POST` | `/api/backup/run` | Run a backup snapshot immediately (same as "Run Backup Now" in Settings) |
-| `GET` | `/api/backup/list` | List existing snapshots — name, size, files, created time |
+| `GET` | `/info` | Version, install dir, port |
+| `POST` | `/restart` | Graceful restart (exits the process; systemd's `Restart=on-failure` brings it back up) |
+| `GET` / `POST` | `/port` | Read/update the listen port in `config.yaml` (takes effect on next restart) |
+| `GET` | `/net-interfaces` | This host's own network interfaces (for the Wireshark-GUI tab only) |
+| `GET` | `/ssl/status` | Installed cert status/expiry |
+| `POST` | `/ssl/upload` | Install a PEM cert + key |
+| `POST` | `/ssl/upload-pfx` | Install from a PFX/PKCS#12 bundle + passphrase |
+| `DELETE` | `/ssl/cert` | Remove the installed cert/key |
+| `GET` | `/backups` | List existing backup snapshots |
+| `POST` | `/backups/run` | Run a backup snapshot immediately |
+| `POST` | `/backups/restore/{snapshot_name}` | Restore directly from an on-server snapshot; optional `?files=pktpcap.db,config.yaml` to restore only some of it |
+| `GET` | `/export` | Download a full backup bundle (`pktpcap.db` + `config.yaml`) as a `.tar.gz` |
+| `POST` | `/import` | Upload a `.tar.gz` bundle to restore from; optional `files` form field restricts which files are restored |
 
-### Suite Integration
-
-| Method | Path | Description |
-|---|---|---|
-| `GET` | `/api/suite/token` | Return the current suite token and whether one is set — for display in Settings |
-| `POST` | `/api/suite/register` | Called **by pktHub** (not by an admin directly) to push/set this app's suite token during registration — body `{"suite_token": "..."}` |
-| `POST` | `/api/suite/regenerate` | Generate a new local suite token, invalidating the old one — re-register in pktHub afterward |
-
-### Logs
-
-| Method | Path | Description |
-|---|---|---|
-| `GET` | `/api/logs` | Query app logs (supports `?level=`, `?logger=`, `?limit=`, `?offset=`) |
-| `GET` | `/api/logs/stats` | Log count by level and logger |
-| `DELETE` | `/api/logs` | Clear all logs **(admin only)** |
-| `POST` | `/api/logs/level?level=DEBUG` | Change the live log level |
-
-### Live Feed
+### AI (`/api/ai`)
 
 | Method | Path | Description |
 |---|---|---|
-| `POST` | `/api/feed/<name>` | Stream pcapng data into a named session |
-| `GET` | `/api/feeds` | List active feed sessions |
-| `GET` | `/api/feeds/<name>/download` | Download buffered pcapng as a file |
-| `DELETE` | `/api/feeds/<name>` | Clear and remove a session |
+| `POST` | `/chat` | Send a question + optional capture context to the configured provider |
+| `POST` | `/test` | Test a provider/key/model combination without saving it ("Say PONG") |
 
-### Server
+### Logs (`/api/logs`)
 
 | Method | Path | Description |
 |---|---|---|
-| `POST` | `/api/restart` | Graceful server restart |
-| `GET` | `/api/health` | Public health check (used by pktHub) |
+| `GET` | `` | Query app logs (supports `?level=`, `?logger=`, `?limit=`, `?offset=`) |
+| `GET` | `/stats` | Log count by level and logger |
+| `DELETE` | `` | Clear all logs (admin only) |
+| `POST` | `/level?level=DEBUG` | Change the live log level |
 
-### User Keys
-
-| Method | Path | Description |
-|---|---|---|
-| `GET` | `/api/user-api-keys` | This user's own keys for `abuseipdb`, `ipinfo`, `ipapi_is`, `ipqualityscore`, `mxtoolbox` |
-| `PUT` | `/api/user-api-keys/<provider>` | Set (or clear, with an empty value) this user's key for a provider |
-| `POST` | `/api/user-api-keys/<provider>/test` | Validate a key against the real provider API using a harmless test IP |
-| `GET` | `/api/whoami` | Current session's username — used to label the User Keys tab |
-
-### IP Info
+### Live Feed (mounted at `/api`)
 
 | Method | Path | Description |
 |---|---|---|
-| `GET` | `/api/ip-info/<ip>` | Combined ipinfo.io + ipapi.is + AbuseIPDB + MXToolbox (ptr/asn/blacklist) lookup for a single public IP, using the caller's own stored keys. Returns 400 for private/loopback/link-local/reserved/multicast addresses. |
+| `GET` | `/capture/wrapper-config` | Unauthenticated — the fields the Wireshark wrapper script needs (enabled flags, feed token, default duration) |
+| `POST` | `/feed/{name}` | Stream pcapng data into a named session (Bearer feed-token auth) |
+| `GET` | `/feeds` | List active feed sessions |
+| `GET` | `/feeds/{name}/download` | Download an active session's buffered bytes |
+| `DELETE` | `/feeds/{name}` | Clear and remove an active session |
 
-### MXToolbox
+### Captures (`/api/captures`)
 
 | Method | Path | Description |
 |---|---|---|
-| `POST` | `/api/mxtoolbox/lookup` | Generic passthrough to any MXToolbox `Lookup` command — body `{"command", "argument", "port"?}`. Covers everything not already auto-wired into `/api/ip-info/<ip>`: email/DNS records (`mx`, `spf`, `dmarc`, `dkim`, `dns`, `txt`, `soa`, `bimi`, `mta-sts`, `tlsrpt`, `a`, `aaaa`) and active probes (`ping`, `trace`, `tcp`, `http`, `https`, `smtp`) that run from MXToolbox's own infrastructure against the target. `dkim` needs `domain:selector`; `tcp` needs `port`. Returns MXToolbox's raw JSON — no response modeling, since nothing in the UI consumes it yet. |
+| `GET` | `` | List persisted captures (DB-backed: status/source/size/created_at) |
+| `POST` | `/upload` | Drag-and-drop upload from the Upload page |
+| `GET` | `/{fname}/download` | Download a persisted capture |
+| `DELETE` | `/{fname}` | Delete the file and its DB row |
+
+### Suite Integration (`/api/suite`, `/api/integrations`)
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/suite/token` | Current inbound suite token, for display in Settings |
+| `POST` | `/suite/register` | Called **by pktHub** to push/set this app's suite token |
+| `POST` | `/suite/regenerate` | Generate a new inbound suite token (admin) |
+| `GET` | `/suite/whoami` | Current session's identity, including suite-forwarded users |
+| `GET` | `/integrations` | List outbound integrations to sibling apps |
+| `POST` | `/integrations` | Create an outbound integration |
+| `PUT` | `/integrations/{id}` | Update an outbound integration |
+| `DELETE` | `/integrations/{id}` | Delete an outbound integration |
+| `POST` | `/integrations/{id}/test` | Health-check a configured integration |
+
+### User Keys (`/api/user-api-keys`)
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `` | Current user's own keys for `abuseipdb`, `ipqualityscore`, `ipinfo`, `ipapi_is`, `mxtoolbox` |
+| `PUT` | `/{provider}` | Set (or clear) the current user's key for a provider |
+| `PUT` | `/{provider}/enabled` | Toggle whether a provider's section shows in the IP Lookup modal |
+| `PUT` | `/ipapi_is/free-tier` | Use ipapi.is's keyless free tier instead of a stored key |
+| `PUT` | `/ipinfo/fields` / `/ipapi_is/fields` / `/mxtoolbox/fields` | Per-field show/hide preferences for that provider's modal section |
+| `POST` | `/{provider}/test` | Validate a key against the real provider API using a harmless test IP |
+
+### IP Info (`/api/ip-info`)
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/{ip}` | Combined ipinfo.io + ipapi.is + AbuseIPDB + MXToolbox lookup for a public IP, using the caller's own keys. 400 for private/loopback/reserved addresses |
+| `GET` | `/internal/{ip}` | pktIPAM inventory lookup (subnet/lease/DNS/ARP) for a private IP, over a configured Suite Integration. 400 for public addresses |
+
+### MXToolbox (`/api/mxtoolbox`)
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/lookup` | Generic passthrough to any MXToolbox `Lookup` command — body `{"command", "argument", "port"?}` |
+
+### Health
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/health` | Public health check (used by pktHub / monitoring) |
 
 ---
 
@@ -764,82 +724,101 @@ All endpoints are served from the app root (default `http://your-host`).
 
 ```
 pktpcap/
-├── service/                    ← Application source (copied to the install dir by install.sh)
-│   ├── server.py               ← Flask entry point — all routes, SAML, notifications, feeds
-│   ├── db.py                   ← SQLite database layer, default settings, admin bootstrap
-│   ├── backup_job.py           ← In-app scheduled/on-demand backup engine (Settings → Data → Backups)
-│   ├── suite_client.py         ← pktpcap-as-client helper for calling a sibling pkt* app's suite API (not yet wired to a UI feature)
-│   ├── logging_handler.py      ← SQLite async log ring-buffer
-│   ├── requirements.txt
-│   ├── config.json             ← Runtime config ({db_type, db_path}) — GITIGNORED
-│   ├── static/
-│   │   ├── index.html          ← Full single-page app (upload/analyze, live feeds, logs) — server-rendered via Flask + static assets, not a React SPA
-│   │   ├── nav.js              ← Shared sidebar nav component
-│   │   └── logo.png
-│   ├── pktpcap                  ← Remote-capture wrapper script (renamed from pkt-capture) — used by Wireshark's SSH Remote Capture; installed at <install_dir>/pktpcap with __PORT__ substituted by install.sh
-│   └── templates/
-│       ├── login.html          ← Login page (local auth + SSO; Enter-to-submit)
-│       └── settings.html       ← Settings UI (admin only) — General/Captures/Notifications/User Keys/Capture Ingest/Security (Users, Auth, Suite Integration, AI Assistant, SSL)/Data (Storage, Backups)
+├── app/                          ← Current FastAPI backend (used by install.sh / systemd)
+│   ├── main.py                   ← FastAPI app, router registration, SPA static-file serving
+│   ├── server.py                 ← uvicorn entry point (python -m app.server)
+│   ├── config.py                 ← pydantic-settings — reads config.yaml + PKTPCAP_* env vars
+│   ├── database.py                ← aiosqlite engine, migration runner, admin seeding
+│   ├── dependencies.py           ← auth dependencies (JWT + suite-token), role guards
+│   ├── logging_handler.py        ← SQLite log ring-buffer handler
+│   ├── backup.py                 ← Scheduled/on-demand backup job
+│   ├── api/                      ← One router module per feature: auth, users, settings,
+│   │                                system, logs, integrations, suite, user_api_keys,
+│   │                                ip_info, mxtoolbox, ai, captures, feeds
+│   ├── auth/                     ← local.py (JWT/bcrypt), saml.py (Okta SSO)
+│   ├── capture/                  ← auth.py (feed-token check), feed_sessions.py (in-memory
+│   │                                buffers), storage.py (disk persistence), reconcile.py
+│   │                                (background task reconciling captures vs disk)
+│   └── integrations/              ← suite_client.py (outbound calls to sibling pkt* apps)
 │
-├── install.sh                   ← Interactive Ubuntu Server install script (see Installation)
-├── pktpcap.service              ← systemd unit template (placeholders substituted by install.sh)
-├── backup.py                    ← Standalone dev-machine checkout backup (2-rotation) — NOT the in-app feature; see backup_job.py above
+├── frontend/                     ← React 18 + Vite SPA (current)
+│   ├── src/
+│   │   ├── App.tsx               ← Routes: /, /live-feeds, /upload, /analyzer, /logs, /settings
+│   │   ├── pages/                ← Dashboard, LiveFeeds, Upload, Analyzer, Logs, Settings, Login
+│   │   ├── components/           ← Layout (sidebar nav), HelpButton, AiAssistant, IpLink, Pagination
+│   │   ├── lib/pcap/              ← Client-side pcap/pcapng parser + rule-based analyzer (TypeScript)
+│   │   ├── api/client.ts         ← Typed fetch wrapper for every backend endpoint
+│   │   └── store/auth.tsx        ← JWT auth context (access token in memory, refresh via cookie)
+│   ├── dist/                     ← Build output (gitignored) — this is what FastAPI serves
+│   └── vite.config.ts            ← Dev server on :5176, proxies /api to :8765
+│
+├── migrations/                    ← Idempotent SQL, applied in order at startup
+│   ├── 001_initial.sql            ← users, settings, app_logs, integrations, user_api_keys
+│   └── 002_captures.sql           ← captures table
 │
 ├── scripts/
-│   └── verify_deploy.py         ← SSH into a deployed host and check service/port/health
+│   ├── pktpcap                    ← Remote-capture wrapper script (source of truth) — copied to
+│   │                                 <install_dir>/pktpcap by install.sh with __PORT__ substituted
+│   └── verify_deploy.py           ← SSH into a deployed host and check service/port/health
 │
-├── ssl/                        ← SSL certs — GITIGNORED (place certs here)
+├── install.sh                     ← Interactive Ubuntu Server install script (see Installation)
+├── pktpcap.service                ← systemd unit template (placeholders substituted by install.sh)
+├── config.example.yaml            ← Template for config.yaml (copied + filled in by install.sh)
+├── requirements.txt                ← Python dependencies for app/ (current backend)
+├── backup.py                      ← Standalone dev-machine checkout backup (2-rotation) — NOT
+│                                     the in-app feature (that's app/backup.py)
+│
+├── service/                       ← LEGACY. The original Flask/Jinja app pktPCAP shipped as before
+│                                     the 2026-07-26 rebuild. Left in the tree for reference only —
+│                                     install.sh, pktpcap.service, and requirements.txt no longer
+│                                     touch it, and it is not what a fresh install runs. Has its
+│                                     own service/requirements.txt from before the rebuild.
+│
+├── ssl/                           ← SSL certs — GITIGNORED (place certs here, or upload via Settings)
 │   └── .gitkeep
 │
 ├── favicon.ico / favicon.svg / icon-*.png ← App icons
-└── lockup-*.png / lockup.svg   ← Logo assets
+└── lockup-*.png / lockup.svg      ← Logo assets
 ```
 
-pktPCAP is **server-rendered** (Flask serving static HTML/JS + Jinja templates), not a React/Vite single-page app like some sibling `pkt*` tools — there's no separate frontend build step; editing `service/static/index.html` or the templates takes effect on the next request (or `POST /api/restart`).
+pktPCAP is a **React 18 / Vite SPA** served by FastAPI (`app/main.py` mounts `frontend/dist` and falls back to `index.html` for client-side routing). Editing frontend source requires `npm run build` (or `npm run dev` against the `:5176` dev server, which proxies `/api` to `:8765`) — there's no live-reload of raw TS/TSX by the production server, unlike the old Flask/Jinja app.
 
 ---
 
 ## SSL / TLS
 
-pktPCAP auto-detects SSL at startup by checking for `ssl/server.crt` and `ssl/server.key` relative to `server.py`. **File presence is authoritative** — the `ssl_enabled` database flag is not used for auto-detection. Place your cert and key in the `ssl/` directory and restart; pktPCAP will serve HTTPS automatically.
-
-For PFX/PKCS#12 cert conversion:
-```bash
-openssl pkcs12 -in cert.pfx -clcerts -nokeys -out ssl/server.crt
-openssl pkcs12 -in cert.pfx -nocerts -nodes  -out ssl/server.key
-```
+Install a certificate from **Settings → Security → SSL/TLS**: either a PEM cert + key pair, or a PFX/PKCS#12 bundle + passphrase (the server extracts it to PEM via `openssl` internally). Files are written to `ssl_dir` (default `<install_dir>/ssl`) as `server.crt` / `server.key`. Status, expiry, subject, and issuer are shown live via `GET /api/system/ssl/status`, which shells out to `openssl x509` to read the installed cert's metadata.
 
 The `ssl/` directory is gitignored — never commit certificate material.
 
 ---
 
-## Sidebar / Navigation
+## Architecture Notes
 
-`service/static/nav.js` is a shared component used by both `index.html` and `settings.html`. It renders the sidebar navigation and handles role-based visibility:
-- Settings link is hidden for non-admin roles
-- Clear Logs button is hidden for non-admin roles
+**Path resolution:** `app/config.py` resolves a single `install_dir` (from `$PKTPCAP_INSTALL_DIR` → the directory the loaded `config.yaml` lives in → cwd) and every other on-disk path (`db_path`, `log_file`, `ssl_dir`, `storage_path`) defaults to somewhere under it — no source file hardcodes an absolute install path.
 
-Both pages fetch `/api/auth/current-user` to populate the user/logout footer.
+**Auth:** JWT access tokens (15 min expiry, `HS256`) + an httponly refresh-token cookie (7 days) for local login; `bcrypt` password hashing via `passlib`. A separate trust path exists for `X-Suite-Token`: if it matches the configured `suite_token`, the request is treated as the forwarded `X-Suite-User`/`X-Suite-Role` identity with no token of its own (`app/dependencies.py::get_current_user`).
+
+**Feed sessions:** held entirely in the single worker process's memory (`app/capture/feed_sessions.py`) — this is why `workers` must stay `1` in `config.yaml`. A `ReconcileTask` runs in the background reconciling the `captures` DB table against what's actually on disk (catches crashes mid-write, manual file deletion, or `storage_path` changing under a running process).
+
+**Backup scheduler:** `app/backup.py` starts a background task at boot that sleeps for `backup_interval_hours` and runs a snapshot whenever `auto_backup` is on; "Run Backup Now" (`POST /api/system/backups/run`) calls the same function directly, outside the schedule.
+
+**Server restart:** `POST /api/system/restart` schedules `os._exit(1)` after a short delay and relies on the systemd unit's `Restart=on-failure` to bring the process back up — unlike the old Flask app, it does not self-`Popen` a replacement process (that pattern was found to occasionally leave an orphaned, systemd-untracked process squatting on the port).
+
+**AI:** the floating `AiAssistant` component POSTs `{question, context}` to `/api/ai/chat`; the server forwards it to Anthropic or OpenAI with a system prompt tuned for packet/capture troubleshooting and returns the answer. API keys never leave the host.
+
+**pktHub / Suite integration:** inbound — the app accepts an `X-Suite-Token` header on every request; a matching token establishes the forwarded user/role with no separate login. Outbound — `app/integrations/suite_client.py` lets pktPCAP call a sibling app's own suite API (currently used to query pktIPAM for internal-IP lookups).
 
 ---
 
-## Architecture Notes
+## Known Limitations
 
-**Path resolution:** `BASE = Path(__file__).parent` throughout — the server resolves all paths (static files, `ssl/`, `config.json`, screenshots) relative to `server.py`, regardless of the current working directory it's launched from.
+- **tshark interface field has no remote-host awareness.** The Live Feeds interface field's autocomplete suggestions come from `GET /api/system/net-interfaces` — pktPCAP's own host — which is only actually relevant to the Wireshark-GUI tab (where Wireshark SSHes into this same host). For the generic tshark/curl method, you must know and type the *remote* capture host's real interface name yourself (`tshark -D` on that host); the field is free-text and the mismatch is explained in its help text rather than fixed at the UI level.
+- **Legacy `service/` tree.** The pre-rebuild Flask/Jinja app is still present in the repository for reference but is dead code — `install.sh`, `pktpcap.service`, and the root `requirements.txt` no longer reference it. It has its own separate `service/requirements.txt` and should not be edited expecting it to affect a running instance.
+- **No upgrade path from the pre-rebuild database.** The FastAPI rebuild uses a fresh schema (`migrations/001_initial.sql`) — user accounts and settings from a pre-2026-07-26 Flask-based install are not carried forward automatically.
+- **Single-worker constraint.** `workers` must stay at `1` because live feed sessions are held in one process's memory — this rules out horizontal scaling of the backend process without a redesign of feed storage.
 
-**Backup scheduler:** `service/backup_job.py` starts a daemon thread at boot that sleeps for `backup_interval_hours` and runs a snapshot whenever `auto_backup` is on; "Run Backup Now" and `POST /api/backup/run` call the same `run_backup()` function directly, outside the schedule.
-
-**Remote-capture wrapper:** `service/pktpcap` (installed at `<install_dir>/pktpcap`) is invoked by Wireshark as its SSH Remote Capture command in place of `dumpcap`. It checks `wireshark_capture_enabled` via `/api/settings`, then tees `dumpcap`'s output: one stream goes back over the SSH pipe to Wireshark's GUI, the other is POSTed to this server's own `/api/feed/<name>` endpoint using the same feed-token auth as the generic tshark method.
-
-**AI proxy:** The frontend calls `localAsk(prompt, dataArray)` which POSTs to `/api/ai`. The server forwards the request to Anthropic or OpenAI and streams the response back. API keys never leave the host.
-
-**Log capture:** A background daemon thread drains a `queue.Queue` of log records into the `app_logs` SQLite table. The ring buffer is capped at 10,000 rows; oldest rows are purged on each flush cycle.
-
-**Server restart:** `POST /api/restart` spawns `subprocess.Popen([sys.executable] + sys.argv)`, then calls `os._exit(0)` after 0.8 s. The new process is ready before the old one exits — the browser reconnects automatically.
-
-**API key masking:** `GET /api/settings` returns keys as `sk-ant-api0•••...`. `POST /api/settings` skips overwriting a field if the submitted value contains a `•` character, preventing accidental key erasure.
-
-**pktHub integration:** The app accepts an `X-Suite-Token` header on every request. A matching token establishes a Flask session as the forwarded user/role, enabling pktHub to proxy requests without a separate login flow.
+If you're tracking a specific older bug list against this app, re-verify it against current code first — the 2026-07-26 FastAPI/React rebuild (`git log`: "Rebuild pktPCAP as FastAPI + React, matching the pkt* suite framework") explicitly rewrote the capture-persistence, Live Feeds copy/refresh, token-display, and tshark-allow-toggle screens as part of the same change, so bug reports filed against the pre-rebuild UI may no longer apply.
 
 ---
 
@@ -847,8 +826,8 @@ Both pages fetch `/api/auth/current-user` to populate the user/logout footer.
 
 | Provider | Models |
 |---|---|
-| Anthropic | `claude-opus-4-8`, `claude-sonnet-5`, `claude-haiku-4-5-20251001` |
-| OpenAI | `gpt-4o`, `gpt-4o-mini`, `o1`, and any model name entered manually |
+| Anthropic | `claude-opus-4-8` (default), `claude-sonnet-5`, `claude-haiku-4-5-20251001` |
+| OpenAI | `gpt-4o` (default), `gpt-4o-mini`, `o1`, and any model name entered manually |
 
 ---
 

@@ -76,7 +76,7 @@ const NAV = [
   { to: '/settings',   label: 'Settings',   icon: '⚙', adminOnly: true, dividerBefore: true },
 ]
 
-export default function Layout({ children }: { children: ReactNode }) {
+export default function Layout({ children, chromeless = false }: { children: ReactNode; chromeless?: boolean }) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [showChangePw, setShowChangePw] = useState(false)
@@ -86,11 +86,23 @@ export default function Layout({ children }: { children: ReactNode }) {
     navigate('/login')
   }
 
+  // Chromeless: embedded via pkthub's remote-settings iframe — no sidebar,
+  // no header, just the page content. pktPCAP's Layout doesn't wrap any
+  // context providers of its own (auto-refresh state lives per-page), so
+  // there's nothing else to preserve here.
+  if (chromeless) {
+    return (
+      <div className="bg-gray-950 text-white min-h-screen p-5">
+        {children}
+      </div>
+    )
+  }
+
   return (
     <div className="flex h-screen bg-gray-950 text-white overflow-hidden">
       <aside className="w-52 flex-shrink-0 bg-gray-900 border-r border-gray-800 flex flex-col">
         <div className="flex items-center px-3 py-3 border-b border-gray-800">
-          <img src="/lockup-64h.png" alt="pktPCAP" className="w-full h-auto" />
+          <img src="lockup-64h.png" alt="pktPCAP" className="w-full h-auto" />
         </div>
 
         <nav className="flex-1 px-2 py-4 space-y-0.5">
