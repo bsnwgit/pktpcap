@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import re
+from typing import Optional
 
 import aiosqlite
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
@@ -63,8 +64,18 @@ async def wrapper_config():
 
 
 @router.post("/feed/{name}", dependencies=[Depends(require_feed_token)])
-async def receive_feed(name: str, request: Request):
-    """Streaming endpoint — tshark/Wireshark pushes raw pcapng bytes here."""
+async def receive_feed(name: str, request: Request, owner: Optional[int] = None):
+    """Streaming endpoint — tshark/Wireshark pushes raw pcapng bytes here.
+
+    `owner` (optional query param) is the pktPCAP user id that generated
+    this push command — embedded by the Live Feeds page's tshark/curl
+    command builder for the currently signed-in user, purely so the
+    resulting capture can be attributed for the sharing feature (see
+    app/api/captures.py). It is not a security control — feed_token is what
+    actually authorizes the push; a bogus/absent owner just leaves the
+    resulting capture unowned (visible to everyone), same as before this
+    feature existed.
+    """
     if not _FEED_NAME_RE.match(name):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -84,6 +95,8 @@ async def receive_feed(name: str, request: Request):
     manager = request.app.state.feed_sessions
     session = await manager.get_or_create(name, request.client.host if request.client else "unknown")
     session.connected = True
+    if owner is not None:
+        session.owner_user_id = owner
 
     try:
         async for chunk in request.stream():

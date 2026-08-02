@@ -34,6 +34,15 @@ class FeedSession:
         self.truncated = False
         self._buf = bytearray()
         self._lock = asyncio.Lock()
+        # Set from the optional ?owner=<user_id> query param on the ingest
+        # POST — the push itself is authenticated by feed_token, not a user
+        # login, so this is just bookkeeping for the captures-sharing
+        # feature (whose capture this becomes once persisted), not a
+        # security boundary. None for pushes that don't supply it (e.g. the
+        # Wireshark SSH wrapper script, which has no pktPCAP user context at
+        # all — those stay unowned and visible to everyone, same as before
+        # this feature existed).
+        self.owner_user_id: Optional[int] = None
 
     async def append(self, data: bytes) -> None:
         async with self._lock:
