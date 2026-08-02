@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
 import HelpButton from '../components/HelpButton'
 import IpLink, { linkifyIps } from '../components/IpLink'
+import Spinner from '../components/Spinner'
 import { parsePCAP, analyzePackets, fmtBytes, safeIso, type AnalysisResult } from '../lib/pcap'
 
 type LocationState =
@@ -97,7 +98,7 @@ export default function Analyzer() {
     )
   }
 
-  if (loading) return <div className="flex items-center justify-center h-48 text-white text-sm">Parsing {label || 'capture'}…</div>
+  if (loading) return <div className="flex items-center justify-center h-48"><Spinner label={`Parsing ${label || 'capture'}…`} /></div>
   if (error) return <div className="bg-red-900/30 border border-red-700/50 rounded-lg px-4 py-3 text-sm text-red-300 max-w-lg mx-auto mt-8">{error}</div>
   if (!result) return null
 
