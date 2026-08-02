@@ -157,7 +157,11 @@ export const api = {
     }),
 
   // -- System ---------------------------------------------------------------------
-  getSystemInfo: () => request<{ version: string; install_dir: string; port: number }>('/system/info'),
+  getSystemInfo: () =>
+    request<{
+      app_name: string; version: string; install_dir: string; port: number
+      github: string; license: string; developer: string; contact: string
+    }>('/system/info'),
   browseFs: (path: string) => request<{ path: string; parent: string | null; entries: Array<{ name: string; path: string; is_dir: boolean }> }>(
     `/system/browse-fs${path ? `?path=${encodeURIComponent(path)}` : ''}`
   ),
