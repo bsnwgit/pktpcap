@@ -40,11 +40,17 @@ if [ -z "$TOKEN" ]; then
 fi
 
 # Tee: stdout -> Wireshark via SSH, process sub -> pktPCAP feed
+#
+# -T - (not --data-binary @-): --data-binary reads all of stdin into memory
+# to compute a Content-Length before sending anything, so the whole capture
+# would upload in one burst only once dumpcap exits — it would never appear
+# as an active feed session while running. -T - streams via chunked
+# Transfer-Encoding as dumpcap produces data. -T defaults to PUT, hence the
+# explicit -X POST override.
 "$DUMPCAP" "$@" | tee >(
     curl -s -X POST \
         -H "Authorization: Bearer ${TOKEN}" \
-        -H "Content-Type: application/octet-stream" \
-        --data-binary @- \
+        -T - \
         "http://localhost:__PORT__/api/feed/${FEED_NAME}" \
         >/dev/null 2>&1
 )
