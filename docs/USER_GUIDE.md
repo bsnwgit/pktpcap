@@ -10,7 +10,7 @@ Roles: `admin`, `analyst`, `viewer` — Settings, log clearing, and admin routes
 
 ## Navigation
 
-**Dashboard**, **Live Feeds**, **Upload**, **Analyzer**, **Logs**. **Settings** appears only for admins.
+Sidebar pages: **Dashboard**, **Live Feeds**, **Upload**, **Logs**, **Settings** (admin-only). **Analyzer** isn't a standalone sidebar link — you land there automatically after analyzing a capture from Upload.
 
 ## Analyzing a capture file
 
@@ -50,3 +50,7 @@ Browse the app's own log history, with pagination.
 ## Your account
 
 Manage your own password from the user menu. Your personal IP-lookup API keys live under Settings → User Keys, private to your account.
+
+## Getting help in the app
+
+Click **Documentation** in the sidebar (just above your account info) to open this guide and the Administrator Guide as in-app tabs, so you don't need the repo checked out to read them.
