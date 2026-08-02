@@ -644,10 +644,40 @@ function SiblingIntegrations() {
 }
 
 // -- User Keys tab (personal, per-user external API keys) -------------------------
-// Providers with their own section in the IP Lookup modal (IpLink.tsx) —
-// these get a "show in IP Lookup modal" checkbox. ipqualityscore has no
-// modal section (its key exists only for other consumers), so it's excluded.
-const MODAL_PROVIDERS = ['ipinfo', 'ipapi_is', 'abuseipdb', 'mxtoolbox']
+// Providers whose response the user can filter down to specific sections in
+// the IP Lookup modal. Keyed by provider id; each entry's field keys match
+// what the backend's IPINFO_FIELDS / IPAPI_IS_FIELDS constants accept.
+const FIELD_SETS: Record<string, { key: string; label: string }[]> = {
+  ipinfo: [
+    { key: 'geolocation', label: 'Geolocation' },
+    { key: 'asn',         label: 'ASN / Org' },
+    { key: 'company',     label: 'Company' },
+    { key: 'privacy',     label: 'Privacy Detection (VPN/Proxy/Tor)' },
+    { key: 'abuse',       label: 'Abuse Contact' },
+    { key: 'domains',     label: 'Hosted Domains' },
+  ],
+  ipapi_is: [
+    { key: 'geolocation', label: 'Geolocation' },
+    { key: 'asn',         label: 'ASN / Org' },
+    { key: 'company',     label: 'Company' },
+    { key: 'detection',   label: 'Threat Detection (VPN/Proxy/Tor/Datacenter)' },
+    { key: 'abuse',       label: 'Abuse Contact' },
+  ],
+  mxtoolbox: [
+    { key: 'ptr',       label: 'Reverse DNS (PTR)' },
+    { key: 'asn',       label: 'ASN' },
+    { key: 'blacklist', label: 'Blacklist Check' },
+  ],
+}
+const setFieldsApi: Record<string, (fields: string[]) => Promise<UserApiKey>> = {
+  ipinfo: api.setIpinfoFields,
+  ipapi_is: api.setIpapiIsFields,
+  mxtoolbox: api.setMxtoolboxFields,
+}
+// The 5 providers with a section in the IP Lookup modal — AbuseIPDB and
+// IPQualityScore have no per-field checkboxes (single score, not multiple
+// sections) but still get the modal-section on/off toggle.
+const MODAL_PROVIDERS = ['ipinfo', 'ipapi_is', 'abuseipdb', 'mxtoolbox', 'ipqualityscore']
 
 function ApiKeysTab({ lucidToken, onLucidChange, lucidSave }: {
   lucidToken: string
@@ -663,6 +693,40 @@ function ApiKeysTab({ lucidToken, onLucidChange, lucidSave }: {
   const [error, setError]     = useState<Record<string, string>>({})
   const [testing, setTesting] = useState<Record<string, boolean>>({})
   const [testResult, setTestResult] = useState<Record<string, { ok: boolean; detail: string }>>({})
+  const [fieldsError, setFieldsError] = useState('')
+
+  async function handleToggleField(provider: string, fieldKey: string, checked: boolean) {
+    const providerKey = keys.find(k => k.provider === provider)
+    const current = providerKey?.enabled_fields ?? FIELD_SETS[provider].map(f => f.key)
+    const next = checked ? [...current, fieldKey] : current.filter(f => f !== fieldKey)
+    setFieldsError('')
+    try {
+      const updated = await setFieldsApi[provider](next)
+      setKeys(prev => prev.map(k => k.provider === provider ? updated : k))
+    } catch (err: any) {
+      setFieldsError(err.message ?? 'Failed to save')
+    }
+  }
+
+  async function handleToggleFreeTier(checked: boolean) {
+    setFieldsError('')
+    try {
+      const updated = await api.setIpapiIsFreeTier(checked)
+      setKeys(prev => prev.map(k => k.provider === 'ipapi_is' ? updated : k))
+    } catch (err: any) {
+      setFieldsError(err.message ?? 'Failed to save')
+    }
+  }
+
+  async function handleToggleEnabled(provider: string, checked: boolean) {
+    setFieldsError('')
+    try {
+      const updated = await api.setProviderEnabled(provider, checked)
+      setKeys(prev => prev.map(k => k.provider === provider ? updated : k))
+    } catch (err: any) {
+      setFieldsError(err.message ?? 'Failed to save')
+    }
+  }
 
   function load() {
     setLoading(true)
@@ -701,20 +765,6 @@ function ApiKeysTab({ lucidToken, onLucidChange, lucidSave }: {
     }
   }
 
-  async function handleToggleEnabled(provider: string, checked: boolean) {
-    try {
-      const updated = await api.setProviderEnabled(provider, checked)
-      setKeys(prev => prev.map(k => k.provider === provider ? updated : k))
-    } catch {}
-  }
-
-  async function handleToggleFreeTier(checked: boolean) {
-    try {
-      const updated = await api.setIpapiIsFreeTier(checked)
-      setKeys(prev => prev.map(k => k.provider === 'ipapi_is' ? updated : k))
-    } catch {}
-  }
-
   const inp = 'w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-sky-500 font-mono'
 
   return (
@@ -722,7 +772,7 @@ function ApiKeysTab({ lucidToken, onLucidChange, lucidSave }: {
       <div className="flex items-center gap-2">
         <h2 className="text-lg font-semibold text-white">User Keys</h2>
         <HelpButton title="User Keys — How It Works">
-          <p>External API keys for lookup tools (IP reputation, geolocation, DNS/blacklist intel, etc.) are <span className="text-gray-300 font-medium">personal, not shared</span> — each user stores their own key here under their own account, and only that user's own requests use it. Nobody else, including admins, can see the key's value.</p>
+          <p>External API keys for lookup tools (IP reputation, geolocation, etc.) are <span className="text-gray-300 font-medium">personal, not shared</span> — each user stores their own key here under their own account, and only that user's own requests use it. Nobody else, including admins, can see the key's value.</p>
           <p>Leave a field blank and save to clear a key.</p>
         </HelpButton>
       </div>
@@ -734,8 +784,10 @@ function ApiKeysTab({ lucidToken, onLucidChange, lucidSave }: {
         <p className="text-sm text-white">Loading…</p>
       ) : (
         <div className="space-y-4 max-w-lg">
-          {keys.map(k => (
-            <div key={k.provider}>
+          {keys.map(k => {
+            const isFreeTier = k.provider === 'ipapi_is' && k.free_tier
+            return (
+            <div key={k.provider} className="pb-4 border-b-2 border-gray-600 last:border-0 last:pb-0">
               <label className="block text-xs text-white mb-1">{k.label}</label>
               {MODAL_PROVIDERS.includes(k.provider) && (
                 <label className="flex items-center gap-2 text-xs text-white cursor-pointer mb-1.5">
@@ -756,7 +808,7 @@ function ApiKeysTab({ lucidToken, onLucidChange, lucidSave }: {
                     onChange={e => handleToggleFreeTier(e.target.checked)}
                     className="accent-sky-600"
                   />
-                  Use free tier (1,000 req/day, no key required)
+                  Use free tier (no key required, ~1,000 lookups/day)
                 </label>
               )}
               <div className="flex items-center gap-2">
@@ -765,18 +817,19 @@ function ApiKeysTab({ lucidToken, onLucidChange, lucidSave }: {
                   value={drafts[k.provider] ?? ''}
                   onChange={e => setDrafts(d => ({ ...d, [k.provider]: e.target.value }))}
                   placeholder="Not set"
-                  className={inp}
+                  disabled={isFreeTier}
+                  className={`${inp} ${isFreeTier ? 'opacity-40 cursor-not-allowed' : ''}`}
                 />
                 <button
                   onClick={() => handleTest(k.provider)}
-                  disabled={testing[k.provider] || !(drafts[k.provider] ?? '').trim()}
+                  disabled={isFreeTier || testing[k.provider] || !(drafts[k.provider] ?? '').trim()}
                   className="shrink-0 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-white text-sm font-medium rounded-lg px-4 py-2 transition-colors disabled:opacity-50"
                 >
                   {testing[k.provider] ? 'Testing…' : 'Test'}
                 </button>
                 <button
                   onClick={() => handleSave(k.provider)}
-                  disabled={saving[k.provider]}
+                  disabled={isFreeTier || saving[k.provider]}
                   className="shrink-0 bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-white text-sm font-medium rounded-lg px-4 py-2 transition-colors"
                 >
                   {saving[k.provider] ? 'Saving…' : 'Save'}
@@ -789,8 +842,27 @@ function ApiKeysTab({ lucidToken, onLucidChange, lucidSave }: {
                   {testResult[k.provider].ok ? '✓ ' : '✗ '}{testResult[k.provider].detail}
                 </p>
               )}
+              {FIELD_SETS[k.provider] && (
+                <div className="mt-3 pl-1">
+                  <p className="text-xs text-gray-500 mb-1.5">Shown in the IP Lookup modal:</p>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+                    {FIELD_SETS[k.provider].map(f => (
+                      <label key={f.key} className="flex items-center gap-2 text-xs text-white cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={k.enabled_fields ? k.enabled_fields.includes(f.key) : true}
+                          onChange={e => handleToggleField(k.provider, f.key, e.target.checked)}
+                          className="accent-sky-600"
+                        />
+                        {f.label}
+                      </label>
+                    ))}
+                  </div>
+                  {fieldsError && <p className="text-xs text-red-400 mt-1">{fieldsError}</p>}
+                </div>
+              )}
             </div>
-          ))}
+          )})}
         </div>
       )}
 
@@ -815,7 +887,7 @@ function ApiKeysTab({ lucidToken, onLucidChange, lucidSave }: {
         </div>
         {lucidSave.saved && <p className="text-xs text-green-400 mt-1">Saved</p>}
         {lucidSave.error && <p className="text-xs text-red-400 mt-1">{lucidSave.error}</p>}
-        <p className="text-xs text-gray-500 mt-1">Personal Access Token from lucid.co → Account → API Tokens. Enables exporting diagrams into Lucidchart.</p>
+        <p className="text-xs text-gray-500 mt-1">Personal Access Token from lucid.co → Account → API Tokens. Required for topology export to Lucidchart.</p>
       </div>
     </div>
   )
