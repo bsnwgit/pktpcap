@@ -22,6 +22,7 @@ from pydantic import BaseModel
 from app.config import get_settings
 from app.dependencies import AdminUser, CurrentUser
 from app.backup import run_backup_sync, list_backups_sync, _read_backup_settings_sync
+from app.version import get_version
 
 router = APIRouter()
 
@@ -42,12 +43,18 @@ def _config_file_path() -> Path:
 
 
 @router.get("/info")
-async def system_info(user: CurrentUser):
-    settings = get_settings()
+async def system_info(user: CurrentUser) -> dict:
+    """Version/about info shown on the Settings → System tab."""
+    cfg = get_settings()
     return {
-        "version": "0.1.0",
-        "install_dir": settings.install_dir,
-        "port": settings.port,
+        "app_name": "pktPCAP",
+        "version": get_version(),
+        "install_dir": cfg.install_dir,
+        "port": cfg.port,
+        "github": "https://github.com/bsnwgit/pktpcap",
+        "license": "PolyForm Noncommercial 1.0.0",
+        "developer": "Robert Barnett",
+        "contact": "inquiry@barsoftnetware.com",
     }
 
 
