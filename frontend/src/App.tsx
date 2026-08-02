@@ -10,6 +10,7 @@ const Upload     = lazy(() => import('./pages/Upload'))
 const Analyzer   = lazy(() => import('./pages/Analyzer'))
 const Logs       = lazy(() => import('./pages/Logs'))
 const Settings   = lazy(() => import('./pages/Settings'))
+const Documentation = lazy(() => import('./pages/Documentation'))
 
 function PageFallback() {
   return <div className="flex items-center justify-center h-48 text-white">Loading…</div>
@@ -75,6 +76,11 @@ export default function App() {
             <AdminRoute>
               <Suspense fallback={<PageFallback />}><Settings /></Suspense>
             </AdminRoute>
+          } />
+          <Route path="/documentation" element={
+            <ProtectedRoute>
+              <Suspense fallback={<PageFallback />}><Documentation /></Suspense>
+            </ProtectedRoute>
           } />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
