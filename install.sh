@@ -66,6 +66,7 @@ if [ "$REPO_DIR" = "$INSTALL_DIR" ]; then
 else
     cp -r "$REPO_DIR/app"        "$INSTALL_DIR/"
     cp -r "$REPO_DIR/migrations" "$INSTALL_DIR/"
+    cp -r "$REPO_DIR/docs"       "$INSTALL_DIR/"
     cp -r "$REPO_DIR/icon.svg" "$REPO_DIR/lockup.svg" "$INSTALL_DIR/" 2>/dev/null || true
 fi
 # Wireshark SSH Remote Capture wrapper — installed at the top level of the
