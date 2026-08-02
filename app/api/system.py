@@ -51,6 +51,60 @@ async def system_info(user: CurrentUser):
     }
 
 
+class BrowseEntry(BaseModel):
+    name: str
+    path: str
+    is_dir: bool
+
+
+class BrowseResult(BaseModel):
+    path: str
+    parent: Optional[str]
+    entries: list[BrowseEntry]
+
+
+@router.get("/browse-fs", response_model=BrowseResult)
+async def browse_fs(user: AdminUser, path: str = ""):
+    """List a directory on THIS pktPCAP server's filesystem. Backs the
+    Remote Command file picker in the Wireshark SSH Remote Capture builder
+    (Live Feeds page) — that command path has to point at a real
+    executable on this host, so browsing beats typing it blind. Admin-only,
+    same trust boundary as SSL cert upload / restart / backup export —
+    an admin already has full server access via SSH, so no extra
+    sandboxing beyond the role gate.
+    """
+    settings = get_settings()
+    base = Path(path) if path else Path(settings.install_dir)
+    try:
+        base = base.resolve()
+    except OSError:
+        raise HTTPException(status_code=400, detail="Invalid path")
+    # A caller may pass a file path (e.g. re-opening the browser on the
+    # Remote Command field's current value, which points at an executable,
+    # not a folder) — browse its containing directory instead of 404ing.
+    if base.exists() and base.is_file():
+        base = base.parent
+    # A typed-but-not-yet-real path (e.g. a fresh install with no binary at
+    # that path yet) shouldn't dead-end the picker — fall back to install_dir.
+    if not base.exists() or not base.is_dir():
+        base = Path(settings.install_dir).resolve()
+    if not base.exists() or not base.is_dir():
+        raise HTTPException(status_code=404, detail="Not a directory")
+
+    entries: list[BrowseEntry] = []
+    try:
+        for child in sorted(base.iterdir(), key=lambda p: (not p.is_dir(), p.name.lower())):
+            try:
+                entries.append(BrowseEntry(name=child.name, path=str(child), is_dir=child.is_dir()))
+            except OSError:
+                continue
+    except PermissionError:
+        raise HTTPException(status_code=403, detail="Permission denied")
+
+    parent = str(base.parent) if base != base.parent else None
+    return BrowseResult(path=str(base), parent=parent, entries=entries)
+
+
 @router.post("/restart")
 async def restart_service(user: AdminUser):
     asyncio.create_task(_delayed_restart())
