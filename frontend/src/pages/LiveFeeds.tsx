@@ -4,6 +4,7 @@ import { api, FeedSession, Capture, triggerBrowserDownload } from '../api/client
 import { useAuth } from '../store/auth'
 import HelpButton from '../components/HelpButton'
 import Spinner from '../components/Spinner'
+import PersistedCaptures from '../components/PersistedCaptures'
 import { copyToClipboard } from '../utils/clipboard'
 import { fmtBytes } from '../lib/pcap'
 
@@ -87,27 +88,11 @@ function InlineToggle({ value, onChange, disabled }: { value: boolean; onChange:
   )
 }
 
-const STATUS_STYLES: Record<string, string> = {
-  saved: 'bg-green-900/40 text-green-400 border border-green-700/40',
-  saving: 'bg-yellow-900/40 text-yellow-400 border border-yellow-700/40',
-  failed: 'bg-red-900/40 text-red-400 border border-red-700/40',
-  missing: 'bg-gray-800 text-gray-400 border border-gray-700',
-}
-
 function fmtDuration(sec: number): string {
   if (sec < 60) return `${sec.toFixed(0)}s`
   const m = Math.floor(sec / 60)
   const s = Math.floor(sec % 60)
   return `${m}m ${s}s`
-}
-
-function fmtTs(ts: string): string {
-  try {
-    const d = new Date(ts.includes('T') || ts.endsWith('Z') ? ts : ts.replace(' ', 'T') + 'Z')
-    return d.toLocaleString()
-  } catch {
-    return ts
-  }
 }
 
 // -- Three-tab push-command reference: tshark/curl, Wireshark CLI (sshdump
@@ -221,7 +206,10 @@ function PushCommands() {
   // Transfer-Encoding and streams each chunk as tshark produces it, so the
   // session shows up live in Active Feed Sessions immediately. -T defaults
   // to PUT, hence the explicit -X POST override.
-  const tsharkCmd = `tshark -i ${iface}${filterArg}${durationArg} -w - | curl -sS -X POST \\\n  -H "Authorization: Bearer ${token || 'YOUR_TOKEN_HERE'}" \\\n  -T - \\\n  "http://${host}:${port}/api/feed/${name}"`
+  // ?owner=<user.id> attributes the resulting persisted capture to whoever
+  // copies this command (see app/api/feeds.py's receive_feed docstring) —
+  // purely for the captures-sharing feature, not an auth control.
+  const tsharkCmd = `tshark -i ${iface}${filterArg}${durationArg} -w - | curl -sS -X POST \\\n  -H "Authorization: Bearer ${token || 'YOUR_TOKEN_HERE'}" \\\n  -T - \\\n  "http://${host}:${port}/api/feed/${name}?owner=${user?.id ?? ''}"`
 
   // Wireshark's SSH remote capture (the "sshdump" extcap) runs the Remote
   // Capture Command exactly as given — it does NOT append the Remote
@@ -484,6 +472,8 @@ function WiresharkStopNotice() {
 
 export default function LiveFeeds() {
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const isAdmin = user?.role === 'admin'
   const [feeds, setFeeds] = useState<FeedSession[]>([])
   const [captures, setCaptures] = useState<Capture[]>([])
   const [storageConfigured, setStorageConfigured] = useState(true)
@@ -521,6 +511,9 @@ export default function LiveFeeds() {
   const deleteCapture = async (fname: string) => {
     if (!confirm(`Delete ${fname}?`)) return
     try { await api.deleteCapture(fname); load() } catch (e: any) { setError(e.message) }
+  }
+  const toggleCaptureShared = async (fname: string, shared: boolean) => {
+    try { await api.setCaptureShared(fname, shared); load() } catch (e: any) { setError(e.message) }
   }
   const analyzeFeed = (name: string) => navigate('/analyzer', { state: { kind: 'feed', name } })
   const analyzeCapture = (filename: string) => navigate('/analyzer', { state: { kind: 'capture', filename } })
@@ -610,52 +603,18 @@ export default function LiveFeeds() {
         )}
       </div>
 
-      <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-800 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-white">Persisted Captures</h2>
-          {!storageConfigured && (
-            <span className="text-xs text-yellow-400">No storage path configured — captures aren't saved to disk. Set one in Settings → Captures.</span>
-          )}
-        </div>
-        {captures.length === 0 ? (
-          <div className="px-6 py-8 text-center text-sm text-gray-500">
-            {loading ? <Spinner label="Loading…" /> : 'No captures saved yet'}
-          </div>
-        ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-800 text-left text-xs text-gray-500 uppercase tracking-wider">
-                <th className="px-6 py-2">Filename</th>
-                <th className="px-3 py-2">Source</th>
-                <th className="px-3 py-2">Status</th>
-                <th className="px-3 py-2">Size</th>
-                <th className="px-3 py-2">Created</th>
-                <th className="px-3 py-2"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-800/60">
-              {captures.map(c => (
-                <tr key={c.id} className="hover:bg-gray-800/30">
-                  <td className="px-6 py-3 text-white font-mono text-xs">{c.filename}</td>
-                  <td className="px-3 py-3 text-gray-400 text-xs">{c.source}</td>
-                  <td className="px-3 py-3">
-                    <span className={`px-2 py-0.5 rounded text-xs ${STATUS_STYLES[c.status] ?? STATUS_STYLES.missing}`}>{c.status}</span>
-                  </td>
-                  <td className="px-3 py-3 text-gray-300">{c.size_bytes != null ? fmtBytes(c.size_bytes) : '—'}</td>
-                  <td className="px-3 py-3 text-gray-400 text-xs">{fmtTs(c.created_at)}</td>
-                  <td className="px-3 py-3">
-                    <div className="flex items-center justify-end gap-2">
-                      {c.status === 'saved' && <button onClick={() => analyzeCapture(c.filename)} className="text-xs text-sky-400 hover:text-sky-300">Analyze</button>}
-                      {c.status === 'saved' && <button onClick={() => downloadCapture(c.filename)} className="text-xs text-gray-400 hover:text-white">Download</button>}
-                      <button onClick={() => deleteCapture(c.filename)} className="text-xs text-white hover:text-red-400">Delete</button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+      <PersistedCaptures
+        title="Persisted Captures"
+        captures={captures.filter(c => c.source !== 'upload')}
+        loading={loading}
+        storageConfigured={storageConfigured}
+        currentUserId={user?.id ?? -1}
+        isAdmin={isAdmin}
+        onAnalyze={analyzeCapture}
+        onDownload={downloadCapture}
+        onDelete={deleteCapture}
+        onToggleShared={toggleCaptureShared}
+      />
     </div>
   )
 }
