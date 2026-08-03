@@ -91,14 +91,15 @@ async def save_feed_to_disk(feed_session: FeedSession) -> Optional[str]:
         ts = datetime.datetime.fromtimestamp(feed_session.last_seen).strftime("%Y%m%d-%H%M%S")
         fname = f"{feed_session.name}_{ts}.pcapng"
 
-        await _insert_capture_row(db, fname, feed_session.name, source, "saving")
+        owner = feed_session.owner_user_id
+        await _insert_capture_row(db, fname, feed_session.name, source, "saving", created_by=owner)
         try:
             d.mkdir(parents=True, exist_ok=True)
             (d / fname).write_bytes(data)
-            await _insert_capture_row(db, fname, feed_session.name, source, "saved", size_bytes=len(data))
+            await _insert_capture_row(db, fname, feed_session.name, source, "saved", size_bytes=len(data), created_by=owner)
             log.info("Saved capture %s (%d bytes) to %s", fname, len(data), d)
             return fname
         except OSError:
             log.exception("Failed to save feed %s to storage_path", feed_session.name)
-            await _insert_capture_row(db, fname, feed_session.name, source, "failed")
+            await _insert_capture_row(db, fname, feed_session.name, source, "failed", created_by=owner)
             return None

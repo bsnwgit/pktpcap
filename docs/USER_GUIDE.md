@@ -15,7 +15,7 @@ Sidebar pages: **Dashboard**, **Live Feeds**, **Upload**, **Logs**, **Settings**
 ## Analyzing a capture file
 
 1. Go to **Upload**, drag-and-drop (or browse for) a `.pcap`, `.pcapng`, or `.cap` file.
-2. Click **Analyze (local)** to parse it entirely in your browser without touching the server, or **Analyze & Save** to also persist it to server storage.
+2. Click **Analyze (local)** to parse it entirely in your browser without touching the server, or **Analyze & Save** to also persist it to server storage. Check **Share with other users** first if you want everyone to see it — uploads are private to you by default.
 3. Results appear across seven tabs on the **Analyzer** page:
 
 | Tab | Contents |
@@ -31,6 +31,12 @@ Sidebar pages: **Dashboard**, **Live Feeds**, **Upload**, **Logs**, **Settings**
 ## Live Feeds
 
 If your network has a remote host running `tshark`, or you use Wireshark's own remote-capture feature, the **Live Feeds** page lets you build a capture command (session name, interface, BPF filter, duration) and stream pcapng data straight into pktPCAP for analysis, without manually copying files around.
+
+## Persisted Captures and sharing
+
+Any capture you save (via **Analyze & Save** on Upload, or a finished live feed) shows up in a **Persisted Captures** list — on the Upload page for uploads, on Live Feeds for feed pushes. Each entry lets you re-analyze, download, or delete it.
+
+Saved captures are **private to you by default**. Check **Share with other users** when saving (or toggle it later from the list) to let every signed-in user see and analyze it — it shows up in their list labeled "Shared by `<your username>`". Only the owner or an admin can toggle sharing or delete a capture. Captures with no owner (e.g. a Wireshark SSH remote-capture push, which has no pktPCAP user context) are visible to everyone, the same as before this feature existed.
 
 ## Looking up an IP address
 
