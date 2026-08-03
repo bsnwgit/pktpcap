@@ -12,7 +12,7 @@
 
 ## Overview
 
-pktPCAP is a locally-hosted packet capture analyzer. Drop a `.pcap` or `.pcapng` file onto the UI and get instant, rule-based analysis of TCP health, DNS, threats, and traffic flows — no cloud upload required. An optional AI assistant (Anthropic or OpenAI) is available as a floating chat panel on every page, and can answer questions about whatever capture you're currently viewing.
+pktPCAP is a locally-hosted packet capture analyzer. Drop a `.pcap` or `.pcapng` file onto the UI and get instant, rule-based analysis of TCP health, DNS, threats, and traffic flows — no cloud upload required. An optional AI assistant (local/self-hosted via Ollama or any OpenAI-compatible endpoint, or cloud via Anthropic/OpenAI) is available as a floating chat panel on every page, and can answer questions about whatever capture you're currently viewing.
 
 **Key traits:**
 - Runs entirely on your infrastructure — captures never leave your environment
@@ -246,7 +246,7 @@ The simplest path. You already have a capture file.
 │         └─ POST /api/ai/chat ─► [pktPCAP FastAPI server]         │
 │                                  │                               │
 │                                  ▼                               │
-│                     [Anthropic / OpenAI API]  (optional)         │
+│              [Ollama/local, Anthropic, or OpenAI]  (optional)    │
 │                                  │                               │
 │                                  ▼                               │
 │                     AI Assistant chat panel                      │
@@ -259,7 +259,7 @@ The simplest path. You already have a capture file.
 2. **Analyze (local)** reads the file entirely client-side and never sends it anywhere; **Analyze & Save** also `POST`s it to `/api/captures/upload` so it's persisted and shows up in the **Persisted Captures** box on the Upload page (and, if shared, in other users' lists too). Uploads are private to the uploader by default — check **Share with other users** to change that.
 3. `parsePCAP()` (`frontend/src/lib/pcap/parser.ts`) walks every packet record and builds in-memory data structures: flow tuples, TCP flag counters, DNS query tables, and threat indicators (`analyze.ts`).
 4. Rule-based analysis runs immediately in the browser — no server round-trip needed. Results render across seven tabs on the **Analyzer** page.
-5. If an AI key is configured, the floating **AI Assistant** panel (available on every page) can answer free-form questions about the current capture — it POSTs the question plus whatever analysis context is on screen to `/api/ai/chat`, which the server forwards to Anthropic or OpenAI.
+5. If an AI provider is enabled and configured, the floating **AI Assistant** panel (available on every page) can answer free-form questions about the current capture — it POSTs the question plus whatever analysis context is on screen to `/api/ai/chat`, which the server forwards to whichever provider is enabled (local/self-hosted first, then Anthropic or OpenAI).
 
 **Server role in local mode:** the FastAPI server is only involved for `/api/captures/upload` (if you choose to save) and the AI chat proxy. Packet parsing and rule-based analysis are entirely client-side.
 
@@ -464,7 +464,7 @@ Buffer limit is **200 MB per named session**. If the stream exceeds this, the se
 |---|---|
 | File analysis | Parse `.pcap` / `.pcapng` / `.cap`; drop multiple files to queue, analyze locally or save to server storage |
 | Seven analysis tabs | Summary, Anomalies, Flows, TCP, UDP, DNS, Threats |
-| AI Assistant | Floating chat panel (any page) — Anthropic Claude or OpenAI GPT, proxied through the local server, using the current view's capture context |
+| AI Assistant | Floating chat panel (any page) — Ollama/local, Anthropic, or OpenAI, proxied through the local server, using the current view's capture context |
 | IP Lookup | Every IP in the Analyzer is clickable: ipinfo.io / ipapi.is / AbuseIPDB / MXToolbox for public IPs (per-user API keys), pktIPAM inventory lookup for private IPs (via Suite Integration) |
 | Live feed — tshark/curl | Any remote host with `tshark` streams pcapng directly to the server over HTTP; independently toggleable on/off |
 | Live feed — Wireshark GUI | Native Wireshark SSH Remote Capture support via the bundled `pktpcap` wrapper script — see [Wireshark GUI remote capture](#wireshark-gui-remote-capture-ssh) |
@@ -542,13 +542,16 @@ Two directions:
 
 ### Security → AI Assistant
 
+Providers are grouped **Local / Self-Hosted (Private)** first, then **Cloud (Paid)** below — each with its own enable toggle instead of the old single provider radio. Local providers are tried first; the first enabled provider with valid config answers each chat question.
+
 | Setting | Description |
 |---|---|
-| Provider | `anthropic` or `openai` |
+| Ollama | Local models via a running Ollama server — base URL + model name |
+| Local providers (+ Add) | Any number of additional OpenAI-compatible local endpoints (LM Studio, LocalAI, vLLM, etc.) — name, base URL, model, optional API key |
 | `anthropic_key` / `anthropic_model` | API key + model (default `claude-opus-4-8`; also selectable: `claude-sonnet-5`, `claude-haiku-4-5-20251001`) |
 | `openai_key` / `openai_model` | API key + model (default `gpt-4o`; also selectable: `gpt-4o-mini`, `o1`, or any model name typed manually) |
 
-Both a "Say PONG" key test (`POST /api/ai/test`) and the live chat panel are available.
+Both a "Say PONG" key test (`POST /api/ai/test`, Anthropic/OpenAI only) and the live chat panel are available.
 
 ### Security → SSL/TLS
 
@@ -816,7 +819,7 @@ The `ssl/` directory is gitignored — never commit certificate material.
 
 **Server restart:** `POST /api/system/restart` schedules `os._exit(1)` after a short delay and relies on the systemd unit's `Restart=on-failure` to bring the process back up — unlike the old Flask app, it does not self-`Popen` a replacement process (that pattern was found to occasionally leave an orphaned, systemd-untracked process squatting on the port).
 
-**AI:** the floating `AiAssistant` component POSTs `{question, context}` to `/api/ai/chat`; the server forwards it to Anthropic or OpenAI with a system prompt tuned for packet/capture troubleshooting and returns the answer. API keys never leave the host.
+**AI:** the floating `AiAssistant` component POSTs `{question, context}` to `/api/ai/chat`; the server resolves the first enabled provider (local/self-hosted first, then Anthropic or OpenAI) with a system prompt tuned for packet/capture troubleshooting and returns the answer. API keys never leave the host.
 
 **pktHub / Suite integration:** inbound — the app accepts an `X-Suite-Token` header on every request; a matching token establishes the forwarded user/role with no separate login. Outbound — `app/integrations/suite_client.py` lets pktPCAP call a sibling app's own suite API (currently used to query pktIPAM for internal-IP lookups).
 
@@ -837,6 +840,7 @@ If you're tracking a specific older bug list against this app, re-verify it agai
 
 | Provider | Models |
 |---|---|
+| Ollama / local (OpenAI-compatible) | Whatever's pulled/served on the configured endpoint — free-text model field |
 | Anthropic | `claude-opus-4-8` (default), `claude-sonnet-5`, `claude-haiku-4-5-20251001` |
 | OpenAI | `gpt-4o` (default), `gpt-4o-mini`, `o1`, and any model name entered manually |
 
