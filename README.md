@@ -26,6 +26,10 @@ pktPCAP is a locally-hosted packet capture analyzer. Drop a `.pcap` or `.pcapng`
 
 ---
 
+## Recent Changes (2026-08)
+
+- **Persisted capture sharing.** Captures (uploads and tshark/Wireshark pushes) are now attributed to the user who created them, with a per-capture "shared" flag the owner or an admin can toggle so other users see it labeled "Shared by `<username>`". Unowned captures (Wireshark SSH pushes with no pktPCAP user context) stay visible to everyone, unchanged from before. The Upload page now has its own **Persisted Captures** box (in addition to Live Feeds'), each filtered to its own source so the two lists don't overlap.
+
 ## Recent Changes (2026-07)
 
 - **Rebuilt as FastAPI + React.** pktPCAP was the first app in the `pkt*` suite, originally a synchronous Flask app with server-rendered Jinja templates, cookie-session auth, and sha256 password hashing. It's now a FastAPI backend (`app/`) + React 18/Vite SPA (`frontend/`) with JWT/bcrypt auth, matching every sibling app's stack. The old Flask app is left in place under `service/` for reference but is **not used** by `install.sh` or the systemd unit anymore — see [Project Structure](#project-structure).
@@ -252,7 +256,7 @@ The simplest path. You already have a capture file.
 **What happens step by step:**
 
 1. On the **Upload** page, the user drops a `.pcap` or `.pcapng` file, or clicks to browse — multiple files can be queued.
-2. **Analyze (local)** reads the file entirely client-side and never sends it anywhere; **Analyze & Save** also `POST`s it to `/api/captures/upload` so it's persisted and shows up later in Live Feeds → Persisted Captures.
+2. **Analyze (local)** reads the file entirely client-side and never sends it anywhere; **Analyze & Save** also `POST`s it to `/api/captures/upload` so it's persisted and shows up in the **Persisted Captures** box on the Upload page (and, if shared, in other users' lists too). Uploads are private to the uploader by default — check **Share with other users** to change that.
 3. `parsePCAP()` (`frontend/src/lib/pcap/parser.ts`) walks every packet record and builds in-memory data structures: flow tuples, TCP flag counters, DNS query tables, and threat indicators (`analyze.ts`).
 4. Rule-based analysis runs immediately in the browser — no server round-trip needed. Results render across seven tabs on the **Analyzer** page.
 5. If an AI key is configured, the floating **AI Assistant** panel (available on every page) can answer free-form questions about the current capture — it POSTs the question plus whatever analysis context is on screen to `/api/ai/chat`, which the server forwards to Anthropic or OpenAI.
@@ -465,6 +469,7 @@ Buffer limit is **200 MB per named session**. If the stream exceeds this, the se
 | Live feed — tshark/curl | Any remote host with `tshark` streams pcapng directly to the server over HTTP; independently toggleable on/off |
 | Live feed — Wireshark GUI | Native Wireshark SSH Remote Capture support via the bundled `pktpcap` wrapper script — see [Wireshark GUI remote capture](#wireshark-gui-remote-capture-ssh) |
 | Persisted captures | Uploaded or feed-saved `.pcapng` files tracked in a `captures` DB table (status: saving/saved/failed/missing) — not just a directory listing |
+| Capture sharing | Captures are private to the uploader/pusher by default; owner or admin can toggle **shared** so every user sees it ("Shared by `<username>`"); unowned pushes (e.g. Wireshark SSH) stay visible to all |
 | In-app log viewer | SQLite-backed app logs, queryable from the Logs page with pagination; live log-level change from the UI |
 | User management | Create/edit/delete local users with password reset; designate a default admin |
 | Role-based access | `admin`, `analyst`, `viewer` — Settings, log clearing, and admin-only routes enforced server-side |
