@@ -47,7 +47,7 @@ Click any underlined IP address anywhere in the Analyzer (top talkers, flows, TC
 
 ## AI Assistant
 
-Click the floating **✦** button (bottom-right, any page) to ask a question about whatever capture is currently on screen — powered by Claude or GPT depending on what your admin has configured.
+Click the floating **✦** button (bottom-right, any page) to ask a question about whatever capture is currently on screen — powered by whichever provider your admin has enabled (a local/self-hosted model, Claude, or GPT).
 
 ## Logs
 
