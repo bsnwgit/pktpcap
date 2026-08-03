@@ -278,9 +278,12 @@ export const api = {
   downloadCaptureBytes: (fname: string) => authedBlobFetch(`/captures/${fname}/download`),
   getCaptures: () => request<{ storage_path_configured: boolean; captures: Capture[] }>('/captures'),
   deleteCapture: (fname: string) => request(`/captures/${fname}`, { method: 'DELETE' }),
-  uploadCapture: async (file: File): Promise<{ ok: boolean; filename: string; size_bytes: number }> => {
+  setCaptureShared: (fname: string, shared: boolean) =>
+    request<Capture>(`/captures/${fname}/shared`, { method: 'PUT', body: JSON.stringify({ shared }) }),
+  uploadCapture: async (file: File, shared = false): Promise<{ ok: boolean; filename: string; size_bytes: number }> => {
     const formData = new FormData()
     formData.append('file', file)
+    formData.append('shared', String(shared))
     const headers: Record<string, string> = {}
     if (_accessToken) headers['Authorization'] = `Bearer ${_accessToken}`
     const res = await fetch('/api/captures/upload', { method: 'POST', headers, body: formData })
@@ -445,5 +448,7 @@ export interface Capture {
   size_bytes: number | null
   status: string
   created_by: number | null
+  owner_username: string | null
+  shared: boolean
   created_at: string
 }

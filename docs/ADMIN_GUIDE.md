@@ -59,6 +59,8 @@ A session is `connected` while data is flowing. If a Captures storage path is co
 
 Uploaded or feed-saved `.pcapng` files are tracked in a `captures` DB table (status: saving/saved/failed/missing) — not just a directory listing, so the UI knows the real state of each file.
 
+Each capture is attributed to the user who created it (`created_by`) and has a `shared` flag: private to the owner by default, toggleable by the owner or any admin so other users can see and analyze it (labeled "Shared by `<username>`" in their list). Captures with no owner — e.g. a Wireshark SSH remote-capture push, which has no pktPCAP user context — stay visible to everyone regardless of `shared`, matching pre-sharing-feature behavior. Delete/share permissions follow the same owner-or-admin rule server-side, not just in the UI.
+
 ## Notification channels
 
 Slack, Email (SMTP), PagerDuty, generic Webhook, Tracecat — configured under Settings, each independently enabled with a built-in **Send Test** button that performs a real dispatch.

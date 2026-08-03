@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { api, setToken, clearToken } from '../api/client'
 
 interface AuthState {
-  user: { username: string; role: string; hasPassword: boolean; authProvider: string } | null
+  user: { id: number; username: string; role: string; hasPassword: boolean; authProvider: string } | null
   login: (username: string, password: string) => Promise<void>
   logout: () => Promise<void>
   isLoading: boolean
@@ -30,7 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         clearCookie('sso_role')
         setToken(ssoToken, ssoRole)
         api.getMe()
-          .then(me => setUser({ username: me.username, role: me.role, hasPassword: me.has_password, authProvider: me.auth_provider }))
+          .then(me => setUser({ id: me.id, username: me.username, role: me.role, hasPassword: me.has_password, authProvider: me.auth_provider }))
           .catch(() => {})
           .finally(() => setIsLoading(false))
         return
@@ -52,7 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             return api.getMe()
           }
         })
-        .then(me => { if (me) setUser({ username: me.username, role: me.role, hasPassword: me.has_password, authProvider: me.auth_provider }) })
+        .then(me => { if (me) setUser({ id: me.id, username: me.username, role: me.role, hasPassword: me.has_password, authProvider: me.auth_provider }) })
         .catch(() => {})
         .finally(() => setIsLoading(false))
     }
@@ -67,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then(r => r.ok ? r.json() : null)
       .then(whoami => {
         if (whoami?.authenticated && whoami?.via_suite_token) {
-          setUser({ username: 'pktHub', role: whoami.role, hasPassword: false, authProvider: 'suite' })
+          setUser({ id: 0, username: 'pktHub', role: whoami.role, hasPassword: false, authProvider: 'suite' })
           setIsLoading(false)
           return true
         }
@@ -81,7 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const data = await api.login(username, password)
     setToken(data.access_token, data.role)
     const me = await api.getMe()
-    setUser({ username: me.username, role: me.role, hasPassword: me.has_password, authProvider: me.auth_provider })
+    setUser({ id: me.id, username: me.username, role: me.role, hasPassword: me.has_password, authProvider: me.auth_provider })
   }
 
   const logout = async () => {
