@@ -18,7 +18,7 @@ Prompts for install directory and port (default `8765`), handles the venv, `conf
 
 1. **Change the admin password.**
 2. **Decide your capture delivery mode(s)**: local file upload needs no server-side setup at all (parsing is entirely client-side); live feeds need either a remote `tshark`/`curl` pipe or Wireshark's own SSH Remote Capture pointed at this host — see Live Feed setup below.
-3. **Enable an AI provider** (Settings → Security → AI Assistant) if you want the floating assistant to work — local/self-hosted (Ollama, or any OpenAI-compatible endpoint), Anthropic, or OpenAI; each has its own enable toggle and local providers are tried first.
+3. **Enable an AI provider** (Settings → Security → AI Assistant) if you want the floating assistant to work — local/self-hosted (Ollama, or any OpenAI-compatible endpoint), Anthropic, or OpenAI; each has its own enable toggle and local providers are tried first. The assistant is scoped strictly to pktPCAP's own domain — off-topic questions and prompt-injection/override attempts are refused server-side before ever reaching the provider.
 4. **Set up a Suite Integration connection to pktIPAM** if you want private/RFC1918 IPs in the Analyzer to resolve to real inventory data instead of just showing as plain addresses.
 5. **Configure alert notification channels.**
 6. **Set up backups** and confirm a manual run succeeds.
