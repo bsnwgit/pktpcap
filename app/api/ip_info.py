@@ -22,10 +22,10 @@ import httpx
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
+from app.crypto import decrypt_str
 from app.database import DB_PATH
 from app.dependencies import CurrentUser
 from app.integrations.suite_client import SuiteClient
-from app.crypto import decrypt_str
 
 router = APIRouter()
 
@@ -299,7 +299,8 @@ async def get_internal_ip_info(ip: str, user: CurrentUser):
     if not integration or not integration["base_url"] or not integration["suite_token"]:
         return InternalIpInfoResult(ip=ip, configured=False, error="pktIPAM integration is not configured — add one in Settings → Security → Suite Integration")
 
-    client = SuiteClient(integration["base_url"], integration["suite_token"], suite_user="pktpcap", suite_role="admin")
+    client = SuiteClient(integration["base_url"], decrypt_str(integration["suite_token"]),
+                         suite_user="pktpcap", suite_role="admin")
     try:
         data = await client.get("/api/ip-addresses/lookup", params={"ip": ip})
     except httpx.HTTPStatusError as exc:
