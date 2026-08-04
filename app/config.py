@@ -113,6 +113,11 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 15
     refresh_token_expire_days: int = 7
 
+    # -- Credential encryption (Fernet) -------------------------------------------
+    # Separate from secret_key (JWT signing) — used to encrypt stored secrets
+    # (user API keys, etc.) at rest.
+    credential_key: str = Field(default=_yaml_cfg.get("credential_key", ""))
+
     # -- CORS ----------------------------------------------------------------------
     cors_origins: list[str] = Field(
         default=_yaml_cfg.get("cors_origins", ["*"])
