@@ -502,7 +502,7 @@ Buffer limit is **200 MB per named session**. If the stream exceeds this, the se
 
 Configuration is split into two layers:
 
-- **`config.yaml`** — startup/infrastructure settings that must be known before the database connects: `host`, `port`, `workers` (must stay `1`), `install_dir`, `secret_key` (JWT signing), `cors_origins`, `log_level`/`log_file`, `ssl_dir`, `storage_path`. Copy `config.example.yaml` to `<install_dir>/config.yaml` (or point `PKTPCAP_CONFIG` at it) and restart to change any of these. Every path defaults to somewhere under `install_dir`, so nothing needs to be set explicitly unless you want it somewhere else.
+- **`config.yaml`** — startup/infrastructure settings that must be known before the database connects: `host`, `port`, `workers` (must stay `1`), `install_dir`, `secret_key` (JWT signing), `credential_key` (Fernet key encrypting stored secrets like user API keys at rest), `cors_origins`, `log_level`/`log_file`, `ssl_dir`, `storage_path`. Copy `config.example.yaml` to `<install_dir>/config.yaml` (or point `PKTPCAP_CONFIG` at it) and restart to change any of these. Every path defaults to somewhere under `install_dir`, so nothing needs to be set explicitly unless you want it somewhere else.
 - **SQLite `settings` table** — everything else (capture retention, notification channels, AI provider keys, SAML config, suite integrations, per-user lookup API keys). Managed entirely through the **Settings** UI, organized into tabs: General, Security (Users, Auth, Suite Integration, AI Assistant, SSL/TLS), Data (Storage, Backups), Notifications, User Keys, Captures, Capture Ingest.
 
 ### General
@@ -563,7 +563,7 @@ Upload a PEM cert + key pair, or a PFX/PKCS#12 bundle + passphrase (converted se
 
 ### User Keys
 
-Per-user API keys for **AbuseIPDB**, **IPQualityScore**, **ipinfo.io**, **ipapi.is**, and **MXToolbox** — scoped strictly to the logged-in user via `GET/PUT /api/user-api-keys/<provider>`, no shared/admin key, no cross-user visibility. Each provider can be individually enabled/disabled for the IP Lookup modal, and ipinfo.io/ipapi.is/MXToolbox further support per-field show/hide (e.g. hide "Company" but keep "Geolocation"). ipapi.is also supports a keyless free-tier toggle.
+Per-user API keys for **AbuseIPDB**, **IPQualityScore**, **ipinfo.io**, **ipapi.is**, and **MXToolbox** — scoped strictly to the logged-in user via `GET/PUT /api/user-api-keys/<provider>`, no shared/admin key, no cross-user visibility. Keys are Fernet-encrypted at rest (`app/crypto.py`, using a dedicated `credential_key` — separate from `secret_key`, which only signs JWTs) — decrypted only in memory when a lookup runs or the owning user views their own key. Each provider can be individually enabled/disabled for the IP Lookup modal, and ipinfo.io/ipapi.is/MXToolbox further support per-field show/hide (e.g. hide "Company" but keep "Geolocation"). ipapi.is also supports a keyless free-tier toggle.
 
 ---
 
