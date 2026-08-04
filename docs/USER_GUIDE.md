@@ -47,7 +47,7 @@ Click any underlined IP address anywhere in the Analyzer (top talkers, flows, TC
 
 ## AI Assistant
 
-Click the floating **✦** button (bottom-right, any page) to ask a question about whatever capture is currently on screen — powered by whichever provider your admin has enabled (a local/self-hosted model, Claude, or GPT).
+Click the floating **✦** button (bottom-right, any page) to ask a question about whatever capture is currently on screen — powered by whichever provider your admin has enabled (a local/self-hosted model, Claude, or GPT). It's scoped strictly to pktPCAP's own domain (captures, flows, protocol breakdowns); off-topic questions, requests to discuss other pktApp suite tools, and prompt-injection attempts ("ignore your instructions," etc.) are refused.
 
 ## Logs
 
