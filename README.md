@@ -30,6 +30,10 @@ pktPCAP is a locally-hosted packet capture analyzer. Drop a `.pcap` or `.pcapng`
 
 - **Persisted capture sharing.** Captures (uploads and tshark/Wireshark pushes) are now attributed to the user who created them, with a per-capture "shared" flag the owner or an admin can toggle so other users see it labeled "Shared by `<username>`". Unowned captures (Wireshark SSH pushes with no pktPCAP user context) stay visible to everyone, unchanged from before. The Upload page now has its own **Persisted Captures** box (in addition to Live Feeds'), each filtered to its own source so the two lists don't overlap.
 
+## Recent Changes (2026-08)
+
+- **AI Assistant chat error messages fixed.** A connection/timeout failure reaching a provider (e.g. Ollama unreachable) used to surface as a blank message like `"Ollama error:"` with no detail — httpx's own connection/timeout exceptions often carry no message text. It now names the provider and its base URL, or the failure type when nothing else is available. (pktPCAP's chat request already sent proper auth via `api.aiChat()`, so it wasn't affected by the auth bug fixed the same day in several sibling apps — see their READMEs.)
+
 ## Recent Changes (2026-07)
 
 - **Rebuilt as FastAPI + React.** pktPCAP was the first app in the `pkt*` suite, originally a synchronous Flask app with server-rendered Jinja templates, cookie-session auth, and sha256 password hashing. It's now a FastAPI backend (`app/`) + React 18/Vite SPA (`frontend/`) with JWT/bcrypt auth, matching every sibling app's stack. The old Flask app is left in place under `service/` for reference but is **not used** by `install.sh` or the systemd unit anymore — see [Project Structure](#project-structure).
