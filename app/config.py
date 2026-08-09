@@ -141,9 +141,46 @@ class Settings(BaseSettings):
     )
 
 
+# Insecure placeholders that must never actually sign a JWT or encrypt a
+# stored secret. Two distinct spellings exist for secret_key: this module's
+# own in-code fallback (used when the key is entirely absent from
+# config.yaml) and config.example.yaml's placeholder text (what's actually
+# in config.yaml if an operator copied that file without editing it) — a
+# different string, so checking only one leaves the other route to a
+# publicly-known secret unguarded.
+_INSECURE_SECRET_KEY_VALUES = {
+    "", "CHANGE_ME_IN_PRODUCTION_secret_key_32chars",
+    "CHANGE_ME_generate_with_openssl_rand_hex_32",
+}
+_INSECURE_CREDENTIAL_KEY_VALUES = {
+    "", "CHANGE_ME_generate_with_fernet_generate_key",
+}
+
+
+def _validate_secrets(s: "Settings") -> None:
+    """Fail loudly at startup rather than silently signing JWTs / encrypting
+    secrets with a publicly-known key."""
+    if (s.secret_key or "").strip() in _INSECURE_SECRET_KEY_VALUES:
+        raise RuntimeError(
+            "pktpcap refuses to start: secret_key is missing or still set to a "
+            "placeholder value from config.example.yaml. Set a real, unique "
+            "secret_key in config.yaml — `openssl rand -hex 32` generates one."
+        )
+    if (s.credential_key or "").strip() in _INSECURE_CREDENTIAL_KEY_VALUES:
+        raise RuntimeError(
+            "pktpcap refuses to start: credential_key is missing or still set to "
+            "a placeholder value from config.example.yaml. Set a real, unique "
+            "credential_key in config.yaml — "
+            "`python3 -c \"from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\"` "
+            "generates one."
+        )
+
+
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()
+    s = Settings()
+    _validate_secrets(s)
+    return s
 
 
 # suite_token_from_sqlite_patch — reads token from SQLite so /api/suite/register
@@ -152,6 +189,7 @@ _patched_get_settings = get_settings  # noqa: save original if it exists
 
 def get_settings() -> Settings:  # type: ignore[misc]
     s = Settings()
+    _validate_secrets(s)
     try:
         import sqlite3 as _sq, json as _j
         _db_path = s.db_path
