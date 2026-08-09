@@ -72,6 +72,7 @@ class FeedSession:
                 "bytes_received": self.bytes_received,
                 "duration": self.last_seen - self.created_at,
                 "truncated": self.truncated,
+                "owner_user_id": self.owner_user_id,
             }
 
 

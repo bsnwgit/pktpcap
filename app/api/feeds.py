@@ -1,10 +1,12 @@
 """
 /api/feed/{name}  (POST)  — streaming tshark/Wireshark pcapng ingest
-/api/feeds        (GET)   — list active in-memory feed sessions
-/api/feeds/{name}/download (GET)
-/api/feeds/{name} (DELETE)
-/api/capture/wrapper-config (GET) — unauthenticated, localhost-only in
-    practice; see the docstring below for why this exists.
+/api/feeds        (GET)   — list active in-memory feed sessions, filtered to
+    the caller's own sessions (admins see all)
+/api/feeds/{name}/download (GET) — owner or admin only
+/api/feeds/{name} (DELETE) — owner or admin only
+/api/capture/wrapper-config (GET) — unauthenticated but loopback-only
+    (enforced in code, not just "in practice"); see the docstring below for
+    why this exists.
 
 Mounted at prefix "/api" in app/main.py (not "/api/feeds") because the
 ingest route is intentionally singular (/api/feed/<name>, matching the old
@@ -43,18 +45,24 @@ async def _get_setting(key: str, default=None):
 
 
 # -- Wrapper-script config bootstrap ----------------------------------------------
-# service/pktpcap (the Wireshark SSH-remote-capture wrapper) runs on this same
+# scripts/pktpcap (the Wireshark SSH-remote-capture wrapper) runs on this same
 # host and needs to know whether it's allowed to push, and what feed_token to
 # use, before every capture. The old Flask app let it call the generic
 # GET /api/settings unauthenticated (via its own now-removed global
 # auth-disabled bypass); the rebuilt /api/settings requires a real login, so
 # a small dedicated endpoint covers just the two fields the wrapper needs.
 # This is a deliberate, scoped exception — not a blanket settings bypass —
-# and is safe under the same trust model as feed_token itself (a shared
-# secret the wrapper script already has to know).
+# but it hands out feed_token in the clear, so it must not be reachable off
+# the box. scripts/pktpcap always calls it via `http://localhost:__PORT__`
+# (see that script), so it's enforced here as loopback-only rather than
+# trusted to stay "unauthenticated in practice": any request whose peer
+# address isn't 127.0.0.1/::1 gets a 404, same as if the route didn't exist.
 
 @router.get("/capture/wrapper-config")
-async def wrapper_config():
+async def wrapper_config(request: Request):
+    client_host = request.client.host if request.client else None
+    if client_host not in ("127.0.0.1", "::1"):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
     return {
         "wireshark_capture_enabled": bool(await _get_setting("wireshark_capture_enabled", False)),
         "tshark_capture_enabled": bool(await _get_setting("tshark_capture_enabled", True)),
@@ -114,10 +122,24 @@ async def receive_feed(name: str, request: Request, owner: Optional[int] = None)
     return {"ok": True, "bytes_received": session.bytes_received}
 
 
+def _can_access_feed(owner_user_id: Optional[int], user: dict) -> bool:
+    """Same ownership pattern as app/api/captures.py's _can_view/_can_manage:
+    admins see/manage everything; a session with no owner (e.g. the
+    Wireshark SSH wrapper, which has no pktPCAP user context to attribute a
+    push to) stays accessible to anyone, matching pre-existing behavior for
+    unowned captures; otherwise only the owner."""
+    if user["role"] == "admin":
+        return True
+    if owner_user_id is None:
+        return True
+    return owner_user_id == user["id"]
+
+
 @router.get("/feeds")
 async def list_feeds(user: CurrentUser, request: Request):
     manager = request.app.state.feed_sessions
-    return await manager.list()
+    sessions = await manager.list()
+    return [s for s in sessions if _can_access_feed(s.get("owner_user_id"), user)]
 
 
 @router.get("/feeds/{name}/download")
@@ -126,6 +148,8 @@ async def download_feed(name: str, user: CurrentUser, request: Request):
     session = await manager.get(name)
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
+    if not _can_access_feed(session.owner_user_id, user):
+        raise HTTPException(status_code=403, detail="Only the owner or an admin can download this feed session")
     data = await session.get_bytes()
     if not data:
         raise HTTPException(status_code=404, detail="No data captured yet")
@@ -139,5 +163,10 @@ async def download_feed(name: str, user: CurrentUser, request: Request):
 @router.delete("/feeds/{name}")
 async def delete_feed(name: str, user: CurrentUser, request: Request):
     manager = request.app.state.feed_sessions
+    session = await manager.get(name)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    if not _can_access_feed(session.owner_user_id, user):
+        raise HTTPException(status_code=403, detail="Only the owner or an admin can delete this feed session")
     await manager.delete(name)
     return {"ok": True}
