@@ -9,6 +9,8 @@ unlike sibling apps this manifest has no "Active Alerts" widget.
 """
 from __future__ import annotations
 
+import html
+
 import aiosqlite
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
@@ -87,7 +89,7 @@ def _status_badge(status: str) -> str:
         return '<span class="badge br">FAILED</span>'
     if s == "missing":
         return '<span class="badge by">MISSING</span>'
-    return f'<span class="badge bn">{(status or "UNKNOWN").upper()}</span>'
+    return f'<span class="badge bn">{html.escape((status or "UNKNOWN").upper())}</span>'
 
 
 def _fmt_bytes(n) -> str:
@@ -116,10 +118,10 @@ async def widget_recent_captures():
 
     if rows:
         trs = "".join(
-            f"<tr><td>{r['session_name']}</td><td>{r['source']}</td>"
+            f"<tr><td>{html.escape(str(r['session_name']))}</td><td>{html.escape(str(r['source']))}</td>"
             f"<td>{_fmt_bytes(r['size_bytes'])}</td>"
             f"<td>{_status_badge(r['status'])}</td>"
-            f"<td>{str(r['created_at'])[:19].replace('T',' ')}</td></tr>"
+            f"<td>{html.escape(str(r['created_at'])[:19].replace('T',' '))}</td></tr>"
             for r in rows
         )
         body = (
@@ -146,7 +148,7 @@ async def widget_live_feed_sessions(request: Request):
         for s in sessions:
             state_badge = '<span class="badge bg">LIVE</span>' if s.get("connected") else '<span class="badge bn">IDLE</span>'
             parts.append(
-                f"<tr><td>{s['name']}</td><td>{s.get('remote_addr') or ''}</td>"
+                f"<tr><td>{html.escape(str(s['name']))}</td><td>{html.escape(str(s.get('remote_addr') or ''))}</td>"
                 f"<td>{state_badge}</td>"
                 f"<td>{_fmt_bytes(s.get('bytes_received'))}</td></tr>"
             )
