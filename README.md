@@ -503,7 +503,7 @@ Buffer limit is **200 MB per named session**. If the stream exceeds this, the se
 Configuration is split into two layers:
 
 - **`config.yaml`** — startup/infrastructure settings that must be known before the database connects: `host`, `port`, `workers` (must stay `1`), `install_dir`, `secret_key` (JWT signing), `credential_key` (Fernet key encrypting stored secrets like user API keys at rest), `cors_origins`, `log_level`/`log_file`, `ssl_dir`, `storage_path`. Copy `config.example.yaml` to `<install_dir>/config.yaml` (or point `PKTPCAP_CONFIG` at it) and restart to change any of these. Every path defaults to somewhere under `install_dir`, so nothing needs to be set explicitly unless you want it somewhere else.
-- **SQLite `settings` table** — everything else (capture retention, notification channels, AI provider keys, SAML config, suite integrations, per-user lookup API keys). Managed entirely through the **Settings** UI, organized into tabs: General, Security (Users, Auth, Suite Integration, AI Assistant, SSL/TLS), Data (Storage, Backups), Notifications, User Keys, Captures, Capture Ingest.
+- **SQLite `settings` table** — everything else (capture retention, notification channels, AI provider keys, SAML config, suite integrations, per-user lookup API keys). Managed entirely through the **Settings** UI. Settings is organized into two sections, picked from a section bar above the tab bar — **Common** (General, Security [Users, Auth, Suite Integration, AI Assistant, SSL/TLS], Data [Storage, Backups], Notifications, User Keys, System) and **pktPCAP** (Captures, Capture Ingest). Only the selected section's tabs are shown; a deep link like `/settings?tab=captures` selects the section for you.
 
 ### General
 
@@ -556,6 +556,8 @@ Providers are grouped **Local / Self-Hosted (Private)** first, then **Cloud (Pai
 | `openai_key` / `openai_model` | API key + model (default `gpt-4o`; also selectable: `gpt-4o-mini`, `o1`, or any model name typed manually) |
 
 Both a "Say PONG" key test (`POST /api/ai/test`, Anthropic/OpenAI only) and the live chat panel are available.
+
+Each provider call is allowed up to **180 seconds** to respond. That headroom is for local models on modest hardware — a large model answering a complex, multi-part question can easily run past a minute, and a tighter ceiling turned those into spurious failures. Cloud providers rarely approach it. On overrun the chat reports that the provider didn't finish in time instead of failing blankly.
 
 ### Security → SSL/TLS
 

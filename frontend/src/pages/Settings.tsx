@@ -1687,8 +1687,9 @@ function CapturesTab({ settings, set, save }: {
 
 type TabId = 'general' | 'security' | 'data' | 'notifications' | 'apikeys' | 'system' | 'captures' | 'ingest'
 
-// Tabs left of the divider are the suite-common set every pkt app shares;
-// tabs right of it (gapBefore) are pktPCAP-specific: Captures (storage path/
+// Tabs before gapBefore are the suite-common set every pkt app shares and make
+// up the "Common" section; gapBefore and everything after it are
+// pktPCAP-specific and make up the "pktPCAP" section: Captures (storage path/
 // quota/retention for persisted .pcapng files) and Capture Ingest (feed
 // token + tshark/Wireshark toggles + prefilled push commands).
 const TABS: Array<{ id: TabId; label: string; adminOnly?: boolean; gapBefore?: boolean }> = [
@@ -1701,6 +1702,17 @@ const TABS: Array<{ id: TabId; label: string; adminOnly?: boolean; gapBefore?: b
   { id: 'captures',      label: 'Captures', adminOnly: true, gapBefore: true },
   { id: 'ingest',        label: 'Capture Ingest', adminOnly: true },
 ]
+
+// ── Top-level sections — Common holds the tabs that used to sit left of the
+// divider (gapBefore); the app-specific section holds gapBefore and everything
+// after it. Split point is derived from TABS itself, not duplicated here.
+type SectionId = 'common' | 'app'
+const APP_SECTION_LABEL = 'pktPCAP'
+const FIRST_APP_TAB_INDEX = TABS.findIndex(t => t.gapBefore)
+const sectionOfTab = (id: TabId): SectionId => {
+  const idx = TABS.findIndex(t => t.id === id)
+  return idx >= 0 && idx < FIRST_APP_TAB_INDEX ? 'common' : 'app'
+}
 
 const OSS_NOTICES: Array<{ name: string; license: string }> = [
   { name: 'FastAPI',            license: 'MIT' },
@@ -1768,6 +1780,12 @@ export default function Settings() {
     }
   })()
   const [tab, setTab] = useState<TabId>(deepLink.tab)
+  const [section, setSection] = useState<SectionId>(sectionOfTab(deepLink.tab))
+  const selectSection = (s: SectionId) => {
+    setSection(s)
+    const firstVisible = TABS.filter(t => !t.adminOnly || isAdmin).find(t => sectionOfTab(t.id) === s)
+    if (firstVisible) setTab(firstVisible.id)
+  }
   const [securityTab, setSecurityTab] = useState<SecurityTabId>(deepLink.security ?? (isAdmin ? 'users' : 'auth'))
   const [dataTab, setDataTab] = useState<DataTabId>(deepLink.data ?? 'storage')
   const [settings, setSettings] = useState<SettingsMap>({})
@@ -1932,15 +1950,25 @@ export default function Settings() {
     <div className="space-y-4">
       <h1 className="text-xl font-bold text-white">pktPCAP - Settings</h1>
 
+      <div className="flex items-center gap-1 bg-gray-900 border border-gray-800 rounded-xl p-1 w-fit">
+        <button onClick={() => selectSection('common')}
+          className={`text-sm px-4 py-1.5 rounded-lg whitespace-nowrap transition-colors ${section === 'common' ? 'bg-gray-700 text-white' : 'text-white hover:text-white'}`}>
+          Common
+        </button>
+        {TABS.some(t => (!t.adminOnly || isAdmin) && sectionOfTab(t.id) === 'app') && (
+          <button onClick={() => selectSection('app')}
+            className={`text-sm px-4 py-1.5 rounded-lg whitespace-nowrap transition-colors ${section === 'app' ? 'bg-gray-700 text-white' : 'text-white hover:text-white'}`}>
+            {APP_SECTION_LABEL}
+          </button>
+        )}
+      </div>
+
       <div className="flex items-center gap-1 bg-gray-900 border border-gray-800 rounded-xl p-1 w-fit overflow-x-auto">
-        {TABS.filter(t => !t.adminOnly || isAdmin).map(t => (
-          <Fragment key={t.id}>
-            {t.gapBefore && <div className="w-px self-stretch bg-gray-700 mx-2" />}
-            <button onClick={() => setTab(t.id)}
-              className={`text-sm px-4 py-1.5 rounded-lg whitespace-nowrap transition-colors ${tab === t.id ? 'bg-gray-700 text-white' : 'text-white hover:text-white'}`}>
-              {t.label}
-            </button>
-          </Fragment>
+        {TABS.filter(t => (!t.adminOnly || isAdmin) && sectionOfTab(t.id) === section).map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)}
+            className={`text-sm px-4 py-1.5 rounded-lg whitespace-nowrap transition-colors ${tab === t.id ? 'bg-gray-700 text-white' : 'text-white hover:text-white'}`}>
+            {t.label}
+          </button>
         ))}
       </div>
 
