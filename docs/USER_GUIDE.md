@@ -12,6 +12,8 @@ Roles: `admin`, `analyst`, `viewer` — Settings, log clearing, and admin routes
 
 Sidebar pages: **Dashboard**, **Live Feeds**, **Upload**, **Logs**, **Settings** (admin-only). **Analyzer** isn't a standalone sidebar link — you land there automatically after analyzing a capture from Upload.
 
+Settings has a section bar at the top with **Common** (General, Security, Data, Notifications, User Keys, System — shared across the pkt* apps) and **pktPCAP** (Captures, Capture Ingest). The tabs below change with the section you pick, so switch sections if a tab seems to be missing.
+
 ## Analyzing a capture file
 
 1. Go to **Upload**, drag-and-drop (or browse for) a `.pcap`, `.pcapng`, or `.cap` file.
