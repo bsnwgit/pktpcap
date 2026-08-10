@@ -19,6 +19,8 @@ from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
+import aiosqlite
+
 from app.config import get_settings
 from app.dependencies import AdminUser, CurrentUser
 from app.backup import run_backup_sync, list_backups_sync, _read_backup_settings_sync
@@ -330,8 +332,41 @@ async def run_backup_now(user: AdminUser):
     return result
 
 
-@router.get("/export")
-async def export_bundle(user: AdminUser):
+class ExportRequest(BaseModel):
+    password: str
+
+
+async def _verify_export_password(user: dict, password: str) -> None:
+    """Step-up re-auth for the full backup bundle.
+
+    The bundle deliberately contains both the database and config.yaml,
+    because a restore is useless without them — but that pairing means one
+    downloaded file holds every encrypted secret AND the key that decrypts
+    them, and it lands wherever the browser puts downloads. Being logged in as
+    an admin is not a high enough bar to hand that over, so the caller
+    re-enters their current password: the same bar as revealing any other
+    stored secret.
+
+    Suite-proxied callers (X-Suite-Token, synthetic user id 0) have no local
+    password and are always rejected — they must log in as a real local admin.
+    """
+    from app.auth.local import verify_password
+
+    _settings = get_settings()
+    async with aiosqlite.connect(_settings.db_path) as _conn:
+        _conn.row_factory = aiosqlite.Row
+        async with _conn.execute(
+            "SELECT hashed_password FROM users WHERE id = ?", (user["id"],)
+        ) as _cur:
+            _row = await _cur.fetchone()
+    if not _row or not verify_password(password, _row["hashed_password"]):
+        raise HTTPException(status_code=401, detail="Incorrect password")
+
+
+@router.post("/export")
+async def export_bundle(body: ExportRequest, user: AdminUser):
+    await _verify_export_password(user, body.password)
+
     """Download a full backup bundle as a .tar.gz archive: pktpcap.db + config.yaml."""
     settings = get_settings()
     date_str = datetime.utcnow().strftime("%Y-%m-%d")
