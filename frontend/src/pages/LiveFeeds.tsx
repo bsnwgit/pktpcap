@@ -406,7 +406,7 @@ function PushCommands() {
           <div className="space-y-1.5">
             <pre className="bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-xs font-mono text-emerald-400 whitespace-pre-wrap overflow-x-auto">{tsharkCmd}</pre>
             <button onClick={() => copy(tsharkCmd)}
-              className="text-xs px-3 py-1.5 rounded-lg text-white transition-colors" style={{ background: copied ? '#16a34a' : '#374151' }}>
+              className="text-xs px-3 py-1.5 rounded-lg text-white transition-colors" style={{ background: copied ? '#52cc8e' : '#2a2418' }}>
               {copied ? '✓ Copied' : 'Copy Command'}
             </button>
           </div>
@@ -417,7 +417,7 @@ function PushCommands() {
             <p className="text-xs text-gray-500">Run this on the machine that has Wireshark installed (not on the pktPCAP server) — it launches Wireshark and starts capturing immediately over SSH:</p>
             <pre className="bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-xs font-mono text-emerald-400 whitespace-pre-wrap overflow-x-auto">{wsCliCmd}</pre>
             <button onClick={() => copy(wsCliCmd)}
-              className="text-xs px-3 py-1.5 rounded-lg text-white transition-colors" style={{ background: copied ? '#16a34a' : '#374151' }}>
+              className="text-xs px-3 py-1.5 rounded-lg text-white transition-colors" style={{ background: copied ? '#52cc8e' : '#2a2418' }}>
               {copied ? '✓ Copied' : 'Copy Command'}
             </button>
             <p className="text-xs text-gray-500 mt-2">This server's interfaces: {ownInterfaces.length ? ownInterfaces.join(', ') : 'loading…'}</p>
@@ -437,7 +437,7 @@ function PushCommands() {
             </ol>
             <pre className="bg-gray-950 border border-gray-800 rounded-lg px-3 py-2 text-xs font-mono text-emerald-400 whitespace-pre-wrap overflow-x-auto">{wsRemoteCommand}</pre>
             <button onClick={() => copy(wsRemoteCommand)}
-              className="text-xs px-3 py-1.5 rounded-lg text-white transition-colors" style={{ background: copied ? '#16a34a' : '#374151' }}>
+              className="text-xs px-3 py-1.5 rounded-lg text-white transition-colors" style={{ background: copied ? '#52cc8e' : '#2a2418' }}>
               {copied ? '✓ Copied' : 'Copy Remote Capture Command'}
             </button>
             <p className="text-xs text-gray-500 mb-1">All fields together, for reference:</p>
