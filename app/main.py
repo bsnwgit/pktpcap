@@ -82,6 +82,10 @@ async def lifespan(app: FastAPI):
     await backup_scheduler.start()
     log.info("Backup scheduler started")
 
+    from app.retention import CaptureRetention
+    capture_retention = CaptureRetention()
+    await capture_retention.start()
+
     # Capture-domain startup (app/capture/*) doesn't exist until Stage 2 —
     # guarded the same way as the router registration below, so Stage 1 can
     # be curl-tested standalone before Stage 2 lands.
