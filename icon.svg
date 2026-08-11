@@ -1,12 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <!-- Background -->
-  <rect width="512" height="512" rx="96" fill="#180e2d"/>
-  <!-- Magnifying glass circle -->
-  <circle cx="208" cy="208" r="152" fill="none" stroke="#8b6ce8" stroke-width="34"/>
-  <!-- Packet icon inside -->
-  <rect x="138" y="172" width="140" height="72" rx="14" fill="none" stroke="#8b6ce8" stroke-width="22"/>
-  <line x1="155" y1="197" x2="262" y2="197" stroke="#8b6ce8" stroke-width="16" stroke-linecap="round"/>
-  <line x1="155" y1="220" x2="262" y2="220" stroke="#8b6ce8" stroke-width="16" stroke-linecap="round"/>
-  <!-- Handle -->
-  <line x1="318" y1="318" x2="422" y2="422" stroke="#8b6ce8" stroke-width="38" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <rect width="64" height="64" fill="#04060a"/>
+  <circle cx="32" cy="32" r="30" stroke="rgba(216,180,110,.16)"/>
+  <circle cx="32" cy="32" r="30" stroke="rgba(216,180,110,.5)" stroke-dasharray="1.5 11"/>
+  <circle cx="27" cy="27" r="15" stroke="#f5e2b6" stroke-width="1.4"/>
+  <circle cx="27" cy="27" r="19" stroke="rgba(216,180,110,.2)"/>
+  <rect x="18" y="21" width="18" height="12" stroke="rgba(216,180,110,.85)" stroke-width="1.1"/>
+  <path d="M21 25.5 H33" stroke="#8ad8ea" stroke-width="1.1" stroke-linecap="round"/>
+  <path d="M21 29 H29" stroke="rgba(138,216,234,.55)" stroke-width="1.1" stroke-linecap="round"/>
+  <path d="M38.5 38.5 L50 50" stroke="#f5e2b6" stroke-width="1.6" stroke-linecap="round"/>
+  <path d="M44 41 l-3 3" stroke="rgba(216,180,110,.45)" stroke-width="1.1"/>
 </svg>
