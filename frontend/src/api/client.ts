@@ -184,10 +184,16 @@ export const api = {
     }
     return res.json()
   },
-  exportConfig: async (): Promise<{ blob: Blob; filename: string }> => {
+  exportConfig: async (password: string): Promise<{ blob: Blob; filename: string }> => {
     const headers: Record<string, string> = {}
     if (_accessToken) headers['Authorization'] = `Bearer ${_accessToken}`
-    const res = await fetch('/api/system/export', { headers })
+    // FastAPI needs this to parse the JSON body carrying the password.
+    headers['Content-Type'] = 'application/json'
+    const res = await fetch('/api/system/export', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ password }),
+    })
     if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
     const blob = await res.blob()
     const cd = res.headers.get('Content-Disposition') ?? ''
