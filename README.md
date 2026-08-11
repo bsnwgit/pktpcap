@@ -656,7 +656,7 @@ All endpoints are served from the app root; interactive OpenAPI docs are availab
 | `GET` | `/backups` | List existing backup snapshots |
 | `POST` | `/backups/run` | Run a backup snapshot immediately |
 | `POST` | `/backups/restore/{snapshot_name}` | Restore directly from an on-server snapshot; optional `?files=pktpcap.db,config.yaml` to restore only some of it |
-| `GET` | `/export` | Download a full backup bundle (`pktpcap.db` + `config.yaml`) as a `.tar.gz` |
+| `POST` | `/export` | Download a full backup bundle (`pktpcap.db` + `config.yaml`) as a `.tar.gz`. Requires the caller's current password in the body — the bundle contains every encrypted secret plus the key that decrypts them |
 | `POST` | `/import` | Upload a `.tar.gz` bundle to restore from; optional `files` form field restricts which files are restored |
 
 ### AI (`/api/ai`)
