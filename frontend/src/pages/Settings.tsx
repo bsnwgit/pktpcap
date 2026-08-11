@@ -4,6 +4,7 @@ import { api, User, UserIn, Integration, IntegrationInput, SslStatus, UserApiKey
 import { useAuth } from '../store/auth'
 import HelpButton from '../components/HelpButton'
 import { copyToClipboard } from '../utils/clipboard'
+import { BrandLockup } from '../components/Brand'
 
 // -- Generic helpers -------------------------------------------------------------
 type SettingsMap = Record<string, unknown>
@@ -487,7 +488,7 @@ function SuiteTokenDisplay() {
             <button
               onClick={async () => { const ok = await copyToClipboard(token); if (ok) { setCopied(true); setTimeout(() => setCopied(false), 2000) } }}
               className="px-3 py-1.5 text-xs font-medium text-white rounded-lg whitespace-nowrap transition-colors"
-              style={{ background: copied ? '#16a34a' : '#0284c7' }}
+              style={{ background: copied ? '#52cc8e' : '#469fb4' }}
             >
               {copied ? '✓ Copied' : 'Copy Token'}
             </button>
@@ -1612,7 +1613,7 @@ function CaptureIngestTab({ settings, set, save, port }: {
           <button
             onClick={async () => { const ok = await copyToClipboard(tsharkCmd); if (ok) { setCopiedTshark(true); setTimeout(() => setCopiedTshark(false), 2000) } }}
             className="text-xs px-3 py-1.5 rounded-lg text-white transition-colors"
-            style={{ background: copiedTshark ? '#16a34a' : '#374151' }}
+            style={{ background: copiedTshark ? '#52cc8e' : '#2a2418' }}
           >
             {copiedTshark ? '✓ Copied' : 'Copy Command'}
           </button>
@@ -1625,7 +1626,7 @@ function CaptureIngestTab({ settings, set, save, port }: {
           <button
             onClick={async () => { const ok = await copyToClipboard(wsCmd); if (ok) { setCopiedWs(true); setTimeout(() => setCopiedWs(false), 2000) } }}
             className="text-xs px-3 py-1.5 rounded-lg text-white transition-colors"
-            style={{ background: copiedWs ? '#16a34a' : '#374151' }}
+            style={{ background: copiedWs ? '#52cc8e' : '#2a2418' }}
           >
             {copiedWs ? '✓ Copied' : 'Copy Settings'}
           </button>
@@ -2565,7 +2566,7 @@ export default function Settings() {
             <div className="px-6 py-4 border-b border-gray-800 grid grid-cols-3 gap-4 items-center">
               <h2 className="text-sm font-semibold text-white">System: {systemInfo?.app_name ?? 'pktPCAP'}</h2>
               <div className="col-span-2">
-                <img src="lockup-64h.png" alt={systemInfo?.app_name ?? 'pktPCAP'} className="h-8 w-auto" />
+                <BrandLockup markSize={32} descriptor={null} />
               </div>
             </div>
             <div className="px-6 py-2">
