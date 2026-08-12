@@ -47,10 +47,6 @@ Click any underlined IP address anywhere in the Analyzer (top talkers, flows, TC
 - **Public IPs** open a modal combining ipinfo.io, ipapi.is, AbuseIPDB, and MXToolbox data, using **your own** API keys (Settings → User Keys).
 - **Private/RFC1918 IPs** open a pktIPAM inventory lookup (subnet, DHCP lease, DNS records, ARP sightings) — if your admin has configured a Suite Integration connection to pktIPAM.
 
-## AI Assistant
-
-Click the floating **✦** button (bottom-right, any page) to ask a question about whatever capture is currently on screen — powered by whichever provider your admin has enabled (a local/self-hosted model, Claude, or GPT). It's scoped strictly to pktPCAP's own domain (captures, flows, protocol breakdowns); off-topic questions, requests to discuss other pktApp suite tools, and prompt-injection attempts ("ignore your instructions," etc.) are refused.
-
 ## Logs
 
 Browse the app's own log history, with pagination.

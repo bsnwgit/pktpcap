@@ -18,7 +18,6 @@ Prompts for install directory and port (default `8765`), handles the venv, `conf
 
 1. **Change the admin password.**
 2. **Decide your capture delivery mode(s)**: local file upload needs no server-side setup at all (parsing is entirely client-side); live feeds need either a remote `tshark`/`curl` pipe or Wireshark's own SSH Remote Capture pointed at this host — see Live Feed setup below.
-3. **Enable an AI provider** (Settings → Security → AI Assistant) if you want the floating assistant to work — local/self-hosted (Ollama, or any OpenAI-compatible endpoint), Anthropic, or OpenAI; each has its own enable toggle and local providers are tried first. The assistant is scoped strictly to pktPCAP's own domain — off-topic questions and prompt-injection/override attempts are refused server-side before ever reaching the provider. A provider gets 180 seconds to answer before the request is failed; that ceiling exists for slow local models, so a busy Ollama host is far more likely to hit it than a cloud provider.
 4. **Set up a Suite Integration connection to pktIPAM** if you want private/RFC1918 IPs in the Analyzer to resolve to real inventory data instead of just showing as plain addresses.
 5. **Configure alert notification channels.**
 6. **Set up backups** and confirm a manual run succeeds.
@@ -28,7 +27,6 @@ Prompts for install directory and port (default `8765`), handles the venv, `conf
 
 Settings has a section bar above its tab bar with two buttons:
 
-- **Common** — General, Security (Users, Auth, Suite Integration, AI Assistant, SSL/TLS), Data (Storage, Backups), Notifications, User Keys, System. These are the same in every pkt* app.
 - **pktPCAP** — Captures and Capture Ingest, this app's own settings.
 
 The tab bar shows one section's tabs at a time, so if a tab you're looking for isn't listed, switch sections. These tabs previously shared one long row split by a thin divider. Deep links (`/settings?tab=ingest`, the links from alert emails, and so on) still land on the right tab — the section follows automatically.
@@ -58,7 +56,7 @@ Uses Wireshark's built-in SSH Remote Capture interface type against a small wrap
 3. Running `dumpcap` over SSH needs `root` or a user in the `wireshark` group with `dumpcap` setuid permissions on this host, same as the tshark method.
 4. If the toggle is off, the wrapper exits with an error rather than silently failing.
 
-A live Wireshark session also shows up as a normal entry in **Active Feed Sessions** in the UI — click Analyze to pull it into the standard rule-based/AI analysis.
+A live Wireshark session also shows up as a normal entry in **Active Feed Sessions** in the UI — click Analyze to pull it into the standard rule-based analysis.
 
 ### Feed session lifecycle
 
