@@ -36,7 +36,7 @@ pktPCAP is a locally-hosted packet capture analyzer. Drop a `.pcap` or `.pcapng`
 
 ## Recent Changes (2026-07)
 
-- **Rebuilt as FastAPI + React.** pktPCAP was the first app in the `pkt*` suite, originally a synchronous Flask app with server-rendered Jinja templates, cookie-session auth, and sha256 password hashing. It's now a FastAPI backend (`app/`) + React 18/Vite SPA (`frontend/`) with JWT/bcrypt auth, matching every sibling app's stack. The old Flask app is left in place under `service/` for reference but is **not used** by `install.sh` or the systemd unit anymore — see [Project Structure](#project-structure).
+- **Rebuilt as FastAPI + React.** pktPCAP was the first app in the `pkt*` suite, originally a synchronous Flask app with server-rendered Jinja templates, cookie-session auth, and sha256 password hashing. It's now a FastAPI backend (`app/`) + React 18/Vite SPA (`frontend/`) with JWT/bcrypt auth, matching every sibling app's stack. The old Flask app has been removed; it survives in git history if ever needed.
 - **New `captures` database table.** Persisted `.pcapng` files (from an upload or a finished live feed) now have a real DB row (`saving`/`saved`/`failed`/`missing`) instead of being tracked purely by directory listing — a crash mid-write is now visible instead of silently absent.
 - **IP Lookup wired into the Analyzer.** Every IP shown in Top Talkers, Flows, TCP streams, UDP flows, and Threat evidence is now a clickable lookup (`IpLink` component) — external providers for public IPs, a pktIPAM inventory lookup for private/RFC1918 IPs (if a pktIPAM Suite Integration is configured).
 - **tshark ingest can now be toggled off independently of Wireshark remote capture**, and a default capture duration can be set so a `curl`-piped tshark session can self-terminate cleanly instead of relying on Ctrl+C (which truncates the upload).
@@ -788,12 +788,6 @@ pktpcap/
 ├── backup.py                      ← Standalone dev-machine checkout backup (2-rotation) — NOT
 │                                     the in-app feature (that's app/backup.py)
 │
-├── service/                       ← LEGACY. The original Flask/Jinja app pktPCAP shipped as before
-│                                     the 2026-07-26 rebuild. Left in the tree for reference only —
-│                                     install.sh, pktpcap.service, and requirements.txt no longer
-│                                     touch it, and it is not what a fresh install runs. Has its
-│                                     own service/requirements.txt from before the rebuild.
-│
 ├── ssl/                           ← SSL certs — GITIGNORED (place certs here, or upload via Settings)
 │   └── .gitkeep
 │
@@ -834,7 +828,7 @@ The `ssl/` directory is gitignored — never commit certificate material.
 ## Known Limitations
 
 - **tshark interface field has no remote-host awareness.** The Live Feeds interface field's autocomplete suggestions come from `GET /api/system/net-interfaces` — pktPCAP's own host — which is only actually relevant to the Wireshark-GUI tab (where Wireshark SSHes into this same host). For the generic tshark/curl method, you must know and type the *remote* capture host's real interface name yourself (`tshark -D` on that host); the field is free-text and the mismatch is explained in its help text rather than fixed at the UI level.
-- **Legacy `service/` tree.** The pre-rebuild Flask/Jinja app is still present in the repository for reference but is dead code — `install.sh`, `pktpcap.service`, and the root `requirements.txt` no longer reference it. It has its own separate `service/requirements.txt` and should not be edited expecting it to affect a running instance.
+- **Legacy `service/` tree — removed.** The pre-rebuild Flask/Jinja app lived at `service/` and was dead code: nothing imported it, and `install.sh`, `pktpcap.service` and the root `requirements.txt` never referenced it. It was deleted because it carried 21 of this repository's code-scanning findings, including a password hash of one unsalted-per-round SHA-256 — the live app uses bcrypt (`app/auth/local.py`) — and publishing that on a public repo invites someone to copy it. It remains in git history if it is ever needed: `git show 0590c3e:service/db.py`.
 - **No upgrade path from the pre-rebuild database.** The FastAPI rebuild uses a fresh schema (`migrations/001_initial.sql`) — user accounts and settings from a pre-2026-07-26 Flask-based install are not carried forward automatically.
 - **Single-worker constraint.** `workers` must stay at `1` because live feed sessions are held in one process's memory — this rules out horizontal scaling of the backend process without a redesign of feed storage.
 
