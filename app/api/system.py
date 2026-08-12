@@ -278,8 +278,13 @@ async def upload_ssl_pfx(
     def _extract() -> tuple[bool, str]:
         import tempfile
         _ssl_dir().mkdir(parents=True, exist_ok=True)
-        tmp = Path(tempfile.mktemp(suffix=".pfx"))
-        tmp.write_bytes(pfx_data)
+        # This file holds PKCS#12 private key material, so a predictable name
+        # is the worst case for mktemp's create-between-name-and-write window.
+        # mkstemp creates it atomically with mode 0600 and returns the fd.
+        _fd, _tmp_name = tempfile.mkstemp(suffix=".pfx")
+        with os.fdopen(_fd, "wb") as _fh:
+            _fh.write(pfx_data)
+        tmp = Path(_tmp_name)
         try:
             cert_proc = subprocess.run(
                 ["openssl", "pkcs12",
@@ -389,7 +394,12 @@ async def export_bundle(body: ExportRequest, user: AdminUser):
                 for f in tmp_path.iterdir():
                     tar.add(str(f), arcname=f.name)
 
-    tmp_out = Path(tempfile.mktemp(suffix=".tar.gz"))
+    # mkstemp, not mktemp: mktemp only *suggests* a name, leaving a window in
+    # which anything can create or symlink that path before we write to it.
+    # mkstemp creates it atomically, O_EXCL, mode 0600.
+    _fd, _tmp_name = tempfile.mkstemp(suffix=".tar.gz")
+    os.close(_fd)
+    tmp_out = Path(_tmp_name)
     try:
         await asyncio.to_thread(_build_archive, tmp_out)
 
