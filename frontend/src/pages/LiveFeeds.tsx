@@ -525,11 +525,7 @@ export default function LiveFeeds() {
   }
 
   return (
-    // pb-20: clearance for the floating AI-assistant button (fixed
-    // bottom-6 right-6 in Layout.tsx), which otherwise sits directly over
-    // the last row's action links (Delete, etc.) in the Persisted Captures
-    // table below.
-    <div className="space-y-4 pb-20">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h1 className="text-xl font-semibold text-white">Live Feeds</h1>
