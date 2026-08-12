@@ -1727,7 +1727,6 @@ const OSS_NOTICES: Array<{ name: string; license: string }> = [
   { name: 'python-dotenv',      license: 'BSD-3-Clause' },
   { name: 'aiosmtplib',         license: 'MIT' },
   { name: 'Jinja2',             license: 'BSD-3-Clause' },
-  { name: 'OpenAI SDK',         license: 'Apache-2.0' },
   { name: 'python-dateutil',    license: 'BSD / Apache-2.0' },
   { name: 'python-multipart',   license: 'Apache-2.0' },
   { name: 'React',              license: 'MIT' },

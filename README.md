@@ -243,13 +243,8 @@ The simplest path. You already have a capture file.
 │         ├─ parsePCAP() ──► TS packet parser (pure client-side)   │
 │         │                  builds flows, TCP stats, DNS, threats  │
 │         │                                                        │
-│         ├─ Rule engine ──► anomaly/threat detection (no server)  │
-│         │                                                        │
-│         └─ POST /api/ai/chat ─► [pktPCAP FastAPI server]         │
-│                                  │                               │
-│                                  ▼                               │
-│                                  │                               │
-│                                  ▼                               │
+│         └─ Rule engine ──► anomaly/threat detection (no server)  │
+│                                                                  │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
