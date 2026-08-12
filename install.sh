@@ -200,6 +200,5 @@ if [ "$FRONTEND_BUILT" -eq 0 ]; then
 fi
 echo "Next steps:"
 echo "  1. Log in and change the admin password if needed"
-echo "  2. Add an Anthropic or OpenAI API key in Settings -> Security -> AI Assistant (optional)"
 echo "  3. Configure a Storage path in Settings -> Captures to persist live-fed captures to disk"
 echo "  4. Check service status: sudo systemctl status pktpcap"

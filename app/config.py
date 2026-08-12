@@ -15,7 +15,7 @@ it's installed at /opt/pktpcap, in-place in a repo checkout, or anywhere
 else. Override any individual path in config.yaml if you need it to live
 somewhere else.
 
-Runtime settings (capture storage/retention, notification channels, AI keys,
+Runtime settings (capture storage/retention, notification channels,
 SAML config, suite integrations, per-user lookup API keys) are stored in
 SQLite and loaded via the settings table; those are NOT in this file. This
 file only covers startup/infrastructure settings that must be known before
