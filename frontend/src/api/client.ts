@@ -253,9 +253,6 @@ export const api = {
     return res.json()
   },
 
-  // ── AI Assistant ─────────────────────────────────────────────────────────
-  aiChat: (question: string, context: Record<string, unknown> = {}) =>
-    request<{ answer: string; provider?: string; tokens_used: number }>('/ai/chat', { method: 'POST', body: JSON.stringify({ question, context }) }),
   testAiKey: (provider: string, api_key: string, model?: string) =>
     request<{ ok: boolean; reply?: string; error?: string }>('/ai/test', { method: 'POST', body: JSON.stringify({ provider, api_key, model }) }),
 

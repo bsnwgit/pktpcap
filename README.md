@@ -5,14 +5,14 @@
 </p>
 
 <p align="center">
-  A standalone FastAPI/React web app for analyzing PCAP files in the browser, with an AI chat assistant and a live NetFlow-style capture feed.
+  A standalone FastAPI/React web app for analyzing PCAP files in the browser, with a live NetFlow-style capture feed.
 </p>
 
 ---
 
 ## Overview
 
-pktPCAP is a locally-hosted packet capture analyzer. Drop a `.pcap` or `.pcapng` file onto the UI and get instant, rule-based analysis of TCP health, DNS, threats, and traffic flows — no cloud upload required. An optional AI assistant (local/self-hosted via Ollama or any OpenAI-compatible endpoint, or cloud via Anthropic/OpenAI) is available as a floating chat panel on every page, and can answer questions about whatever capture you're currently viewing.
+pktPCAP is a locally-hosted packet capture analyzer. Drop a `.pcap` or `.pcapng` file onto the UI and get instant, rule-based analysis of TCP health, DNS, threats, and traffic flows — no cloud upload required.
 
 **Key traits:**
 - Runs entirely on your infrastructure — captures never leave your environment
@@ -32,7 +32,6 @@ pktPCAP is a locally-hosted packet capture analyzer. Drop a `.pcap` or `.pcapng`
 
 ## Recent Changes (2026-08)
 
-- **AI Assistant chat error messages fixed.** A connection/timeout failure reaching a provider (e.g. Ollama unreachable) used to surface as a blank message like `"Ollama error:"` with no detail — httpx's own connection/timeout exceptions often carry no message text. It now names the provider and its base URL, or the failure type when nothing else is available. (pktPCAP's chat request already sent proper auth via `api.aiChat()`, so it wasn't affected by the auth bug fixed the same day in several sibling apps — see their READMEs.)
 
 ## Recent Changes (2026-07)
 
@@ -40,7 +39,6 @@ pktPCAP is a locally-hosted packet capture analyzer. Drop a `.pcap` or `.pcapng`
 - **New `captures` database table.** Persisted `.pcapng` files (from an upload or a finished live feed) now have a real DB row (`saving`/`saved`/`failed`/`missing`) instead of being tracked purely by directory listing — a crash mid-write is now visible instead of silently absent.
 - **IP Lookup wired into the Analyzer.** Every IP shown in Top Talkers, Flows, TCP streams, UDP flows, and Threat evidence is now a clickable lookup (`IpLink` component) — external providers for public IPs, a pktIPAM inventory lookup for private/RFC1918 IPs (if a pktIPAM Suite Integration is configured).
 - **tshark ingest can now be toggled off independently of Wireshark remote capture**, and a default capture duration can be set so a `curl`-piped tshark session can self-terminate cleanly instead of relying on Ctrl+C (which truncates the upload).
-- **AI is now a persistent chat assistant** (floating button, bottom-right, on every page) rather than three preset "analysis mode" buttons — ask a free-form question and it uses whatever capture/analysis context is currently on screen.
 - Config split into two layers: `config.yaml` (startup/infrastructure — port, JWT secret, CORS, install dir) and the SQLite `settings` table (everything else, managed from the Settings UI) — see [Configuration](#configuration).
 
 ---
@@ -154,7 +152,7 @@ sed -i "s/CHANGE_ME_generate_with_openssl_rand_hex_32/$(openssl rand -hex 32)/" 
 echo 'install_dir: "/opt/pktpcap"' >> /opt/pktpcap/config.yaml
 ```
 
-`config.yaml` only covers startup/infrastructure settings (host, port, JWT secret, CORS, install dir). Everything else — capture storage/retention, notification channels, AI keys, SAML config, suite integrations, per-user lookup API keys — lives in the SQLite `settings` table, created automatically on first start and managed entirely through the **Settings** UI once you've logged in.
+`config.yaml` only covers startup/infrastructure settings (host, port, JWT secret, CORS, install dir). Everything else — capture storage/retention, notification channels, SAML config, suite integrations, per-user lookup API keys — lives in the SQLite `settings` table, created automatically on first start and managed entirely through the **Settings** UI once you've logged in.
 
 ### 6. Apply migrations and create the admin user
 
@@ -250,10 +248,8 @@ The simplest path. You already have a capture file.
 │         └─ POST /api/ai/chat ─► [pktPCAP FastAPI server]         │
 │                                  │                               │
 │                                  ▼                               │
-│              [Ollama/local, Anthropic, or OpenAI]  (optional)    │
 │                                  │                               │
 │                                  ▼                               │
-│                     AI Assistant chat panel                      │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
@@ -263,9 +259,8 @@ The simplest path. You already have a capture file.
 2. **Analyze (local)** reads the file entirely client-side and never sends it anywhere; **Analyze & Save** also `POST`s it to `/api/captures/upload` so it's persisted and shows up in the **Persisted Captures** box on the Upload page (and, if shared, in other users' lists too). Uploads are private to the uploader by default — check **Share with other users** to change that.
 3. `parsePCAP()` (`frontend/src/lib/pcap/parser.ts`) walks every packet record and builds in-memory data structures: flow tuples, TCP flag counters, DNS query tables, and threat indicators (`analyze.ts`).
 4. Rule-based analysis runs immediately in the browser — no server round-trip needed. Results render across seven tabs on the **Analyzer** page.
-5. If an AI provider is enabled and configured, the floating **AI Assistant** panel (available on every page) can answer free-form questions about the current capture — it POSTs the question plus whatever analysis context is on screen to `/api/ai/chat`, which the server forwards to whichever provider is enabled (local/self-hosted first, then Anthropic or OpenAI).
 
-**Server role in local mode:** the FastAPI server is only involved for `/api/captures/upload` (if you choose to save) and the AI chat proxy. Packet parsing and rule-based analysis are entirely client-side.
+**Server role in local mode:** the FastAPI server is only involved for `/api/captures/upload` (if you choose to save). Packet parsing and rule-based analysis are entirely client-side.
 
 ---
 
@@ -434,7 +429,7 @@ The wrapper checks `wireshark_capture_enabled` before running and exits with an 
 
 > **Note:** on the pktPCAP host, running `dumpcap` over SSH still needs either `root` or a user in the `wireshark` group with `dumpcap` setuid permissions — same requirement as the generic tshark method above.
 
-Once a live Wireshark session is running, its captured bytes are also visible from the pktPCAP UI as a normal entry in **Active Feed Sessions** — click **Analyze** to pull them in for the same rule-based/AI analysis as an uploaded file.
+Once a live Wireshark session is running, its captured bytes are also visible from the pktPCAP UI as a normal entry in **Active Feed Sessions** — click **Analyze** to pull them in for the same rule-based analysis as an uploaded file.
 
 **Expected: a red "Error from extcap pipe" message when you stop the capture.** This comes from **Wireshark itself**, running on whatever machine you launched it from — it is not a pktPCAP error, and it does not mean the capture failed. Wireshark's sshdump extcap logs harmless SSH connection-setup warnings (typically `ssh_config_parse_line: Unsupported option: ...`, from libssh being pickier than OpenSSH about directives in your `~/.ssh/config`) to stderr when it connects, and Wireshark holds onto that stderr buffer and displays it as an "Error" banner the moment the capture pipe closes — regardless of whether the buffered content was actually an error. This is a known, filed Wireshark bug ([gitlab.com/wireshark/wireshark/-/issues/15845](https://gitlab.com/wireshark/wireshark/-/issues/15845)), purely client-side, with nothing pktPCAP can do to suppress it. If the capture otherwise shows "Capture started" → "Capture stopped" with no other complaint, it worked correctly.
 
@@ -468,7 +463,6 @@ Buffer limit is **200 MB per named session**. If the stream exceeds this, the se
 |---|---|
 | File analysis | Parse `.pcap` / `.pcapng` / `.cap`; drop multiple files to queue, analyze locally or save to server storage |
 | Seven analysis tabs | Summary, Anomalies, Flows, TCP, UDP, DNS, Threats |
-| AI Assistant | Floating chat panel (any page) — Ollama/local, Anthropic, or OpenAI, proxied through the local server, using the current view's capture context |
 | IP Lookup | Every IP in the Analyzer is clickable: ipinfo.io / ipapi.is / AbuseIPDB / MXToolbox for public IPs (per-user API keys), pktIPAM inventory lookup for private IPs (via Suite Integration) |
 | Live feed — tshark/curl | Any remote host with `tshark` streams pcapng directly to the server over HTTP; independently toggleable on/off |
 | Live feed — Wireshark GUI | Native Wireshark SSH Remote Capture support via the bundled `pktpcap` wrapper script — see [Wireshark GUI remote capture](#wireshark-gui-remote-capture-ssh) |
@@ -503,7 +497,6 @@ Buffer limit is **200 MB per named session**. If the stream exceeds this, the se
 Configuration is split into two layers:
 
 - **`config.yaml`** — startup/infrastructure settings that must be known before the database connects: `host`, `port`, `workers` (must stay `1`), `install_dir`, `secret_key` (JWT signing), `credential_key` (Fernet key encrypting stored secrets like user API keys at rest), `cors_origins`, `log_level`/`log_file`, `ssl_dir`, `storage_path`. Copy `config.example.yaml` to `<install_dir>/config.yaml` (or point `PKTPCAP_CONFIG` at it) and restart to change any of these. Every path defaults to somewhere under `install_dir`, so nothing needs to be set explicitly unless you want it somewhere else.
-- **SQLite `settings` table** — everything else (capture retention, notification channels, AI provider keys, SAML config, suite integrations, per-user lookup API keys). Managed entirely through the **Settings** UI. Settings is organized into two sections, picked from a section bar above the tab bar — **Common** (General, Security [Users, Auth, Suite Integration, AI Assistant, SSL/TLS], Data [Storage, Backups], Notifications, User Keys, System) and **pktPCAP** (Captures, Capture Ingest). Only the selected section's tabs are shown; a deep link like `/settings?tab=captures` selects the section for you.
 
 ### General
 
@@ -544,21 +537,6 @@ Two directions:
 - **Inbound** (`/api/suite/token`, `/api/suite/register`, `/api/suite/regenerate`) — the token pktHub or another suite app uses to authenticate as a forwarded user via `X-Suite-Token`/`X-Suite-User`/`X-Suite-Role` headers.
 - **Outbound** (`/api/integrations/*`) — named connections *to* sibling apps, e.g. a pktIPAM instance used for the internal-IP lookup in [IP Lookup](#ip-lookup-1) below. Multiple named instances per `app_name` are supported.
 
-### Security → AI Assistant
-
-Providers are grouped **Local / Self-Hosted (Private)** first, then **Cloud (Paid)** below — each with its own enable toggle instead of the old single provider radio. Local providers are tried first; the first enabled provider with valid config answers each chat question.
-
-| Setting | Description |
-|---|---|
-| Ollama | Local models via a running Ollama server — base URL + model name |
-| Local providers (+ Add) | Any number of additional OpenAI-compatible local endpoints (LM Studio, LocalAI, vLLM, etc.) — name, base URL, model, optional API key |
-| `anthropic_key` / `anthropic_model` | API key + model (default `claude-opus-4-8`; also selectable: `claude-sonnet-5`, `claude-haiku-4-5-20251001`) |
-| `openai_key` / `openai_model` | API key + model (default `gpt-4o`; also selectable: `gpt-4o-mini`, `o1`, or any model name typed manually) |
-
-Both a "Say PONG" key test (`POST /api/ai/test`, Anthropic/OpenAI only) and the live chat panel are available.
-
-Each provider call is allowed up to **180 seconds** to respond. That headroom is for local models on modest hardware — a large model answering a complex, multi-part question can easily run past a minute, and a tighter ceiling turned those into spurious failures. Cloud providers rarely approach it. On overrun the chat reports that the provider didn't finish in time instead of failing blankly.
-
 ### Security → SSL/TLS
 
 Upload a PEM cert + key pair, or a PFX/PKCS#12 bundle + passphrase (converted server-side with `openssl`) — no manual file placement required. Status (installed/not, expiry, subject/issuer) is shown live. See [SSL / TLS](#ssl--tls) below.
@@ -577,7 +555,6 @@ Per-user API keys for **AbuseIPDB**, **IPQualityScore**, **ipinfo.io**, **ipapi.
 2. Go to **Upload**, drag-and-drop (or browse for) a `.pcap`, `.pcapng`, or `.cap` file.
 3. Click **Analyze (local)** to parse it entirely in the browser without touching the server, or **Analyze & Save** to also persist it to server storage first.
 4. Results appear across seven tabs on the **Analyzer** page.
-5. Optionally, click the floating **✦** button (bottom-right, any page) to ask the AI Assistant a question about the capture currently on screen.
 
 ### Analysis tabs
 
@@ -658,13 +635,6 @@ All endpoints are served from the app root; interactive OpenAPI docs are availab
 | `POST` | `/backups/restore/{snapshot_name}` | Restore directly from an on-server snapshot; optional `?files=pktpcap.db,config.yaml` to restore only some of it |
 | `POST` | `/export` | Download a full backup bundle (`pktpcap.db` + `config.yaml`) as a `.tar.gz`. Requires the caller's current password in the body — the bundle contains every encrypted secret plus the key that decrypts them |
 | `POST` | `/import` | Upload a `.tar.gz` bundle to restore from; optional `files` form field restricts which files are restored |
-
-### AI (`/api/ai`)
-
-| Method | Path | Description |
-|---|---|---|
-| `POST` | `/chat` | Send a question + optional capture context to the configured provider |
-| `POST` | `/test` | Test a provider/key/model combination without saving it ("Say PONG") |
 
 ### Logs (`/api/logs`)
 
@@ -765,7 +735,6 @@ pktpcap/
 │   ├── src/
 │   │   ├── App.tsx               ← Routes: /, /live-feeds, /upload, /analyzer, /logs, /settings
 │   │   ├── pages/                ← Dashboard, LiveFeeds, Upload, Analyzer, Logs, Settings, Login
-│   │   ├── components/           ← Layout (sidebar nav), HelpButton, AiAssistant, IpLink, Pagination
 │   │   ├── lib/pcap/              ← Client-side pcap/pcapng parser + rule-based analyzer (TypeScript)
 │   │   ├── api/client.ts         ← Typed fetch wrapper for every backend endpoint
 │   │   └── store/auth.tsx        ← JWT auth context (access token in memory, refresh via cookie)
@@ -819,8 +788,6 @@ The `ssl/` directory is gitignored — never commit certificate material.
 
 **Server restart:** `POST /api/system/restart` schedules `os._exit(1)` after a short delay and relies on the systemd unit's `Restart=on-failure` to bring the process back up — unlike the old Flask app, it does not self-`Popen` a replacement process (that pattern was found to occasionally leave an orphaned, systemd-untracked process squatting on the port).
 
-**AI:** the floating `AiAssistant` component POSTs `{question, context}` to `/api/ai/chat`; the server resolves the first enabled provider (local/self-hosted first, then Anthropic or OpenAI) with a system prompt tuned for packet/capture troubleshooting and returns the answer. API keys never leave the host.
-
 **pktHub / Suite integration:** inbound — the app accepts an `X-Suite-Token` header on every request; a matching token establishes the forwarded user/role with no separate login. Outbound — `app/integrations/suite_client.py` lets pktPCAP call a sibling app's own suite API (currently used to query pktIPAM for internal-IP lookups).
 
 ---
@@ -833,16 +800,6 @@ The `ssl/` directory is gitignored — never commit certificate material.
 - **Single-worker constraint.** `workers` must stay at `1` because live feed sessions are held in one process's memory — this rules out horizontal scaling of the backend process without a redesign of feed storage.
 
 If you're tracking a specific older bug list against this app, re-verify it against current code first — the 2026-07-26 FastAPI/React rebuild (`git log`: "Rebuild pktPCAP as FastAPI + React, matching the pkt* suite framework") explicitly rewrote the capture-persistence, Live Feeds copy/refresh, token-display, and tshark-allow-toggle screens as part of the same change, so bug reports filed against the pre-rebuild UI may no longer apply.
-
----
-
-## Supported AI Models
-
-| Provider | Models |
-|---|---|
-| Ollama / local (OpenAI-compatible) | Whatever's pulled/served on the configured endpoint — free-text model field |
-| Anthropic | `claude-opus-4-8` (default), `claude-sonnet-5`, `claude-haiku-4-5-20251001` |
-| OpenAI | `gpt-4o` (default), `gpt-4o-mini`, `o1`, and any model name entered manually |
 
 ---
 
