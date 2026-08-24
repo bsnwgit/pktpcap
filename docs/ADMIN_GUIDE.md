@@ -94,6 +94,36 @@ Configure schedule and rotation in Settings — snapshots the SQLite DB and conf
 
 See the README's [Known Limitations](../README.md#known-limitations) section for the current list — check there before assuming something's broken versus a documented gap.
 
+## Resonance (embedded assistant)
+
+Settings → Resonance (admin only). Adds an assistant launcher to the bottom corner of every page. The assistant itself runs on the resonance server; pktPCAP only decides who may open it.
+
+**Setting it up.** Paste the **interface server** address — not resonance's admin portal, which answers on a different address and serves `embed.js` too, so it looks right until the session call returns "not found" — then the key you were issued. Choose which roles may use it, press **Test Connection**, and only then switch **Enabled** on. Test Connection works whether or not the feature is enabled; always prove a key before putting the widget in front of users. Every field ships blank, so a fresh install shows nothing until it is pointed at a resonance server of its own.
+
+Two things have to line up on the resonance side, and both fail silently when they don't:
+
+- **This install's origin** must be on the key's allow-list. The exact string is shown ready to copy on the same page. Behind a reverse proxy, fill in **pktPCAP's own address** yourself — what the app detects is the internal address, not the one users type.
+- **Speakers Name** must be on for the key. Without it resonance records nothing, so there is no trace of who asked what.
+
+**Reachability, twice over.**
+
+- Resonance must be reachable **from the browser**, over HTTPS, with a certificate those browsers already trust. An untrusted certificate produces an empty widget and nothing in the console to explain it.
+- pktPCAP also calls resonance **server to server**, so this host must resolve resonance's name and trust its certificate — the browser doing both is not enough. Python verifies against its own bundled roots rather than the system store, so a certificate signed by an internal CA is trusted by every browser on the network and still rejected here. Point **CA bundle** at the system store instead (`/etc/ssl/certs/ca-certificates.crt` on Debian and Ubuntu).
+
+**What it can reach.** The capture catalogue — which captures exist, what each was called, its size, source, owner and state — the catalogue summary, and pktPCAP's own diagnostic log. Every call is made by pktPCAP's own page on the session of whoever is signed in, so it reaches only what that person could already open. `/.well-known/resonance.json` lists exactly what is on offer.
+
+**It cannot read a capture.** No packet, header or payload is returned by any operation. The assistant sees the catalogue, never the contents; reading a capture stays a deliberate act a person performs by downloading it.
+
+**There is no write half on this app, deliberately.** pktPCAP's only state changes are deleting a capture, sharing one beyond its owner, and accepting an upload — none of which belongs to an assistant — and there is no alert engine here to acknowledge. So the role switch below has two positions rather than three, instead of offering a *Read and write* level that would do nothing.
+
+Documentation is published separately at `GET /api/resonance/docs`, to a suite token or an admin session — the guides shipped with the running version, so pointing resonance at it keeps the assistant's knowledge in step with the installed release.
+
+**Who may open it.** Set per role: *No access* hides the launcher entirely, *Allowed* shows it. Nothing on this page grants a right the role does not already have.
+
+**Credentials.** pktPCAP never sends a login to resonance. It vouches for whoever is signed in and gets back a short-lived, single-use code the browser spends on opening the panel. The key is encrypted at rest and never reaches the browser.
+
+**If it never appears.** Diagnostics reports how many users could not load the widget in the last week; the usual causes are an ad blocker, a wrong server address, or resonance being unreachable. Repeated failures pause the integration for a few minutes rather than hammering resonance — the panel says so while it is paused, and a successful Test Connection clears it.
+
 ## Troubleshooting
 
 | Symptom | Check |
