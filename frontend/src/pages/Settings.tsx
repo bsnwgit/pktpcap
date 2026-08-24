@@ -301,6 +301,132 @@ function Section({ title, help, children, onSave, saving, saved, error }: {
   )
 }
 
+// ── Resonance origin ──────────────────────────────────────────────────────────
+// The one string that has to be copied onto the resonance key, so it is edited
+// and copied in the same place. Showing it twice — once editable in the form and
+// once read-only beside a Copy button — reliably sends people to the copy.
+function ResonanceOriginField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [detected, setDetected] = useState('')
+  const [copied, setCopied] = useState(false)
+
+  useEffect(() => { api.resonanceStatus().then(r => setDetected(r.detected_origin || '')).catch(() => {}) }, [])
+
+  const effective = value.trim() || detected
+
+  return (
+    <div>
+      <div className="flex items-center gap-2">
+        <TextInput value={value} onChange={onChange} placeholder={detected || 'https://pktpcap.example.com'} mono />
+        <button
+          type="button"
+          onClick={() => { navigator.clipboard?.writeText(effective); setCopied(true); setTimeout(() => setCopied(false), 2000) }}
+          className="text-xs text-blue-400 hover:text-blue-300 whitespace-nowrap px-2"
+        >{copied ? 'Copied' : 'Copy'}</button>
+      </div>
+      {!value.trim() && detected && (
+        <p className="text-xs text-gray-500 mt-1">
+          Blank — using <span className="font-mono">{detected}</span>.
+        </p>
+      )}
+    </div>
+  )
+}
+
+// ── Resonance diagnostics ─────────────────────────────────────────────────────
+// Everything here answers a question an admin would otherwise have to open the
+// resonance console to answer: what does this key actually allow, is this
+// install's origin the one the key expects, and is the widget reaching anyone.
+function ResonanceDiagnostics({ baseUrl, keyValue }: { baseUrl: string; keyValue: string }) {
+  const [testing, setTesting] = useState(false)
+  const [result, setResult] = useState<Awaited<ReturnType<typeof api.resonanceTest>> | null>(null)
+  const [status, setStatus] = useState<Awaited<ReturnType<typeof api.resonanceStatus>> | null>(null)
+
+  const loadStatus = () => { api.resonanceStatus().then(setStatus).catch(() => {}) }
+  useEffect(loadStatus, [])
+
+  const runTest = async () => {
+    setTesting(true)
+    setResult(null)
+    try {
+      setResult(await api.resonanceTest(baseUrl, keyValue))
+    } catch (e: any) {
+      setResult({ ok: false, error: e.message || 'Test failed', origin: '' })
+    } finally {
+      setTesting(false)
+      loadStatus()
+    }
+  }
+
+  const cap = (result?.cap || {}) as Record<string, unknown>
+  const failures = status?.load_failures
+
+  return (
+    <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden mt-5">
+      <div className="px-6 py-4 border-b border-gray-800">
+        <h2 className="text-sm font-semibold text-white">Diagnostics</h2>
+      </div>
+      <div className="px-6 py-4 space-y-4">
+
+        {/* getUserMedia is gated on a secure context, so the microphone cannot
+            work over plain HTTP however the key is configured. */}
+        {!window.isSecureContext && (
+          <p className="text-xs text-amber-400">
+            Served over HTTP — voice is unavailable. Text chat is unaffected.
+          </p>
+        )}
+
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={runTest}
+            disabled={testing}
+            className="bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-white text-sm font-medium rounded-lg px-4 py-2 transition-colors"
+          >{testing ? 'Testing…' : 'Test Connection'}</button>
+          <span className="text-xs text-white">Works whether or not the widget is enabled.</span>
+        </div>
+
+        {result && !result.ok && (
+          <div className="text-xs">
+            <p className="text-red-400">{result.error}</p>
+            {result.detail && <p className="text-gray-500 mt-0.5 font-mono">{result.detail}</p>}
+          </div>
+        )}
+
+        {result?.ok && (
+          <div className="text-xs text-white space-y-1">
+            <p className="text-green-400">Connected — this key grants:</p>
+            <p>
+              ask {cap.ask ? '✓' : '✗'} &middot; mic {cap.mic ? '✓' : '✗'} &middot; speak {cap.speak ? '✓' : '✗'}
+            </p>
+            <p>
+              Limits: {String(cap.rate_per_min ?? '?')}/min per key, {String(cap.rate_per_visitor ?? '?')}/min per person
+            </p>
+            <p>
+              Session: {result.expires_in ? Math.round(result.expires_in / 60) : '?'} min &middot; Code: {result.code_expires_in ?? '?'}s
+            </p>
+            <p className="text-gray-500">Sent as {result.user_id_sent}</p>
+          </div>
+        )}
+
+        {status?.breaker.open && (
+          <p className="text-xs text-amber-400">
+            Paused after {status.breaker.failures} failures — retrying in {status.breaker.retry_in_seconds}s.
+            {status.breaker.last_error ? ` Last error: ${status.breaker.last_error}` : ''}
+          </p>
+        )}
+
+        {failures && failures.events > 0 && (
+          <p className="text-xs text-amber-400">
+            The widget failed to load for {failures.users} user{failures.users === 1 ? '' : 's'}
+            {' '}({failures.events} time{failures.events === 1 ? '' : 's'}) in the last {failures.days} days.
+            Common causes are an ad blocker, a wrong server address, or resonance being unreachable.
+          </p>
+        )}
+      </div>
+    </div>
+  )
+}
+
 interface SaveState { saving: boolean; saved: boolean; error: string }
 const INIT: SaveState = { saving: false, saved: false, error: '' }
 
@@ -1683,7 +1809,7 @@ function CapturesTab({ settings, set, save }: {
 
 // -- Tab structure ------------------------------------------------------------------
 
-type TabId = 'general' | 'security' | 'data' | 'notifications' | 'apikeys' | 'system' | 'captures' | 'ingest'
+type TabId = 'general' | 'security' | 'data' | 'notifications' | 'resonance' | 'apikeys' | 'system' | 'captures' | 'ingest'
 
 // Tabs before gapBefore are the suite-common set every pkt app shares and make
 // up the "Common" section; gapBefore and everything after it are
@@ -1695,6 +1821,7 @@ const TABS: Array<{ id: TabId; label: string; adminOnly?: boolean; gapBefore?: b
   { id: 'security',      label: 'Security' },
   { id: 'data',          label: 'Data' },
   { id: 'notifications', label: 'Notifications' },
+  { id: 'resonance',     label: 'Resonance', adminOnly: true },
   { id: 'apikeys',       label: 'User Keys' },
   { id: 'system',        label: 'System' },
   { id: 'captures',      label: 'Captures', adminOnly: true, gapBefore: true },
@@ -1846,6 +1973,26 @@ export default function Settings() {
   const lucidSave = useSave(['lucid_api_token'], settings, load)
   const capturesSave = useSave(['storage_path', 'max_upload_mb', 'storage_quota_gb', 'retention_days', 'auto_purge'], settings, load)
   const ingestSave = useSave(['feed_token', 'tshark_capture_enabled', 'wireshark_capture_enabled', 'default_capture_duration_seconds'], settings, load)
+  const resonanceSave = useSave([
+    'resonance_enabled', 'resonance_base_url', 'resonance_key', 'resonance_role_levels',
+    'resonance_origin', 'resonance_ca_bundle',
+    'resonance_style', 'resonance_target', 'resonance_label', 'resonance_side',
+    'resonance_width', 'resonance_height', 'resonance_open', 'resonance_exclude_paths',
+  ], settings, load)
+  // Whether each role may open the assistant. The stored shape carries a third
+  // "write" level for the app that also publishes a data surface; nothing here
+  // reads it, so the panel offers only the two levels that do something, and
+  // anything unrecognised reads as 'none' — failing closed, as the server does.
+  const RESONANCE_DEFAULT_LEVELS = { admin: 'read', analyst: 'read', viewer: 'read' }
+  const resonanceLevels =
+    (settings['resonance_role_levels'] as Record<string, string>) ?? RESONANCE_DEFAULT_LEVELS
+  const resonanceLevel = (role: string) => {
+    const level = resonanceLevels[role]
+    return level === 'read' || level === 'write' ? 'read' : 'none'
+  }
+  const setResonanceLevel = (role: string, level: string) =>
+    set('resonance_role_levels', { ...resonanceLevels, [role]: level })
+
   const notifySave = useSave([
     'notify_slack_enabled', 'notify_slack_webhook_url', 'notify_slack_channel',
     'notify_email_enabled', 'notify_email_smtp_host', 'notify_email_smtp_port',
@@ -2483,6 +2630,104 @@ export default function Settings() {
       )}
 
       {/* User Keys */}
+      {tab === 'resonance' && (
+        <>
+        <Section title="Resonance" onSave={resonanceSave.save} saving={resonanceSave.saving} saved={resonanceSave.saved} error={resonanceSave.error}
+          help={{
+            title: 'Resonance — How It Works',
+            content: <>
+              <p>Resonance is the shared assistant surface for the pkt suite. It mounts as a launcher in the corner of every page, but the assistant itself runs on the resonance server rather than inside pktPCAP.</p>
+              <p><span className="text-gray-300 font-medium">Resonance AI Interface Server</span> is the interface resonance serves embeds from — <span className="text-amber-500 font-medium">not its admin portal</span>, which usually answers on a different address and will look almost right: it serves <code>embed.js</code> too, and only fails later with a &ldquo;not found&rdquo; on the session call. Whatever is typed into SETTINGS → ENROLL → Enroll Embed Server on resonance goes here character for character, because <code>embed.js</code> derives its own origin from that string. Leave the port off if it sits behind a reverse proxy.</p>
+              <p><span className="text-gray-300 font-medium">pktPCAP&rsquo;s own address</span> is what a browser types to reach this app, and it is the string that has to appear on the resonance key&rsquo;s origins list. Leave it blank and pktPCAP works it out from the request — correct for a direct install, and wrong behind a reverse proxy, where it sees the internal address rather than the one users type.</p>
+              <p><span className="text-gray-300 font-medium">pktPCAP never sends your login credentials.</span> It vouches for whoever is signed in and receives a short-lived, single-use code the browser spends on opening the widget. The key below never reaches the browser.</p>
+              <p><span className="text-gray-300 font-medium">The panel&rsquo;s insides belong to resonance.</span> It is an iframe served from resonance&rsquo;s own origin, so pktPCAP cannot restyle it or move its controls — where the buttons sit is a resonance change. What pktPCAP can do is make the panel bigger, with <span className="text-gray-300 font-medium">Panel size</span>, which is usually what &ldquo;more room to read&rdquo; actually needs.</p>
+              <p><span className="text-amber-500 font-medium">What the assistant will discuss is configured in resonance, not here.</span> The subjects it will engage with are set by the profile the key is authorised against.</p>
+              <p><span className="text-gray-300 font-medium">The assistant can read the capture catalogue.</span> Which captures exist, what each was called, its size, source, owner and state, the catalogue summary, and pktPCAP&rsquo;s own diagnostic log. Each call is made by this page on the session of whoever is signed in, so it reaches only what that person could already open. The list is published at <code>/.well-known/resonance.json</code> and is fixed in the code rather than configurable — but it is inert unless <span className="text-gray-300 font-medium">Enabled</span> is on and the person&rsquo;s role is above <span className="text-gray-300 font-medium">No access</span> below.</p>
+              <p><span className="text-amber-500 font-medium">It cannot read a capture.</span> No packet, header or payload is returned by anything on that list — the assistant sees the catalogue, never the contents. Reading a capture stays a deliberate act a person performs by downloading it here.</p>
+              <p><span className="text-gray-300 font-medium">Nothing it can call changes anything</span>, which is why there is no <span className="text-gray-300 font-medium">Read and write</span> level on this app. pktPCAP&rsquo;s only state changes are deleting a capture, sharing one, and accepting an upload, and none of the three belongs to an assistant — so rather than offer a level that does nothing, the switch below has two positions.</p>
+              <p><span className="text-gray-300 font-medium">Access is a per-role switch.</span> <span className="text-gray-300 font-medium">No access</span> hides the launcher from that role entirely; <span className="text-gray-300 font-medium">Allowed</span> lets them open it and read the operations above.</p>
+              <p>Answers are capped so a conversation stays readable: a page plus the true count, trimmed again if it would be too large to carry. Documentation is published separately at <code>/api/resonance/docs</code>, so pointing resonance at it keeps what the assistant knows in step with the installed version.</p>
+              <p>Resonance must be reachable from the <span className="text-gray-300 font-medium">browser</span>, over HTTPS, with a certificate those browsers already trust. An untrusted certificate produces an empty widget with nothing in the console to explain it.</p>
+              <p><span className="text-gray-300 font-medium">pktPCAP also calls resonance directly</span>, server to server, so this host must be able to resolve resonance&rsquo;s name and trust its certificate — the browser doing both is not enough. Python verifies against its own bundled roots rather than the system store, so a certificate signed by an internal CA is trusted by every browser on the network and still rejected here. <span className="text-gray-300 font-medium">CA bundle</span> points it at the system store instead; on Debian and Ubuntu that is <code>/etc/ssl/certs/ca-certificates.crt</code>.</p>
+            </>,
+          }}
+        >
+          <Field label="Enabled" hint="Show the launcher to users. Separate from Test Connection on purpose.">
+            <Toggle value={bool('resonance_enabled')} onChange={v => set('resonance_enabled', v)} />
+          </Field>
+          <Field label="Resonance AI Interface Server" hint="The interface server, not the admin portal — they are different addresses.">
+            <TextInput value={str('resonance_base_url')} onChange={v => set('resonance_base_url', v)} placeholder="https://resonance.example.com" mono />
+          </Field>
+          <Field label="Key" hint="Issued by resonance, one per placement. Never sent to the browser.">
+            <TextInput value={str('resonance_key')} onChange={v => set('resonance_key', v)} placeholder="e0000000000.…" secret mono />
+          </Field>
+          <Field label="pktPCAP's own address" hint="What browsers type to reach pktPCAP. Copy it onto the resonance key.">
+            <ResonanceOriginField value={str('resonance_origin')} onChange={v => set('resonance_origin', v)} />
+          </Field>
+          <Field label="CA bundle" hint="Only needed if resonance uses an internal CA. Blank trusts public CAs only.">
+            <TextInput value={str('resonance_ca_bundle')} onChange={v => set('resonance_ca_bundle', v)} placeholder="/etc/ssl/certs/ca-certificates.crt" mono />
+          </Field>
+          <Field label="Who can open it" hint="No access hides the launcher entirely for that role.">
+            <div className="space-y-2">
+              {['admin', 'analyst', 'viewer'].map(role => (
+                <div key={role} className="flex items-center gap-3">
+                  <span className="w-20 text-sm text-white">{role}</span>
+                  <SelectInput
+                    value={resonanceLevel(role)}
+                    onChange={v => setResonanceLevel(role, v)}
+                    options={[
+                      { value: 'none', label: 'No access' },
+                      { value: 'read', label: 'Allowed' },
+                    ]}
+                  />
+                </div>
+              ))}
+            </div>
+          </Field>
+          <Field label="Placement" hint="Bubble is a launcher in the corner. Inline renders into an element you name instead.">
+            <SelectInput
+              value={str('resonance_style', 'bubble')}
+              onChange={v => set('resonance_style', v)}
+              options={[{ value: 'bubble', label: 'Bubble' }, { value: 'inline', label: 'Inline' }]}
+            />
+          </Field>
+          {str('resonance_style', 'bubble') === 'inline' && (
+            <Field label="Target element" hint="id of an element that already exists. Without it nothing mounts.">
+              <TextInput value={str('resonance_target')} onChange={v => set('resonance_target', v)} mono />
+            </Field>
+          )}
+          <Field label="Side" hint="Which corner the launcher sits in.">
+            <SelectInput
+              value={str('resonance_side', 'right')}
+              onChange={v => set('resonance_side', v)}
+              options={[{ value: 'right', label: 'Right' }, { value: 'left', label: 'Left' }]}
+            />
+          </Field>
+          <Field label="Label" hint="Optional text on the launcher.">
+            <TextInput value={str('resonance_label')} onChange={v => set('resonance_label', v)} />
+          </Field>
+          <Field label="Panel size" hint="Width and height of the open panel. Blank uses resonance's defaults.">
+            <div className="flex items-center gap-2">
+              <TextInput value={str('resonance_width')} onChange={v => set('resonance_width', v)} placeholder="420" mono />
+              <span className="text-xs text-gray-500">&times;</span>
+              <TextInput value={str('resonance_height')} onChange={v => set('resonance_height', v)} placeholder="640" mono />
+            </div>
+          </Field>
+          <Field label="Open on load" hint="Show the panel expanded rather than waiting for a click.">
+            <Toggle value={bool('resonance_open')} onChange={v => set('resonance_open', v)} />
+          </Field>
+          <Field label="Hide on pages" hint="Comma-separated paths. Listing a page discards conversations on it.">
+            <TextInput
+              value={((settings['resonance_exclude_paths'] as string[]) ?? ['/login']).join(', ')}
+              onChange={v => set('resonance_exclude_paths', v.split(',').map(x => x.trim()).filter(Boolean))}
+              mono
+            />
+          </Field>
+        </Section>
+        <ResonanceDiagnostics baseUrl={str('resonance_base_url')} keyValue={str('resonance_key')} />
+        </>
+      )}
+
       {tab === 'apikeys' && (
         <ApiKeysTab
           lucidToken={str('lucid_api_token')}

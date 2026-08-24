@@ -55,6 +55,16 @@ Browse the app's own log history, with pagination.
 
 Manage your own password from the user menu. Your personal IP-lookup API keys live under Settings → User Keys, private to your account.
 
+## The assistant
+
+If your administrator has set it up, a launcher sits in the bottom corner of every page. Click it to ask questions in a chat panel. The panel comes from the resonance server, so what it can help with depends on how your administrator configured it there.
+
+If your administrator has allowed it for your role, it can tell you which captures exist, how big they are, who made them and whether they are still running — and it can search pktPCAP's own log. It cannot open a capture: no packet or payload ever reaches it, so you still download a capture yourself to look inside.
+
+It cannot change anything at all here — not delete a capture, not share one, not start one.
+
+If the launcher never appears, either your role is set to *No access* or the assistant could not load. Your administrator can see both under Settings → Resonance.
+
 ## Getting help in the app
 
 Click **Documentation** in the sidebar (just above your account info) to open this guide and the Administrator Guide as in-app tabs, so you don't need the repo checked out to read them.

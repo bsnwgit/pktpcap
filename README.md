@@ -803,6 +803,54 @@ If you're tracking a specific older bug list against this app, re-verify it agai
 
 ---
 
+## Resonance (embedded assistant)
+
+Resonance is the suite's shared assistant. It mounts as a launcher in the bottom corner of every
+authenticated page, but the assistant itself runs on the resonance server, not inside pktPCAP.
+Configure it under **Settings → Resonance** (admin only); every field ships blank, so a fresh
+install shows nothing until it is pointed at a resonance server of its own.
+
+`app/integrations/resonance/` and `frontend/src/resonance/` are **vendored** — copied between
+pkt\* apps byte-for-byte except for `APP_SLUG`. They are deliberately not a published package,
+because `install.sh` builds a venv on customer hosts and a private index would put a credentialed
+network dependency in the middle of every install. pktLog is the reference implementation.
+
+```
+browser                 pktPCAP                       resonance
+embed.js  ──GET──▶  /api/resonance/code  ──POST──▶  /embed/session
+          ◀─code──                        ◀─code───
+frame ──────────────────────────────────────────────▶  /embed?c=<code>
+```
+
+pktPCAP vouches for whoever is signed in and receives a short-lived, single-use code. The key is
+encrypted at rest, never reaches the browser, and resonance never sees a pktPCAP credential.
+`GET /api/resonance/code` is the one cookie-authenticated route in the app — `embed.js` fetches it
+itself, outside the SPA, and the access token lives in memory — so `Sec-Fetch-Site` and `Origin`
+are both checked before the cookie is honoured.
+
+**The data surface.** Two documents let resonance discover what it may call, both public because
+they carry names rather than data:
+
+| path | what it is |
+|---|---|
+| `/.well-known/resonance.json` | the grant — the operations this install permits |
+| `/api/resonance/openapi.json` | those operations' OpenAPI, narrowed from the app's own |
+| `/api/resonance/docs` | the shipped guides, for resonance to ingest (suite token or admin) |
+
+Point resonance's **READ SPEC** at `/api/resonance/openapi.json`. The published operations are:
+
+- `getCaptureSummary`
+- `listCaptures`
+- `getCapture`
+- `searchApplicationLog`
+
+Every call is made by pktPCAP's own page, same-origin, on the session of the person already signed
+in, so nothing here reaches data that person could not already open. Which operations exist is
+fixed in `app/api/resonance_data.py`, not configurable per install. Write operations are withheld
+from the grant entirely until an administrator sets a role to **Read and write**.
+
+**Reads only, and no packet data.** The assistant sees the capture catalogue — names, sizes, owners, state — never contents. There is no write half at all: this app's only state changes are delete, share and upload a capture, and there is no alert engine to acknowledge. The role switch has two positions rather than three.
+
 ## Log Forwarding
 
 pktPCAP writes its own application log to the in-app **Logs** page. It can also
