@@ -244,7 +244,7 @@ function isPrivate(ip: string): boolean {
 }
 
 export function securityScan(pkts: Packet[]): SecurityScanResult {
-  const KNOWN_DNS = new Set(['8.8.8.8', '8.8.4.4', '1.1.1.1', '1.0.0.1', '9.9.9.9', '208.67.222.222', '208.67.220.220'])
+  const KNOWN_DNS = new Set(['8.8.8.8', '8.8.4.4', '1.1.1.1', '1.0.0.1', '9.9.9.9', '208.67.222.222', '208.67.220.220'])  // sanitize: allow-public-ip
   const CLEARTEXT: Record<number, string> = { 21: 'FTP', 23: 'Telnet', 80: 'HTTP', 110: 'POP3', 143: 'IMAP', 25: 'SMTP', 119: 'NNTP', 194: 'IRC', 69: 'TFTP', 512: 'rexec', 513: 'rlogin', 514: 'rsh' }
   const BRUTE_PORTS = new Set([22, 23, 3389, 21, 25, 110, 143, 389, 3306, 5432, 1433, 5900])
   const ADMIN_PORTS = new Set([22, 445, 3389, 135, 139, 5985, 5986, 5900, 3306, 5432, 1433])
@@ -414,7 +414,7 @@ export function securityScan(pkts: Packet[]): SecurityScanResult {
       severity: 'low', category: 'DNS', type: 'Non-Standard DNS Resolvers',
       detail: `Queries sent to: ${suspectDNS.slice(0, 5).join(', ')} — verify these are authorized DNS servers`,
       evidence: [`Non-standard resolvers observed:`, ...suspectDNS.slice(0, 10).map(ip => `  ${ip}`),
-        `Known-good DNS servers: 8.8.8.8, 8.8.4.4, 1.1.1.1, 9.9.9.9`],
+        `Known-good DNS servers: 8.8.8.8, 8.8.4.4, 1.1.1.1, 9.9.9.9`],  // sanitize: allow-public-ip
     })
 
   threats.sort((a, b) => ({ high: 0, medium: 1, low: 2 }[a.severity] - { high: 0, medium: 1, low: 2 }[b.severity]))

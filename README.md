@@ -678,6 +678,45 @@ All endpoints are served from the app root; interactive OpenAPI docs are availab
 | `DELETE` | `/integrations/{id}` | Delete an outbound integration |
 | `POST` | `/integrations/{id}/test` | Health-check a configured integration |
 
+#### Nav manifest (pktHub's APPS sidebar)
+
+`GET /api/nav/manifest` (`app/api/nav.py`) publishes pktPCAP's own left-nav so
+pktHub can mirror it under **APPS** in its sidebar. Entries are
+`{path, label, icon, admin_only, divider_before}`. pktHub's health poller
+reads the endpoint on every cycle and caches the result, so a page added here
+shows up in the hub within one poll interval with no change on the hub side.
+
+Selecting one of those rows opens pktPCAP's **real page** inside pktHub —
+proxied, and chromeless so it renders without this app's own sidebar or
+header. It is not a re-implementation and cannot drift from what the page
+actually does.
+
+`NAV_MANIFEST` in `app/api/nav.py` and `NAV` in
+`frontend/src/components/Layout.tsx` are two declarations of one menu, and each
+carries a comment pointing at the other — a page added to one belongs in both.
+The endpoint is gated by `require_suite_token` for the same reason the widget
+endpoints are: it discloses this app's page structure.
+
+`admin_only` controls only what the hub *draws*. The real authorisation is
+this app's own role check against the `X-Suite-Role` pktHub asserts.
+
+#### Chromeless layout needs a definite height
+
+`Layout.tsx`'s chromeless branch uses `h-screen overflow-auto`, not
+`min-h-screen`. A page that fills its container sizes itself with `h-full`,
+which resolves against the parent's height — and collapses to zero against an
+auto-height parent, rendering blank. Maps and canvases hit this first.
+
+#### Widget endpoints now require the suite token
+
+`app/api/widgets.py` previously mounted its router with a bare `APIRouter()`,
+so the server-rendered widget views — which read internal data — answered
+anyone who could reach the port. The router now carries
+`dependencies=[Depends(require_suite_token)]`, matching the NOC Builder's
+actual access path. Anything calling those URLs without `X-Suite-Token` now
+gets a 401.
+
+
 ### User Keys (`/api/user-api-keys`)
 
 | Method | Path | Description |

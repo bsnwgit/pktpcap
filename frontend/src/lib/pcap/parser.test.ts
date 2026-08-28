@@ -97,7 +97,7 @@ describe('parsePCAP + analyzePackets', () => {
   it('parses a DNS query packet and reports it as unanswered', () => {
     const dns = dnsQuery('example.com')
     const udp = udpHeader(5000, 53, dns.length)
-    const ip = ipv4Header(17, '192.168.1.10', '8.8.8.8', udp.length + dns.length)
+    const ip = ipv4Header(17, '192.168.1.10', '203.0.113.8', udp.length + dns.length)
     const eth = ethHeader(0x0800)
     const pkt = [...eth, ...ip, ...udp, ...dns]
 
@@ -107,7 +107,7 @@ describe('parsePCAP + analyzePackets', () => {
     expect(packets).toHaveLength(1)
     expect(packets[0].protocol).toBe('UDP')
     expect(packets[0].srcIP).toBe('192.168.1.10')
-    expect(packets[0].dstIP).toBe('8.8.8.8')
+    expect(packets[0].dstIP).toBe('203.0.113.8')
     expect(packets[0].dns?.qname).toBe('example.com')
     expect(packets[0].dns?.isResponse).toBe(false)
 
@@ -121,7 +121,7 @@ describe('parsePCAP + analyzePackets', () => {
 
   it('parses a bare TCP SYN and flags a failed handshake anomaly', () => {
     const tcp = tcpSynHeader(40000, 443)
-    const ip = ipv4Header(6, '10.0.0.5', '93.184.216.34', tcp.length)
+    const ip = ipv4Header(6, '10.0.0.5', '203.0.113.34', tcp.length)
     const eth = ethHeader(0x0800)
     const pkt = [...eth, ...ip, ...tcp]
 

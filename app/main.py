@@ -29,6 +29,7 @@ from app.api import (
     ip_info as ip_info_router,
     mxtoolbox as mxtoolbox_router,
     widgets as widgets_router,
+    nav as nav_router,
     docs as docs_router,
 )
 from app.api import resonance as resonance_router
@@ -149,6 +150,7 @@ app.include_router(user_api_keys_router.router, prefix="/api/user-api-keys", tag
 app.include_router(ip_info_router.router,   prefix="/api/ip-info",      tags=["ip-info"])
 app.include_router(mxtoolbox_router.router, prefix="/api/mxtoolbox",    tags=["mxtoolbox"])
 app.include_router(widgets_router.router,    prefix="/api/widgets",      tags=["widgets"])
+app.include_router(nav_router.router,        prefix="/api/nav",          tags=["nav"])
 app.include_router(docs_router.router,       prefix="/api/docs-content", tags=["docs"])
 app.include_router(resonance_router.router,  prefix="/api/resonance",    tags=["resonance"])
 # The assistant's data surface. Carries its own absolute paths — /api/resonance/data/*
