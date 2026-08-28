@@ -507,7 +507,7 @@ export default function IpLink({ ip, className = '' }: { ip: string; className?:
 
 // ── Linkify ───────────────────────────────────────────────────────────────────
 // Splits free-text (e.g. a conversation/flow display string like
-// "10.0.0.5:1234 ↔ 8.8.8.8:53 [UDP]") on embedded IPv4 addresses and wraps
+// "10.0.0.5:1234 ↔ 203.0.113.8:53 [UDP]") on embedded IPv4 addresses and wraps
 // each one in an IpLink, leaving the surrounding text as plain string
 // fragments — for places where the IP isn't in its own dedicated field.
 const IPV4_RE = /\b(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\b/g
