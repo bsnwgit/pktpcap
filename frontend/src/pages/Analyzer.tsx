@@ -201,7 +201,7 @@ export default function Analyzer() {
         <div className="space-y-4">
           <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-800"><h2 className="text-sm font-semibold text-white">Conversations ({result.conversations.length})</h2></div>
-            <div className="overflow-x-auto">
+            <div className="f-tbl-scroll overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-800 text-left text-xs text-gray-500 uppercase tracking-wider">
@@ -222,7 +222,7 @@ export default function Analyzer() {
           </div>
           <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-800"><h2 className="text-sm font-semibold text-white">Ports ({result.ports.length})</h2></div>
-            <div className="overflow-x-auto">
+            <div className="f-tbl-scroll overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-800 text-left text-xs text-gray-500 uppercase tracking-wider">
@@ -265,7 +265,7 @@ export default function Analyzer() {
             {result.tcpStats.issueStreams.length === 0 ? (
               <div className="px-6 py-8 text-center text-sm text-gray-500">No problematic TCP streams found</div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="f-tbl-scroll overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-800 text-left text-xs text-gray-500 uppercase tracking-wider">
@@ -304,7 +304,7 @@ export default function Analyzer() {
           </div>
           <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-800"><h2 className="text-sm font-semibold text-white">Flows ({result.udpStats.flows.length})</h2></div>
-            <div className="overflow-x-auto">
+            <div className="f-tbl-scroll overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-800 text-left text-xs text-gray-500 uppercase tracking-wider">
@@ -347,7 +347,7 @@ export default function Analyzer() {
             {result.dnsStats.queries.length === 0 ? (
               <div className="px-6 py-8 text-center text-sm text-gray-500">No DNS queries found</div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="f-tbl-scroll overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-800 text-left text-xs text-gray-500 uppercase tracking-wider">
