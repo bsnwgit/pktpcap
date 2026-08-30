@@ -147,3 +147,43 @@ Documentation is published separately at `GET /api/resonance/docs`, to a suite t
 ## Upgrading
 
 Pull the latest code, rebuild the frontend if you build manually, then restart the service. Migrations run automatically on startup.
+
+Re-running `install.sh` also works, and is the better route when a release drops
+or renames a file: it detects the existing install, reports the version it
+found, and offers to uninstall it first so no stale module is left importable.
+Your data is kept either way, and the port you enter at the prompt is applied to
+the existing `config.yaml` without touching another line of it. Set
+`PKTPCAP_REMOVE_EXISTING=1` (or `0`) to answer that prompt from a script;
+non-interactive runs upgrade in place.
+
+## Uninstalling
+
+`install.sh` copies `uninstall.sh` into the install directory, so it is on the
+host without the repo:
+
+```bash
+bash /opt/pktpcap/uninstall.sh
+```
+
+It reads the install directory from the systemd unit, stops and removes the
+service, and deletes the application code and the virtualenv. **Data is kept by
+default** — `config.yaml` (which holds the JWT secret and the credential
+encryption key), `pktpcap.db` and its `-wal`/`-shm`, `logs/`, `backups/` and
+anything uploaded under `ssl/`, `captures/`. It asks separately before removing
+those, and that prompt defaults to no.
+
+| Flag | Effect |
+|---|---|
+| *(none)* | Remove the service, the code and the venv; keep data. Prompts first. |
+| `--purge` | Also delete the config, database, logs, backups and TLS material. Not recoverable. |
+| `--dry-run` | Print what would be removed; change nothing. |
+| `--yes` | Skip the prompts — required for a non-interactive run. |
+| `--dir PATH` | Install directory, if the unit file is already gone. |
+
+Re-running `install.sh` afterwards against the same directory picks the kept
+data back up, so the admin password and every setting survive an uninstall that
+was not a `--purge`.
+
+An install directory that is itself a git checkout (an in-place install) is
+detected, and its source tree is never deleted — only the unit and the venv go.
+
