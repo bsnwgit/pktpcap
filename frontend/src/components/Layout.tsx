@@ -1,5 +1,5 @@
-import { ReactNode, useState } from 'react'
-import { NavLink, useNavigate } from 'react-router-dom'
+import { ReactNode, useState, useEffect } from 'react'
+import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../store/auth'
 import { api, getToken } from '../api/client'
 import ResonanceMount from '../resonance/ResonanceMount'
@@ -84,6 +84,12 @@ export default function Layout({ children, chromeless = false }: { children: Rea
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [showChangePw, setShowChangePw] = useState(false)
+  const [navOpen, setNavOpen] = useState(false)
+  const { pathname } = useLocation()
+
+  // A NavLink does not unmount this component, so without this the drawer
+  // stays open on top of the page it has just navigated to.
+  useEffect(() => { setNavOpen(false) }, [pathname])
 
   const handleLogout = async () => {
     await logout()
@@ -100,20 +106,45 @@ export default function Layout({ children, chromeless = false }: { children: Rea
   // screen and not how the page lays out.
   if (chromeless) {
     return (
-      <div className="relative z-10 text-white h-screen overflow-auto p-6">
+      <div className="relative z-10 text-white h-dvh overflow-auto p-6">
         {children}
       </div>
     )
   }
 
   return (
-    <div className="relative z-10 flex h-screen text-white overflow-hidden">
-      <aside className="w-[210px] flex-shrink-0 border-r border-gray-800 flex flex-col" style={{ background: 'linear-gradient(180deg, rgba(216,180,110,.025), transparent 40%)' }}>
+    <div className="relative z-10 flex h-dvh text-white overflow-hidden">
+      {navOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/60 md:hidden"
+          onClick={() => setNavOpen(false)}
+          aria-hidden
+        />
+      )}
+
+      <aside
+        className={clsx(
+          'f-drawer w-[min(82vw,320px)] md:w-[210px] flex-shrink-0 border-r border-gray-800 flex flex-col',
+          // Off-canvas overlay on a phone, the desk sidebar from md up. The
+          // md: resets are what keep the desktop rendering unchanged.
+          //
+          // Width tracks the viewport instead of sitting at a fixed 260: 82vw
+          // is 262px on a 320px SE and caps at 320px from roughly 390px up, so
+          // it stays proportional on the small phones where a fixed width hurts
+          // and stops sprawling on the wide ones. The cap also guarantees a
+          // strip of backdrop stays visible, which is what makes the panel read
+          // as something you can dismiss rather than a new page.
+          'fixed inset-y-0 left-0 z-40 transition-transform duration-200',
+          'md:static md:z-auto md:translate-x-0 md:transition-none',
+          navOpen ? 'translate-x-0' : '-translate-x-full',
+        )}
+        style={{ background: 'linear-gradient(180deg, rgba(216,180,110,.025), transparent 40%)' }}
+      >
         <div className="flex items-center px-5 py-4 border-b border-gray-800">
           <BrandLockup markSize={30} />
         </div>
 
-        <nav className="flex-1 px-2 py-4 space-y-0.5">
+        <nav className="flex-1 overflow-y-auto px-2 py-4 space-y-0.5">
           {NAV.filter(n => !n.adminOnly || user?.role === 'admin').map(({ to, label, icon, dividerBefore }) => (
             <div key={to}>
               {dividerBefore && <div className="h-px bg-blue-500/25 mx-3 my-3" />}
@@ -121,7 +152,7 @@ export default function Layout({ children, chromeless = false }: { children: Rea
                 to={to}
                 end={to === '/'}
                 className={({ isActive }) => clsx(
-                  'flex items-center gap-3 pl-3 pr-3 py-2.5 text-[11.5px] uppercase tracking-[0.13em] transition-colors',
+                  'flex items-center gap-3 pl-3 pr-3 py-3.5 md:py-2.5 text-[13px] md:text-[11.5px] uppercase tracking-[0.1em] md:tracking-[0.13em] transition-colors',
                   isActive
                     ? 'bg-sky-600/20 text-sky-300 font-medium'
                     : 'text-gray-400 hover:text-white hover:bg-blue-500/[0.04] border-l-2 border-transparent',
@@ -138,7 +169,7 @@ export default function Layout({ children, chromeless = false }: { children: Rea
           <NavLink
             to="/documentation"
             className={({ isActive }) => clsx(
-              'flex items-center gap-3 pl-3 pr-3 py-2.5 text-[11.5px] uppercase tracking-[0.13em] transition-colors',
+              'flex items-center gap-3 pl-3 pr-3 py-3.5 md:py-2.5 text-[13px] md:text-[11.5px] uppercase tracking-[0.1em] md:tracking-[0.13em] transition-colors',
               isActive
                 ? 'bg-gradient-to-r from-blue-500/[0.12] to-transparent text-blue-300 border-l-2 border-blue-500'
                 : 'text-gray-400 hover:text-white hover:bg-blue-500/[0.04] border-l-2 border-transparent',
@@ -149,7 +180,7 @@ export default function Layout({ children, chromeless = false }: { children: Rea
           </NavLink>
         </div>
 
-        <div className="px-3 py-3 border-t border-gray-800">
+        <div className="f-safe-b px-3 py-3 border-t border-gray-800">
           <div className="flex items-center gap-2 px-2 py-1.5">
             <div className="w-6 h-6 rounded-full bg-sky-600 flex items-center justify-center text-xs font-bold">
               {user?.username?.[0]?.toUpperCase()}
@@ -159,13 +190,13 @@ export default function Layout({ children, chromeless = false }: { children: Rea
               <p className="text-xs text-white capitalize">{user?.role}</p>
             </div>
             {user?.authProvider === 'local' && (
-              <button onClick={() => setShowChangePw(true)} title="Change password" className="text-white hover:text-white">
+              <button onClick={() => setShowChangePw(true)} title="Change password" className="f-tap text-white hover:text-white">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25a3 3 0 013 3m3 0a6 6 0 01-7.029 5.912c-.563-.097-1.159.026-1.563.43L10.5 17.25H8.25v2.25H6v2.25H2.25v-2.818c0-.597.237-1.17.659-1.591l6.499-6.499c.404-.404.527-1 .43-1.563A6 6 0 1121.75 8.25z"/>
                 </svg>
               </button>
             )}
-            <button onClick={handleLogout} title="Sign out" className="text-white hover:text-white">
+            <button onClick={handleLogout} title="Sign out" className="f-tap text-white hover:text-white">
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
@@ -175,10 +206,25 @@ export default function Layout({ children, chromeless = false }: { children: Rea
       </aside>
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="h-12 flex-shrink-0 border-b border-gray-800 flex items-center px-6 gap-5">
-          <div className="flex items-center gap-1.5 text-sm">
+        <header className="h-12 flex-shrink-0 border-b border-gray-800 flex items-center px-4 md:px-6 gap-3 md:gap-5">
+          {/* On the desk this bar holds a status dot and little else, so the
+              drawer control and the lockup fit into it without displacing
+              anything that was already there. */}
+          <button
+            onClick={() => setNavOpen(true)}
+            aria-label="Open navigation"
+            className="f-tap md:hidden -ml-2 text-white"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5" />
+            </svg>
+          </button>
+          <div className="md:hidden">
+            <BrandLockup markSize={22} />
+          </div>
+          <div className="flex items-center gap-1.5 text-sm ml-auto md:ml-0">
             <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-            <span className="text-white text-xs">Packet Capture &amp; Analysis</span>
+            <span className="text-white text-xs hidden sm:inline">Packet Capture &amp; Analysis</span>
           </div>
         </header>
 
