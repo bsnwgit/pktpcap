@@ -562,7 +562,7 @@ export default function LiveFeeds() {
             {loading ? <Spinner label="Loading…" /> : 'No active feed sessions'}
           </div>
         ) : (
-          <table className="w-full text-sm">
+          <table className="f-tbl-cards w-full text-sm">
             <thead>
               <tr className="border-b border-gray-800 text-left text-xs text-gray-500 uppercase tracking-wider">
                 <th className="px-6 py-2">Name</th>
@@ -576,15 +576,15 @@ export default function LiveFeeds() {
             <tbody className="divide-y divide-gray-800/60">
               {feeds.map(f => (
                 <tr key={f.name} className="hover:bg-gray-800/30">
-                  <td className="px-6 py-3 text-white font-mono text-xs">{f.name}{f.truncated && <span className="ml-1 text-yellow-400" title="Buffer cap (200MB) reached — truncated">⚠</span>}</td>
-                  <td className="px-3 py-3">
+                  <td data-label="Name" className="px-6 py-3 text-white font-mono text-xs">{f.name}{f.truncated && <span className="ml-1 text-yellow-400" title="Buffer cap (200MB) reached — truncated">⚠</span>}</td>
+                  <td data-label="Status" className="px-3 py-3">
                     <span className={`px-2 py-0.5 rounded text-xs ${f.connected ? 'bg-green-900/40 text-green-400 border border-green-700/40' : 'bg-gray-800 text-gray-400 border border-gray-700'}`}>
                       {f.connected ? 'streaming' : 'idle'}
                     </span>
                   </td>
-                  <td className="px-3 py-3 text-gray-400 font-mono text-xs">{f.remote_addr}</td>
-                  <td className="px-3 py-3 text-gray-300">{fmtBytes(f.bytes_received)}</td>
-                  <td className="px-3 py-3 text-gray-300">{fmtDuration(f.duration)}</td>
+                  <td data-label="Remote" className="px-3 py-3 text-gray-400 font-mono text-xs">{f.remote_addr}</td>
+                  <td data-label="Bytes" className="px-3 py-3 text-gray-300">{fmtBytes(f.bytes_received)}</td>
+                  <td data-label="Duration" className="px-3 py-3 text-gray-300">{fmtDuration(f.duration)}</td>
                   <td className="px-3 py-3">
                     <div className="flex items-center justify-end gap-2">
                       <button onClick={() => analyzeFeed(f.name)} className="text-xs text-sky-400 hover:text-sky-300">Analyze</button>
