@@ -971,4 +971,4 @@ More at **[pktsolution.com](https://pktsolution.com)**.
 
 ## License
 
-MIT
+This project is distributed under the PolyForm Noncommercial License 1.0.0 — see [`LICENSE`](LICENSE).
