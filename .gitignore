@@ -60,6 +60,3 @@ Desktop.ini
 .idea/
 *.swp
 *~
-
-# Claude project notes (local only)
-CLAUDE.md
