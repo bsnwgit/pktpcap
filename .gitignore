@@ -27,8 +27,9 @@ ssl/*.key
 ssl/*.pem
 ssl/*.pfx
 
-# Runtime output
-screenshots/
+# Runtime output — anchored to the repo root, so it does not also swallow
+# docs/screenshots/, which is committed on purpose.
+/screenshots/
 
 # Database (contains user accounts)
 *.db
