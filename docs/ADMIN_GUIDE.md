@@ -136,6 +136,10 @@ Documentation is published separately at `GET /api/resonance/docs`, to a suite t
 
 ## Troubleshooting
 
+The most common ones. For anything else — the single-worker constraint, feed
+auth and the 200MB cap, capture ownership, SSH remote capture, TLS, upgrades —
+see [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
+
 | Symptom | Check |
 |---|---|
 | Service won't start | `journalctl -u pktpcap -n 50`; check config paths |
