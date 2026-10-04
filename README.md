@@ -722,6 +722,10 @@ this app's own role check against the `X-Suite-Role` pktHub asserts.
 which resolves against the parent's height — and collapses to zero against an
 auto-height parent, rendering blank. Maps and canvases hit this first.
 
+#### Capture analysis widgets
+
+The Analyzer page's two charts are NOC widgets for any saved capture, picked from a list: **Capture Protocols** (packet count per protocol) and **Capture Top Talkers** (the ten busiest source addresses by bytes). The Analyzer parses in the browser, so `app/capture/analysis.py` repeats the same counting on the server — same protocol labels, same captured-length byte accounting — streaming the file from disk. Results are cached per file, so only the first view of a large capture pays for the parse. Checked against tshark on saved captures: protocol totals, the ICMP count and the top-talker byte counts matched exactly.
+
 #### Widget endpoints now require the suite token
 
 `app/api/widgets.py` previously mounted its router with a bare `APIRouter()`,
