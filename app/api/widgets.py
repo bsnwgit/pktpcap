@@ -9,12 +9,13 @@ unlike sibling apps this manifest has no "Active Alerts" widget.
 """
 from __future__ import annotations
 
+import asyncio
 import html
 from contextvars import ContextVar
 
 import aiosqlite
 from fastapi import APIRouter, Depends, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 
 from app.config import get_settings
 from app.dependencies import require_suite_token
@@ -85,6 +86,26 @@ MANIFEST = [
         "description": "Biggest saved captures by file size",
         "view_path": "/api/widgets/largest_captures",
         "default_w": 600, "default_h": 340, "min_w": 320, "min_h": 200,
+    },
+    {
+        "id": "capture_protocols", "title": "Capture Protocols", "category": "Captures",
+        "description": "Protocol breakdown, by packet count, for one saved capture",
+        "view_path": "/api/widgets/capture_protocols",
+        "default_w": 460, "default_h": 320, "min_w": 260, "min_h": 180,
+        "params": [
+            {"key": "capture", "label": "Capture", "type": "select",
+             "options_path": "/api/widgets/options/captures"},
+        ],
+    },
+    {
+        "id": "capture_top_talkers", "title": "Capture Top Talkers", "category": "Captures",
+        "description": "Top source addresses, by bytes, for one saved capture",
+        "view_path": "/api/widgets/capture_top_talkers",
+        "default_w": 460, "default_h": 320, "min_w": 260, "min_h": 180,
+        "params": [
+            {"key": "capture", "label": "Capture", "type": "select",
+             "options_path": "/api/widgets/options/captures"},
+        ],
     },
     {
         "id": "failed_captures", "title": "Failed Captures", "category": "Captures",
@@ -512,6 +533,64 @@ async def widget_top_sessions():
         (r["session_name"], float(r["bytes"]), f"{r['n']} · {_fmt_bytes(r['bytes'])}") for r in rows
     ]) if rows else _empty('No capture has come from a named feed')
     return HTMLResponse(_page("Top Sessions", body))
+
+
+# ── Capture Protocols / Top Talkers widgets (charts) ──────────────────────────
+# These two redraw what the Analyzer page shows for a capture. `capture` arrives
+# from a saved widget config, so it is checked twice before a path is built: it
+# must match the capture-file name pattern, and it must be a row in the captures
+# table. The file is then only ever read from the configured capture directory.
+async def _capture_summary(capture: str):
+    """(summary, None) or (None, error html)."""
+    from app.capture.storage import CAPTURE_FILE_RE, captures_dir
+    if not capture:
+        return None, _needs("Select a capture")
+    if not CAPTURE_FILE_RE.match(capture):
+        return None, _empty("Not a capture file")
+    if not await _rows("SELECT 1 FROM captures WHERE filename = ?", (capture,)):
+        return None, _empty("That capture no longer exists")
+    d = await captures_dir()
+    path = (d / capture) if d else None
+    if not path or not path.is_file():
+        return None, _empty("The capture file is not on disk")
+    try:
+        from app.capture.analysis import summarize
+        return await asyncio.to_thread(summarize, path), None
+    except Exception as exc:
+        _note_err(exc)
+        return None, _empty(str(exc)[:120] or "Could not read this capture")
+
+
+@router.get("/options/captures")
+async def widget_options_captures():
+    rows = await _rows("SELECT filename, session_name FROM captures ORDER BY id DESC LIMIT 200")
+    return JSONResponse([
+        {"value": r["filename"],
+         "label": f"{r['session_name']} ({r['filename']})" if r.get("session_name") else r["filename"]}
+        for r in rows
+    ])
+
+
+@router.get("/capture_protocols", response_class=HTMLResponse, include_in_schema=False)
+async def widget_capture_protocols(capture: str = ""):
+    summ, err = await _capture_summary(capture)
+    if err:
+        return HTMLResponse(_page("Capture Protocols", err))
+    if not summ["protocols"]:
+        return HTMLResponse(_page("Capture Protocols", _empty("No packets in this capture")))
+    body = _bars([(k, v, _fmt_n(v)) for k, v in summ["protocols"][:12]], color="#38bdf8")
+    return HTMLResponse(_page(f"Protocols — {capture}", body))
+
+
+@router.get("/capture_top_talkers", response_class=HTMLResponse, include_in_schema=False)
+async def widget_capture_top_talkers(capture: str = ""):
+    summ, err = await _capture_summary(capture)
+    if err:
+        return HTMLResponse(_page("Capture Top Talkers", err))
+    if not summ["talkers"]:
+        return HTMLResponse(_page("Capture Top Talkers", _empty("No IP traffic found")))
+    body = _bars([(ip, b, _fmt_bytes(b)) for ip, b in summ["talkers"]], color="#34d399")
+    return HTMLResponse(_page(f"Top talkers — {capture}", body))
 
 
 # ── Capture / Volume Trend widgets (charts) ───────────────────────────────────
