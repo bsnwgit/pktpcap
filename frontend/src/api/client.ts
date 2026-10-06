@@ -34,6 +34,11 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const res = await fetch(`/api${path}`, { ...options, headers })
 
   if (res.status === 401) {
+    // A wrong current password on change-password is not an expired session. It
+    // must not be retried either: every attempt counts toward the lockout, and a
+    // retry would count each one twice.
+    const detail = (await res.clone().json().catch(() => null))?.detail
+    if (detail === 'Current password is incorrect') throw new Error(detail)
     const refreshed = await tryRefresh()
     if (refreshed) {
       headers['Authorization'] = `Bearer ${_accessToken}`
@@ -159,6 +164,7 @@ export const api = {
     request<User>(`/users/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   deleteUser: (id: number) => request(`/users/${id}`, { method: 'DELETE' }),
   setDefaultAdmin: (id: number) => request(`/users/${id}/set-default-admin`, { method: 'PATCH' }),
+  unlockUser: (id: number) => request(`/users/${id}/unlock`, { method: 'POST' }),
   resetUserPassword: (id: number, newPassword: string) =>
     request(`/users/${id}/reset-password`, { method: 'PATCH', body: JSON.stringify({ new_password: newPassword }) }),
   changeMyPassword: (current_password: string, new_password: string) =>
@@ -366,6 +372,9 @@ export interface User {
   created_at: string
   last_login: string | null
   has_password: boolean
+  is_locked?: boolean
+  lock_permanent?: boolean
+  locked_until?: string | null
 }
 
 export interface LogRecord {

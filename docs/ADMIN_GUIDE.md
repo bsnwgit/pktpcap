@@ -35,6 +35,21 @@ The tab bar shows one section's tabs at a time, so if a tab you're looking for i
 
 `admin`, `analyst`, `viewer` — Settings, log clearing, and admin routes are enforced server-side, not just hidden in the UI. Manage accounts at Settings → Users: create/edit/delete, reset password, and designate a default admin.
 
+**Failed-login lockout.** A local account is locked for 30 minutes after a set number of failed logins in a row (Settings → Security → Auth → *Failed logins before lockout*, default 3). Failures never expire; only a successful login resets the count. If it then fails that many times again it stays locked until an admin clicks the unlock icon beside it on the Users tab. While locked, even the right password is refused. A wrong current password when changing a password counts as a failed login too, so a signed-in session cannot be used to guess it. A successful login clears the failure count and any earlier lockout. If the only admin is locked, unlock it from the server, in the install directory with the app's own Python:
+
+```bash
+python3 scripts/unlock_user.py <username>
+```
+
+**Per-address throttle.** Separately from the account lockout, an address that keeps failing to sign in is blocked. Failed credential checks are counted by the address they came from, whatever username was tried, at the sign-in form and at the change-password form: after *Failed sign-ins per address* (default 10) within *Counted over* (default 15 minutes), that address is refused for *Address blocked for* (default 15 minutes), even with correct credentials. All three are under Settings → Security → Auth. A successful sign-in does not reset the count, and failures stop counting when the window ends. Other addresses are unaffected, and the block ends by itself.
+
+The address is the one the connection came from. If pktPCAP sits behind a proxy on another host (pktHub, for example), every user arrives from the proxy's address and shares one count, so one person guessing could block everyone behind it. In that setup raise the limit well above normal use, or throttle at the proxy. pktPCAP does not read `X-Forwarded-For`, because any client can send it.
+
+
+### Okta SAML SSO
+
+Settings → Security → Auth: paste Okta's IdP metadata XML (auto-fills SSO URL/Entity ID/certificate) or enter by hand. ACS URL and SP metadata link are derived from **Base URL** — set that first.
+
 ### Okta SAML SSO
 
 `python3-saml`-based, with auto-provisioning and role-sync from IdP attributes on login. If both local auth and SAML are disabled, the login page is skipped and everyone auto-signs in as the default admin (`/api/auth/auto-login`) — only appropriate on a trusted, access-controlled network.
