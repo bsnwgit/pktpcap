@@ -5,19 +5,12 @@
 </p>
 
 <p align="center">
+  <a href="docs/SCREENSHOTS.md"><strong>View screenshots</strong></a>
+</p>
+
+<p align="center">
   <img src="lockup-256h.png" alt="pktPCAP" height="64">
 </p>
-
-<p align="center">
-  <img src="docs/screenshots/dashboard.webp" alt="pktPCAP — Dashboard" width="900">
-</p>
-
-<p align="center">
-  <img src="docs/screenshots/upload.webp" alt="pktPCAP — Capture upload" width="430">
-  <img src="docs/screenshots/live-feeds.webp" alt="pktPCAP — Live feeds" width="430">
-</p>
-
-<p align="center"><sub>Dashboard &middot; Capture upload &middot; Live feeds</sub></p>
 
 <p align="center">
   A standalone FastAPI/React web app for analyzing PCAP files in the browser, with a live NetFlow-style capture feed.
