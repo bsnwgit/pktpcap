@@ -1,6 +1,10 @@
 # pktPCAP
 
 <p align="center">
+  <img src="docs/screenshots/social-preview.png" alt="pktPCAP — Analyse packet captures in your browser" width="900">
+</p>
+
+<p align="center">
   <img src="lockup-256h.png" alt="pktPCAP" height="64">
 </p>
 
@@ -24,6 +28,14 @@
 </p>
 
 ---
+
+## Why pktPCAP
+
+- **Your captures stay yours.** Packet parsing happens client-side in the browser; a `.pcap` or `.pcapng` file never touches the server unless you choose Analyze & Save.
+- **Instant rule-based analysis.** TCP health, DNS, threats and traffic flows, with no API key needed.
+- **Live feed too.** A live pcapng feed endpoint takes a generic tshark or curl feed, or native Wireshark GUI remote capture, plus IP lookup on every IP shown.
+- **Part of a suite.** One of ten self-hosted pkt apps that share one architecture (FastAPI + React), `admin` / `analyst` / `viewer` roles and a suite token. pktPCAP installs and runs standalone, so take only what you need.
+- **Self-hosted, source-available.** A systemd service on Ubuntu Server, with no container runtime. Sign in with local accounts or SAML 2.0 SSO. Free for noncommercial use under the [PolyForm Noncommercial License](LICENSE).
 
 ## Overview
 
