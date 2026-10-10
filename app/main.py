@@ -105,10 +105,16 @@ async def lifespan(app: FastAPI):
     except ImportError:
         log.warning("app.capture not present yet — feed/capture startup skipped (expected before Stage 2)")
 
+    import asyncio
+    from app.self_update import run_forever as self_update_run_forever
+    self_update_task = asyncio.create_task(self_update_run_forever())
+    app.state.self_update_task = self_update_task
+
     yield
 
     # -- Shutdown ----------------------------------------------------------------
     log.info("pktPCAP shutting down")
+    self_update_task.cancel()
     if reconcile_task is not None:
         await reconcile_task.stop()
     await backup_scheduler.stop()
